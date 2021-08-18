@@ -1,0 +1,168 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="LegacyCodes">
+      <UniqueIdentifier>{e73b020a-cb60-4941-abc5-3a28b1315bb7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Exports">
+      <UniqueIdentifier>{2c3fa676-eae2-460d-a262-9602a49be981}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyCef.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyCefAppBrowser.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyCefAppRender.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyClientHandler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyIPC.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyLayeredWindow.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyStructs.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyWebViewMgr.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeV8Accessor.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="NativeV8Handler.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasySchemes.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="WebViewControl.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LegacyImplement.h">
+      <Filter>LegacyCodes</Filter>
+    </ClInclude>
+    <ClInclude Include="Export.h">
+      <Filter>Exports</Filter>
+    </ClInclude>
+    <ClInclude Include="osr_ime_handler_win.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyRenderBrowserInfo.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyRenderWorks.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyBrowserWorks.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EasyIPCWorks.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LegacyExports.h">
+      <Filter>Exports</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyCef.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyCefAppBrowser.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyCefAppRender.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyClientHandler.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyIPC.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyLayeredWindow.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyStructs.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyWebViewMgr.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeV8Accessor.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="NativeV8Handler.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasySchemes.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="WebViewControl.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LegacyImplement.cpp">
+      <Filter>LegacyCodes</Filter>
+    </ClCompile>
+    <ClCompile Include="Export.cpp">
+      <Filter>Exports</Filter>
+    </ClCompile>
+    <ClCompile Include="osr_ime_handler_win.cc">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LegacyExports.cpp">
+      <Filter>Exports</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyRenderBrowserInfo.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyRenderWorks.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyBrowserWorks.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyIPCWorks.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+  </ItemGroup>
+</Project>
