@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <cef_headers_dir>D:\Projects\cef\90.6.3+gc53c523+90.0.4430.93_win32</cef_headers_dir>
+    <cef_wrapper_libs_dir Condition="'$(Configuration)'=='Debug'">D:\Projects\cef\90.6.3+gc53c523+90.0.4430.93_win32\Debug</cef_wrapper_libs_dir>
+    <cef_wrapper_libs_dir Condition="'$(Configuration)'=='Release'">D:\Projects\cef\90.6.3+gc53c523+90.0.4430.93_win32\Release</cef_wrapper_libs_dir>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IncludePath>$(cef_headers_dir);$(IncludePath)</IncludePath>
+    <_PropertySheetDisplayName>cef and ext</_PropertySheetDisplayName>
+    <LibraryPath>$(cef_wrapper_libs_dir);$(OutDir);$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup />
+  <ItemGroup>
+    <BuildMacro Include="cef_headers_dir">
+      <Value>$(cef_headers_dir)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+    <BuildMacro Include="cef_wrapper_libs_dir">
+      <Value>$(cef_wrapper_libs_dir)</Value>
+      <EnvironmentVariable>true</EnvironmentVariable>
+    </BuildMacro>
+  </ItemGroup>
+</Project>
