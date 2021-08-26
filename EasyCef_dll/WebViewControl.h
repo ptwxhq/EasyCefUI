@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "EasyClientHandler.h"
 #include "EasyLayeredWindow.h"
 #include <future>
 
@@ -72,7 +71,8 @@ protected:
 
 	CefRefPtr<CefBrowser> m_browser;
 
-	CefRefPtr<EasyClientHandler> m_clientHandler;
+	//实际是EasyClientHandler
+	CefRefPtr<CefClient> m_clientHandler;
 };
 
 

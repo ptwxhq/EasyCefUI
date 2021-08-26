@@ -271,6 +271,7 @@ namespace wrapQweb {
 	//初始化浏览器控件响应函数
 	EASYCEF_EXP_API void InitEchoFn(EchoMap* map);
 
+	//chromium81开始cookie路径有严格要求，必须位于主目录的下面，不能随意设置，否则使用内存模式
 	EASYCEF_EXP_API void CreateWebControl(HWND hwnd, LPCWSTR url, LPCWSTR cookie = NULL);
 
 	EASYCEF_EXP_API bool CloseWebControl(HWND hwnd);

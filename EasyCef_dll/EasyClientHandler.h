@@ -2,12 +2,12 @@
 
 #include <list>
 #include <unordered_map>
-
+#include "WebViewControl.h"
 
 //Ö÷½ø³Ì
 
-class WebViewControl;
-class WebViewTransparentUIControl;
+//class WebViewControl;
+//class WebViewTransparentUIControl;
 
 
 class EasyClientHandler :

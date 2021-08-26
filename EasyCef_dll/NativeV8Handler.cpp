@@ -252,7 +252,6 @@ void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
             });
 
             nativeapp.nc_setalledge = notify_nc_alledge;
-            console.log("updateNcEleRects" + JSON.stringify(notify_nc_alledge));
             return notify_nc_alledge;
         }
 
@@ -262,32 +261,8 @@ void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
         var timeoutID;
 
         const resizeObserver = new ResizeObserver(entries => {
-
-            //console.log("hello settimer");
-
             window.clearTimeout(timeoutID);
             timeoutID = window.setTimeout(updateNcEleRects, 200, eleList);
-
-            //var callbacktmp_alledge = new Object();
-
-            //  for (let entry of entries) {
-            //	let ele = entry.target;
-            //	let attr=ele.getAttribute("data-nc");
-            //	let drect = ele.getBoundingClientRect();
-
-            //	if(!isArray(!callbacktmp_alledge[attr]))
-            //		callbacktmp_alledge[attr] = new Array();
-
-            //	callbacktmp_alledge[attr].push({left:drect.left,top:drect.top,right:drect.right,bottom:drect.bottom});
-
-            //console.log(attr + JSON.stringify(drect));
-
-            //  }
-
-            //nativeapp.nc_setalledge =  callbacktmp_alledge;
-
-            //console.log("from chg:"+JSON.stringify(callbacktmp_alledge));
-
         });
 
 
@@ -299,21 +274,9 @@ void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
                 if (attr == edges[index].nc) {
                     eleList.push(ele);
                     resizeObserver.observe(ele);
-
-                    //console.log(JSON.stringify(ele.getBoundingClientRect()));
-                    //let drect = ele.getBoundingClientRect(); 
-
-                    //if(!isArray(!tmp_nc_alledge[attr]))
-                    //	tmp_nc_alledge[attr] = new Array();
-
-                    //tmp_nc_alledge[attr].push({left:drect.left,top:drect.top,right:drect.right,bottom:drect.bottom});
-
                 }
             }
         }
-
-        //nativeapp.nc_setalledge = tmp_nc_alledge;
-        //console.log("from init:" +JSON.stringify(tmp_nc_alledge));
     }()
 ))";
 

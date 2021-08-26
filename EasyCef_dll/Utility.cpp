@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 
 //#include <tlhelp32.h>
 #include <Psapi.h>
@@ -474,7 +474,7 @@ CefRefPtr<CefValue> CefV8ValueToCefValue(CefRefPtr<CefV8Value> value)
     else if (value->IsArray())
     {
         auto list = CefListValue::Create();
-        for (size_t i = 0; i < value->GetArrayLength(); i++)
+        for (int i = 0; i < value->GetArrayLength(); i++)
         {
             list->SetValue(i, CefV8ValueToCefValue(value->GetValue(i)));
         }
@@ -505,4 +505,27 @@ CefString CefV8ValueToString(CefRefPtr<CefV8Value> value)
     auto toVal = CefV8ValueToCefValue(value);
 
     return CefWriteJSON(toVal, JSON_WRITER_DEFAULT);
+}
+
+void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context)
+{
+    if (!request_context)
+        return;
+
+    CefString errstr;
+
+#if CEF_VERSION_MAJOR <= 87
+
+    //非sandbox的cef在首次加载flash的时候会闪个cmd...后面看看要怎么处理比较好或者不处理
+    auto val1 = CefValue::Create();
+    val1->SetInt(1);
+    auto valtrue = CefValue::Create();
+    valtrue->SetBool(true);
+    request_context->SetPreference("plugins.run_all_flash_in_allow_mode", valtrue, errstr);
+    request_context->SetPreference("profile.default_content_setting_values.plugins", val1, errstr);
+
+    request_context->SetPreference("plugins.allow_outdated", valtrue, errstr);
+    request_context->SetPreference("webkit.webprefs.plugins_enabled", valtrue, errstr);
+
+#endif
 }

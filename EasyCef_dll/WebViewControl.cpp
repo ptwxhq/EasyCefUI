@@ -259,15 +259,18 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
             CefString(&req_settings.cache_path) = pParams->cookie;
             //TODO 这里CefRequestContextHandler目前用不上
             request_context = CefRequestContext::CreateContext(req_settings, nullptr);
+
+            SetRequestDefaultSettings(request_context);
         }
         else
         {
             request_context = CefRequestContext::GetGlobalContext();
         }
 
-        m_clientHandler = new EasyClientHandler;
+        CefRefPtr<EasyClientHandler> clientHandler = new EasyClientHandler;
+        m_clientHandler = clientHandler;
 
-        m_clientHandler->SetManualHandle(m_itemHandle);
+        clientHandler->SetManualHandle(m_itemHandle);
 
         //   m_clientHandler->m_webcontrol = this;
 
@@ -330,16 +333,7 @@ void WebViewTransparentUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitPar
         //TODO 这里CefRequestContextHandler目前用不上
         request_context = CefRequestContext::CreateContext(req_settings, nullptr);
 
-        auto def_request_context = CefRequestContext::GetGlobalContext();
-
-        auto dicts = def_request_context->GetAllPreferences(false);
-        CefDictionaryValue::KeyList keyList;
-        dicts->GetKeys(keyList);
-        CefString errstr;
-        for (auto& it : keyList)
-        {
-            request_context->SetPreference(it, dicts->GetValue(it), errstr);
-        }
+        SetRequestDefaultSettings(request_context);
     }
     else
     {
@@ -348,12 +342,13 @@ void WebViewTransparentUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitPar
 
 
     ASSERT(CefCurrentlyOn(TID_UI));
-    m_clientHandler = new EasyClientHandler;
+    CefRefPtr<EasyClientHandler> clientHandler = new EasyClientHandler;
+    m_clientHandler = clientHandler;
 
-    m_clientHandler->SetManualHandle(m_itemHandle);
+    clientHandler->SetManualHandle(m_itemHandle);
 
-    m_clientHandler->m_bIsUIControl = true;
-    m_clientHandler->m_webuicontrol = this;
+    clientHandler->m_bIsUIControl = true;
+    clientHandler->m_webuicontrol = this;
 
     auto extra_info = CefDictionaryValue::Create();
 

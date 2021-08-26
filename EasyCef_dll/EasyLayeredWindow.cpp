@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "EasyLayeredWindow.h"
 #include "osr_ime_handler_win.h"
 #include "EasyWebViewMgr.h"
@@ -52,18 +52,33 @@ void LayeredWindowInfo::Update(__in HWND window, __in HDC source)
 	m_info.hdcSrc = source;
 	//m_info.hdcDst = GetDC(window);
 
-	VERIFY(UpdateLayeredWindowIndirect(window, &m_info));
-	////if (!b)
-	//{
-	//	//int err = GetLastError();
-	//	BOOL b = UpdateLayeredWindow(window, m_info.hdcDst, const_cast<POINT*>(m_info.pptDst), const_cast<SIZE*>(m_info.psize), m_info.hdcSrc, const_cast<POINT*>(m_info.pptSrc), m_info.crKey, const_cast<BLENDFUNCTION*>(m_info.pblend), m_info.dwFlags);
-	//	ASSERT(b);
-	//}
+	BOOL bRet = UpdateLayeredWindowIndirect(window, &m_info);
+	VERIFY(bRet);
+	if (!bRet)
+	{
+		//è§£å†³è¢«è„šæœ¬ä¿®æ”¹å¯¼è‡´ç•Œé¢å¼‚å¸¸
+		if (ERROR_INVALID_PARAMETER == GetLastError())
+		{
+			long val = GetWindowLong(window, GWL_EXSTYLE);
+			val &= ~WS_EX_LAYERED;
+			SetWindowLong(window, GWL_EXSTYLE, val);
+			::SetWindowPos(window, 0, 0, 0, 0, 0,
+				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+			val = GetWindowLong(window, GWL_EXSTYLE);
+			val |= WS_EX_LAYERED;
+			SetWindowLong(window, GWL_EXSTYLE, val);
+			::SetWindowPos(window, 0, 0, 0, 0, 0,
+				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+			bRet = UpdateLayeredWindow(window, m_info.hdcDst, const_cast<POINT*>(m_info.pptDst), const_cast<SIZE*>(m_info.psize), m_info.hdcSrc, const_cast<POINT*>(m_info.pptSrc), m_info.crKey, const_cast<BLENDFUNCTION*>(m_info.pblend), m_info.dwFlags);
+			ASSERT(bRet);
+		}
+	
+	}
 
 	//ReleaseDC(window, m_info.hdcDst);
 	//m_info.hdcDst = nullptr;
 
-	//Ê¹ÓÃÍê±Ï¸´Ô­±ÜÃâÂ©µô
+	//ä½¿ç”¨å®Œæ¯•å¤åŸé¿å…æ¼æ‰
 	SetDirtyRect(nullptr);
 
 	//m_info.pptDst = nullptr;
@@ -153,7 +168,7 @@ void EasyLayeredWindow::SetEdgeNcAera(HT_INFO ht, const std::vector<RECT>& vecRc
 {
 	::SetRectRgn(edge_region_[ht], 0, 0, 0, 0);
 
-	for (auto it : vecRc)
+	for (auto& it : vecRc)
 	{
 		HRGN region = ::CreateRectRgn(it.left, it.top, it.right, it.bottom);
 		::CombineRgn(edge_region_[ht], edge_region_[ht], region, true ? RGN_OR : RGN_DIFF);
@@ -697,7 +712,7 @@ LRESULT EasyLayeredWindow::OnNcHitTest(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
 		POINT point = { points.x, points.y };
 		ScreenToClient(&point);
 
-		//Ë³ĞòÏÈ´Ó±ß½Ç¿ªÊ¼
+		//é¡ºåºå…ˆä»è¾¹è§’å¼€å§‹
 		static int nRound[] = {
 			E_HTTOPLEFT,E_HTTOPRIGHT,E_HTBOTTOMLEFT,E_HTBOTTOMRIGHT,
 			E_HTTOP,E_HTLEFT,E_HTRIGHT,E_HTBOTTOM
@@ -741,7 +756,7 @@ LRESULT EasyLayeredWindow::OnNcCalcSize(UINT, WPARAM wParam, LPARAM lParam, BOOL
 	//}
 
 	//if (::IsZoomed(m_hWnd))
-	//{	// ×î´ó»¯Ê±£¬¼ÆËãµ±Ç°ÏÔÊ¾Æ÷×îÊÊºÏ¿í¸ß¶È
+	//{	// æœ€å¤§åŒ–æ—¶ï¼Œè®¡ç®—å½“å‰æ˜¾ç¤ºå™¨æœ€é€‚åˆå®½é«˜åº¦
 	//	MONITORINFO oMonitor = {};
 	//	oMonitor.cbSize = sizeof(oMonitor);
 	//	::GetMonitorInfo(::MonitorFromWindow(*this, MONITOR_DEFAULTTONEAREST), &oMonitor);
@@ -850,7 +865,7 @@ void EasyLayeredWindow::Render()
 
 void EasyLayeredWindow::OnFinalMessage(HWND)
 {
-	//DEBUG°æÈİÒ×³öÏÖÄÚ²¿´íÎó£¬ÎªÁË·½±ãµ÷ÊÔ£¬¾ÍÏÈÆÁ±ÎÁË
+	//DEBUGç‰ˆå®¹æ˜“å‡ºç°å†…éƒ¨é”™è¯¯ï¼Œä¸ºäº†æ–¹ä¾¿è°ƒè¯•ï¼Œå°±å…ˆå±è”½äº†
 #ifndef _DEBUG
 	if (m_browser)
 	{

@@ -19,31 +19,6 @@ void GetLocalPaths();
 
 namespace EASYCEF {
 
-//	//预期使用，后面看参数是否进行变动
-//	EASYCEF_EXP_API bool InvokedJSFunction(HWND hWnd, const char* utf8_module, const char* utf8_method,
-//		const char* utf8_parm,
-//		const char* utf8_frame_name = 0, bool bReturnRawOrJson = false, bool bSync = false);
-//
-//
-//	//同步调用主要为了兼容旧方式，注意参数或返回值不要接近或超过4MB，超过4MB请使用异步方式
-//	bool SyncInvokedJSFunction(HWND hWnd, const char* utf8_module, const char* utf8_method,
-//		const char* utf8_parm,
-//		const char* utf8_frame_name = 0, bool bReturnRawOrJson = false);
-//
-//bool InvokedJSFunction(HWND hWnd, const char* utf8_module, const char* utf8_method, const char* utf8_parm, const char* utf8_frame_name, bool bReturnRawOrJson, bool bSync)
-//{
-//	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
-//	if (item)
-//	{
-//		return item->GetHWND();
-//	}
-//
-//
-//
-//	return false;
-//}
-
-
 bool RegisterPackDomain(LPCWSTR lpszDomain, LPCWSTR lpszFilePath)
 {
 	return DomainPackInfo::GetInstance().RegisterPackDomain(lpszDomain, lpszFilePath);
@@ -118,7 +93,8 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 
 	CefEnableHighDPISupport();
 
-	g_BrowserGlobalVar.Debug = GetPrivateProfileIntW(L"Debug", L"Debug", 0, (g_BrowserGlobalVar.FileDir + L"debug.dbg").c_str()) == 1;
+	auto strDebugConfigPath = g_BrowserGlobalVar.FileDir + L"debug.dbg";
+	g_BrowserGlobalVar.Debug = GetPrivateProfileIntW(L"Debug", L"Debug", 0, strDebugConfigPath.c_str()) == 1;
 
 #if defined(CEF_USE_SANDBOX)
 	g_BrowserGlobalVar.sandbox_info = g_scoped_sandbox.sandbox_info();
@@ -256,8 +232,7 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 
 	CefString(&settings.cache_path).FromWString(g_BrowserGlobalVar.CachePath);
 
-	//settings.log_severity = LOGSEVERITY_WARNING;
-
+	settings.log_severity = (cef_log_severity_t)GetPrivateProfileIntW(L"Debug", L"Log", LOGSEVERITY_DISABLE, strDebugConfigPath.c_str());
 
 	EasyIPCServer::GetInstance().ThdRun();
 

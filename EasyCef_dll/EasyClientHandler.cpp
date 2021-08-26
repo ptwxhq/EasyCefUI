@@ -630,24 +630,24 @@ void EasyClientHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRe
                     if (QueryNodeAttrib(item, x, y, "data-nc", strAttr))
                     {
                         const int size = 64;
-                        wrapQweb::WRAP_CEF_MENU_COMMAND menus[size];
-                        memset(menus, 0, sizeof(wrapQweb::WRAP_CEF_MENU_COMMAND) * size);
+                        auto menus = std::make_unique<wrapQweb::WRAP_CEF_MENU_COMMAND>(size);
+                        memset(menus.get(), 0, sizeof(wrapQweb::WRAP_CEF_MENU_COMMAND) * size);
                         const auto fun = WebkitEcho::getUIFunMap();
                         if (fun)
                         {
-                            fun->insertMenu(hWnd, strAttr.c_str(), menus);
+                            fun->insertMenu(hWnd, strAttr.c_str(), menus.get());
                             for (int i = 0; i < size; ++i)
                             {
-                                if (menus[i].command > 0)
+                                if (menus.get()[i].command > 0)
                                 {
-                                    if (menus[i].top)
+                                    if (menus.get()[i].top)
                                     {
-                                        model->InsertItemAt(0, menus[i].command, menus[i].szTxt);
+                                        model->InsertItemAt(0, menus.get()[i].command, menus.get()[i].szTxt);
                                     }
                                     else {
-                                        model->AddItem(menus[i].command, menus[i].szTxt);
+                                        model->AddItem(menus.get()[i].command, menus.get()[i].szTxt);
                                     }
-                                    model->SetEnabled(menus[i].command, menus[i].bEnable);
+                                    model->SetEnabled(menus.get()[i].command, menus.get()[i].bEnable);
                                 }
                                 else {
                                     break;

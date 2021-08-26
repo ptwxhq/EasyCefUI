@@ -263,6 +263,10 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 
 	try
 	{
+		if(!hEvent)
+			throw "create event failed";
+
+
 		CEasyFileMap mem_result;
 		if (!mem_result.Init(g_IpcMaxMemorySize, strContName.c_str(), PAGE_READWRITE))
 		{
@@ -358,7 +362,8 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 		LOG(WARNING) << GetCurrentProcessId() << "] Err c:" << c;
 	}
 	
-	CloseHandle(hEvent);
+	if (hEvent)
+		CloseHandle(hEvent);
 
 	m_bIsSending = false;
 
