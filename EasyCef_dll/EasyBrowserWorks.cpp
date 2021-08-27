@@ -20,7 +20,11 @@ namespace BrowserSyncWorkFunctions {
 
 	bool crossInvokeWebMethod(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return false;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->crossInvokeWebMethod && IsWindow(hWnd))
 		{
 			int sign = args->GetInt(0);
@@ -39,7 +43,11 @@ namespace BrowserSyncWorkFunctions {
 
 	bool crossInvokeWebMethod2(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return false;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->crossInvokeWebMethod2 && IsWindow(hWnd))
 		{
 			std::wstring randstr = args->GetString(0).ToWString();
@@ -101,7 +109,11 @@ namespace BrowserSyncWorkFunctions {
 
 	bool winProty(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return false;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->winProty && IsWindow(hWnd))
 		{
 			retval = WebkitEcho::getUIFunMap()->winProty(hWnd);
@@ -166,7 +178,11 @@ namespace BrowserSyncWorkJSKeys
 {
 	void window_x(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			RECT rc;
@@ -177,7 +193,11 @@ namespace BrowserSyncWorkJSKeys
 
 	void window_y(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			RECT rc;
@@ -188,7 +208,11 @@ namespace BrowserSyncWorkJSKeys
 
 	void window_w(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			RECT rc;
@@ -199,7 +223,11 @@ namespace BrowserSyncWorkJSKeys
 
 	void window_h(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			RECT rc;
@@ -210,7 +238,11 @@ namespace BrowserSyncWorkJSKeys
 
 	void is_zoomed(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			retval = std::to_string(IsZoomed(hWnd) & 1);
@@ -219,7 +251,11 @@ namespace BrowserSyncWorkJSKeys
 
 	void is_iconic(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			retval = std::to_string(IsIconic(hWnd) & 1);
@@ -239,7 +275,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void setWindowSize(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			int x = args->GetInt(0);
@@ -253,7 +293,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void setWindowPos(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->setWindowPos && IsWindow(hWnd))
 		{
 			int order = args->GetInt(0);
@@ -267,10 +311,10 @@ namespace BrowserAsyncWorkFunctions {
 		}
 	}
 
-
+#define DEF_TRANS_VALUE true
 	struct JSCreateWindowParam
 	{
-		bool trans = false;
+		bool trans = DEF_TRANS_VALUE;
 		int alpha = 255;
 		int x = 0;
 		int y = 0;
@@ -330,7 +374,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void createWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->createWindow && IsWindow(hWnd))
 		{
 			if (args->GetSize() == 1)
@@ -344,7 +392,7 @@ namespace BrowserAsyncWorkFunctions {
 			else
 			{
 				//无法获取原始字符串？参数都解开了，那就这样吧
-				WebkitEcho::getUIFunMap()->createWindow(hWnd, args->GetInt(0), args->GetInt(1), args->GetInt(2), args->GetInt(3), args->GetInt(4), args->GetInt(5), args->GetInt(6), args->GetInt(7), args->GetString(8).ToWString().c_str(), args->GetInt(9), args->GetInt(10), true, args->GetInt(11));
+				WebkitEcho::getUIFunMap()->createWindow(hWnd, args->GetInt(0), args->GetInt(1), args->GetInt(2), args->GetInt(3), args->GetInt(4), args->GetInt(5), args->GetInt(6), args->GetInt(7), args->GetString(8).ToWString().c_str(), args->GetInt(9), args->GetInt(10), DEF_TRANS_VALUE, args->GetInt(11));
 			}
 			
 		}
@@ -352,7 +400,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void createModalWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->createModalWindow && IsWindow(hWnd))
 		{
 			if (args->GetSize() == 1)
@@ -366,14 +418,18 @@ namespace BrowserAsyncWorkFunctions {
 			else
 			{
 				//无法获取原始字符串？参数都解开了，那就这样吧
-				WebkitEcho::getUIFunMap()->createModalWindow(hWnd, args->GetInt(0), args->GetInt(1), args->GetInt(2), args->GetInt(3), args->GetInt(4), args->GetInt(5), args->GetInt(6), args->GetInt(7), args->GetString(8).ToWString().c_str(), args->GetInt(9), args->GetInt(10), true, args->GetInt(11));
+				WebkitEcho::getUIFunMap()->createModalWindow(hWnd, args->GetInt(0), args->GetInt(1), args->GetInt(2), args->GetInt(3), args->GetInt(4), args->GetInt(5), args->GetInt(6), args->GetInt(7), args->GetString(8).ToWString().c_str(), args->GetInt(9), args->GetInt(10), DEF_TRANS_VALUE, args->GetInt(11));
 			}
 		}
 	}
 
 	void createModalWindow2(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->createModalWindow2 && IsWindow(hWnd))
 		{
 			if (args->GetSize() == 1)
@@ -387,7 +443,7 @@ namespace BrowserAsyncWorkFunctions {
 			else
 			{
 				//无法获取原始字符串？参数都解开了，那就这样吧
-				WebkitEcho::getUIFunMap()->createModalWindow2(hWnd, args->GetInt(0), args->GetInt(1), args->GetInt(2), args->GetInt(3), args->GetInt(4), args->GetInt(5), args->GetInt(6), args->GetInt(7), args->GetString(8).ToWString().c_str(), args->GetInt(9), args->GetInt(10), true, args->GetInt(11), args->GetInt(12));
+				WebkitEcho::getUIFunMap()->createModalWindow2(hWnd, args->GetInt(0), args->GetInt(1), args->GetInt(2), args->GetInt(3), args->GetInt(4), args->GetInt(5), args->GetInt(6), args->GetInt(7), args->GetString(8).ToWString().c_str(), args->GetInt(9), args->GetInt(10), DEF_TRANS_VALUE, args->GetInt(11), args->GetInt(12));
 			}
 		}
 
@@ -395,22 +451,24 @@ namespace BrowserAsyncWorkFunctions {
 
 	void setAlpha(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		CefRefPtr<WebViewTransparentUIControl> item = dynamic_cast<WebViewTransparentUIControl*>(EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier()).get());
+		CefRefPtr<WebViewUIControl> item = dynamic_cast<WebViewUIControl*>(EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier()).get());
 
 		if (!item)
 			return;
 
 		int alpha = args->GetInt(0);
 
-		item->m_pWindow->SetAlpha(alpha);
-		//需要通知一下变化
-		item->m_pWindow->PostMessage(WM_PAINT);
+		item->SetAlpha(alpha);
 	}
 
 
 	void minWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			PostMessage(hWnd, WM_SYSCOMMAND, SC_MINIMIZE, NULL);
@@ -419,7 +477,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void maxWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			PostMessage(hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
@@ -428,7 +490,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void restoreWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			PostMessage(hWnd, WM_SYSCOMMAND, SC_RESTORE, NULL);
@@ -438,7 +504,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void closeWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->closeWindow && IsWindow(hWnd))
 		{
 			WebkitEcho::getUIFunMap()->closeWindow(hWnd);
@@ -447,7 +517,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void setWindowText(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (IsWindow(hWnd))
 		{
 			SetWindowTextW(hWnd, args->GetString(0).ToWString().c_str());
@@ -486,7 +560,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void asyncCrossInvokeWebMethod(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->asyncCrossInvokeWebMethod && IsWindow(hWnd))
 		{
 			int sign = args->GetInt(0);
@@ -501,7 +579,11 @@ namespace BrowserAsyncWorkFunctions {
 
 	void asyncCrossInvokeWebMethod2(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		HWND hWnd = browser->GetHost()->GetWindowHandle();
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
 		if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->asyncCrossInvokeWebMethod2 && IsWindow(hWnd))
 		{
 			int sign = args->GetInt(0);
@@ -641,17 +723,17 @@ namespace BrowserAsyncWorkJSKeys {
 		static std::unordered_map<std::string, EasyLayeredWindow::HT_INFO> mapInfo;
 		if (mapInfo.empty())
 		{
-			mapInfo.insert(std::make_pair("top", EasyLayeredWindow::E_HTTOP));
-			mapInfo.insert(std::make_pair("left", EasyLayeredWindow::E_HTLEFT));
-			mapInfo.insert(std::make_pair("right", EasyLayeredWindow::E_HTRIGHT));
-			mapInfo.insert(std::make_pair("bottom", EasyLayeredWindow::E_HTBOTTOM));
-			mapInfo.insert(std::make_pair("topleft", EasyLayeredWindow::E_HTTOPLEFT));
-			mapInfo.insert(std::make_pair("topright", EasyLayeredWindow::E_HTTOPRIGHT));
-			mapInfo.insert(std::make_pair("bottomleft", EasyLayeredWindow::E_HTBOTTOMLEFT));
-			mapInfo.insert(std::make_pair("bottomright", EasyLayeredWindow::E_HTBOTTOMRIGHT));
+			mapInfo.insert(std::make_pair("top", EasyUIWindowBase::E_HTTOP));
+			mapInfo.insert(std::make_pair("left", EasyUIWindowBase::E_HTLEFT));
+			mapInfo.insert(std::make_pair("right", EasyUIWindowBase::E_HTRIGHT));
+			mapInfo.insert(std::make_pair("bottom", EasyUIWindowBase::E_HTBOTTOM));
+			mapInfo.insert(std::make_pair("topleft", EasyUIWindowBase::E_HTTOPLEFT));
+			mapInfo.insert(std::make_pair("topright", EasyUIWindowBase::E_HTTOPRIGHT));
+			mapInfo.insert(std::make_pair("bottomleft", EasyUIWindowBase::E_HTBOTTOMLEFT));
+			mapInfo.insert(std::make_pair("bottomright", EasyUIWindowBase::E_HTBOTTOMRIGHT));
 		}
 
-		CefRefPtr<WebViewTransparentUIControl> item = dynamic_cast<WebViewTransparentUIControl*>(EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier()).get());
+		CefRefPtr<WebViewUIControl> item = dynamic_cast<WebViewUIControl*>(EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier()).get());
 		if (!item || !item->IsUIControl())
 			return;
 
@@ -679,11 +761,15 @@ namespace BrowserAsyncWorkJSKeys {
 						auto obj = list->GetDictionary(i);
 						if (obj)
 						{
-							vecRc.push_back({ obj->GetInt("left"),obj->GetInt("top") ,obj->GetInt("right") ,obj->GetInt("bottom") });
+							RECT rc{ obj->GetInt("left"),obj->GetInt("top") ,obj->GetInt("right") ,obj->GetInt("bottom") };
+							if (rc.left || rc.top || rc.right || rc.bottom)
+							{
+								vecRc.push_back(rc);
+							}
 						}
 					}
 
-					item->m_pWindow->SetEdgeNcAera(type->second, vecRc);
+					item->SetEdgeNcAera(type->second, vecRc);
 				}
 			}
 		}

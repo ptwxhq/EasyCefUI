@@ -103,6 +103,12 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 					break;
 				}
 
+				//首页未定义的情况，自动标记为index.html
+				if (strPathInZip == L"/")
+				{
+					strPathInZip = LR"(\index.html)";
+				}
+
 				std::replace(strPathInZip.begin(), strPathInZip.end(), L'/', L'\\');
 
 				//因路径本身错误导致的不进行修正，直接判断

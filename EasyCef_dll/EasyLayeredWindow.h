@@ -1,7 +1,9 @@
 #pragma once
 
+#include "EasyUIWindow.h"
 
 #define VERIFYHR(x) VERIFY(SUCCEEDED(x))
+
 
 namespace client {
     class OsrImeHandlerWin;
@@ -121,6 +123,8 @@ class EasyLayeredWindow :
     CWindow, CWinTraits
     < WS_OVERLAPPED, WS_EX_LAYERED>>
     //<WS_POPUP | WS_SYSMENU, WS_EX_NOREDIRECTIONBITMAP>>   //测试，win8+
+    ,
+    public EasyUIWindowBase
 {
 public:
     LayeredWindowInfo m_info;
@@ -131,13 +135,14 @@ private:
 
 public:
 
-    EasyLayeredWindow(wvhandle handle);
+    EasyLayeredWindow();
     ~EasyLayeredWindow();
 
     DECLARE_WND_CLASS_EX(g_BrowserGlobalVar.WebViewClassName.c_str(), 0, COLOR_WINDOW)
 
 
     BEGIN_MSG_MAP(EasyLayeredWindow)
+        CHAIN_MSG_MAP(EasyUIWindowBase)
         MESSAGE_HANDLER(WM_LBUTTONDOWN, OnMouseEvent)
         MESSAGE_HANDLER(WM_RBUTTONDOWN, OnMouseEvent)
         MESSAGE_HANDLER(WM_MBUTTONDOWN, OnMouseEvent)
@@ -185,16 +190,12 @@ public:
 
 
         //以下需要UI非透明也要，后面看怎么处理下
-        MESSAGE_HANDLER(WM_DPICHANGED, OnDpiChanged)
-        MESSAGE_HANDLER(WM_NCHITTEST, OnNcHitTest)
-       // MESSAGE_HANDLER(WM_DWMCOMPOSITIONCHANGED, OnDwmCompositionChanged)
-        MESSAGE_HANDLER(WM_GETMINMAXINFO, OnGetMinMaxInfo)
-        
+        // MESSAGE_HANDLER(WM_DWMCOMPOSITIONCHANGED, OnDwmCompositionChanged)
 
         
         //MESSAGE_HANDLER(WM_ACTIVATE, OnActivate)
         //MESSAGE_HANDLER(WM_NCACTIVATE, OnNcActivate)
-        MESSAGE_HANDLER(WM_NCCALCSIZE, OnNcCalcSize)
+
 
        // MESSAGE_HANDLER(WM_CLOSE, OnClose)
     END_MSG_MAP()
@@ -214,25 +215,14 @@ public:
     LRESULT OnIMEComposition(UINT, WPARAM, LPARAM lp, BOOL&);
     LRESULT OnIMECancelCompositionEvent(UINT, WPARAM, LPARAM, BOOL&);
 
-    LRESULT OnDpiChanged(UINT, WPARAM wp, LPARAM lp, BOOL&);
     LRESULT OnDwmCompositionChanged(UINT, WPARAM wp, LPARAM lp, BOOL&);
     
-    LRESULT OnNcHitTest(UINT , WPARAM wp, LPARAM lp, BOOL&);
-    LRESULT OnNcCalcSize(UINT, WPARAM wp, LPARAM lp, BOOL& h);
     LRESULT OnNcActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h);
     LRESULT OnActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h);
-    LRESULT OnGetMinMaxInfo(UINT, WPARAM, LPARAM lp, BOOL&);
-    
-    
 
-    
-
-    LRESULT OnClose(UINT msg, WPARAM wp, LPARAM lp, BOOL&);
     LRESULT OnSysCommand(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle);
 
     LRESULT OnPaint(UINT, WPARAM, LPARAM, BOOL& handle);
-    
-
 
     LRESULT OnIgnore(UINT, WPARAM, LPARAM, BOOL&) { return 0; }
 
@@ -245,47 +235,20 @@ public:
 
     //LRESULT OnTime(UINT, WPARAM wp, LPARAM, BOOL&);
 
-
-    void Run() {};
-
-    void SetAlpha(BYTE alpha) {
-        m_info.SetAlpha(alpha);
-    }
-
-    void SetBrowser(CefRefPtr<CefBrowser> browser) {
-        m_browser = browser;
-    }
-
-    void SetDraggableRegion(const std::vector<CefDraggableRegion>& regions);
+    void SetAlpha(BYTE alpha, bool bRepaint);
 
 
-    void SetToolTip(CefString& str);
-
-    enum HT_INFO
-    {
-        E_HTLEFT,        //10
-        E_HTRIGHT,
-        E_HTTOP,
-        E_HTTOPLEFT,
-        E_HTTOPRIGHT,
-        E_HTBOTTOM,
-        E_HTBOTTOMLEFT,
-        E_HTBOTTOMRIGHT, //17
-        E_END,
-        E_HTBASE = HTLEFT
-    };
-
-    void SetEdgeNcAera(HT_INFO ht, const std::vector<RECT> &vecRc);
+    void SetToolTip(const CefString& str);
 
     void ImePosChange(const CefRange& selected_range, const CefRenderHandler::RectList& character_bounds);
 
-
+    HWND GetSafeHwnd() final {
+        return m_hWnd;
+    };
 
     //临时
-    bool IsOverPopupWidget(int x, int y) const;
-    int GetPopupXOffset() const;
-    int GetPopupYOffset() const;
-    void ApplyPopupOffset(int& x, int& y) const;
+
+
     int view_width_ = 0;
     int view_height_ = 0;
     CefRect popup_rect_;
@@ -293,11 +256,14 @@ public:
 
 private:
 
+    bool IsOverPopupWidget(int x, int y) const;
+    void ApplyPopupOffset(int& x, int& y) const;
+    int GetPopupXOffset() const;
+    int GetPopupYOffset() const;
+
+
     int view_width_old_ = 0;
     int view_height_old_ = 0;
-
-
-    float device_scale_factor_ = 1.f;
 
     // Mouse state tracking.
     POINT last_mouse_pos_ = {};
@@ -311,22 +277,9 @@ private:
     double last_click_time_ = {};
     bool last_mouse_down_on_view_ = {};
 
-
-
-
     HWND m_hToolTip = nullptr;
-
-
 
     // Class that encapsulates IMM32 APIs and controls IMEs attached to a window.
     scoped_ptr<client::OsrImeHandlerWin> ime_handler_;
-    // Draggable region.
-    HRGN draggable_region_ = {};
-    HRGN edge_region_[E_END] = {};
-
-
-
-    CefRefPtr<CefBrowser> m_browser;
-
 
 };

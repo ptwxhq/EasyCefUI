@@ -8,7 +8,7 @@
 #pragma comment(lib, "UxTheme.lib")
 
 
-#define DPI_1X 96.0f
+
 
 inline bool IsMouseEventFromTouch(UINT message) {
 #define MOUSEEVENTF_FROMTOUCH 0xFF515700
@@ -138,13 +138,8 @@ GdiBitmap::~GdiBitmap()
 
 
 
-EasyLayeredWindow::EasyLayeredWindow(wvhandle handle): m_info(1, 1)
+EasyLayeredWindow::EasyLayeredWindow(): m_info(1, 1)
 {
-	draggable_region_ = ::CreateRectRgn(0, 0, 0, 0);
-	for (int i = 0; i < _countof(edge_region_); i++)
-	{
-		edge_region_[i] = CreateRectRgn(0, 0, 0, 0);
-	}
 }
 
 EasyLayeredWindow::~EasyLayeredWindow()
@@ -152,27 +147,6 @@ EasyLayeredWindow::~EasyLayeredWindow()
 	if (IsWindow())
 	{
 		CWindow::DestroyWindow();
-	}
-
-	//OnFinalMessage(nullptr);
-
-	DeleteObject(draggable_region_);
-	for (int i = 0; i < _countof(edge_region_); i++)
-	{
-		DeleteObject(edge_region_[i]);
-	}
-}
-
-
-void EasyLayeredWindow::SetEdgeNcAera(HT_INFO ht, const std::vector<RECT>& vecRc)
-{
-	::SetRectRgn(edge_region_[ht], 0, 0, 0, 0);
-
-	for (auto& it : vecRc)
-	{
-		HRGN region = ::CreateRectRgn(it.left, it.top, it.right, it.bottom);
-		::CombineRgn(edge_region_[ht], edge_region_[ht], region, true ? RGN_OR : RGN_DIFF);
-		::DeleteObject(region);
 	}
 
 }
@@ -663,28 +637,6 @@ LRESULT EasyLayeredWindow::OnIMECancelCompositionEvent(UINT, WPARAM, LPARAM, BOO
 }
 
 
-LRESULT EasyLayeredWindow::OnDpiChanged(UINT, WPARAM wp, LPARAM lp, BOOL&)
-{
-	if (LOWORD(wp) != HIWORD(lp)) {
-		NOTIMPLEMENTED() << "Received non-square scaling factors";
-		return 0;
-	}
-
-	
-	// Scale factor for the new display.
-	const float display_scale_factor =
-		static_cast<float>(LOWORD(wp)) / DPI_1X;
-		
-	device_scale_factor_ = display_scale_factor;
-	
-
-	// Suggested size and position of the current window scaled for the new DPI.
-	const RECT* rect = reinterpret_cast<RECT*>(lp);
-	SetWindowPos(nullptr, rect->left, rect->top, rect->right - rect->left,
-		rect->bottom - rect->top, SWP_NOZORDER);
-
-	return 0;
-}
 
 LRESULT EasyLayeredWindow::OnDwmCompositionChanged(UINT, WPARAM wp, LPARAM lp, BOOL&)
 {
@@ -704,73 +656,7 @@ LRESULT EasyLayeredWindow::OnDwmCompositionChanged(UINT, WPARAM wp, LPARAM lp, B
 	return 0;
 }
 
-LRESULT EasyLayeredWindow::OnNcHitTest(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
-{
-	LRESULT hit = DefWindowProc(msg, wp, lp);
-	if (hit == HTCLIENT) {
-		POINTS points = MAKEPOINTS(lp);
-		POINT point = { points.x, points.y };
-		ScreenToClient(&point);
 
-		//顺序先从边角开始
-		static int nRound[] = {
-			E_HTTOPLEFT,E_HTTOPRIGHT,E_HTBOTTOMLEFT,E_HTBOTTOMRIGHT,
-			E_HTTOP,E_HTLEFT,E_HTRIGHT,E_HTBOTTOM
-		};
-
-		for (int i = 0; i < _countof(nRound); i++)
-		{
-			//if (PtInRect(&m_rcEightAera[i], point))
-			if(PtInRegion(edge_region_[nRound[i]], point.x, point.y))
-			{
-				return E_HTBASE + nRound[i];
-			}
-		}
-
-		if (PtInRegion(draggable_region_, point.x, point.y)) {
-			// If cursor is inside a draggable region return HTCAPTION to allow
-			// dragging.
-			return HTCAPTION;
-		}
-
-
-
-
-	}
-	return hit;
-}
-
-LRESULT EasyLayeredWindow::OnNcCalcSize(UINT, WPARAM wParam, LPARAM lParam, BOOL& h)
-{
-	return 0;
-	//LPRECT pRect = NULL;
-
-	//if (wParam == TRUE)
-	//{
-	//	LPNCCALCSIZE_PARAMS pParam = (LPNCCALCSIZE_PARAMS)lParam;
-	//	pRect = &pParam->rgrc[0];
-	//}
-	//else
-	//{
-	//	pRect = (LPRECT)lParam;
-	//}
-
-	//if (::IsZoomed(m_hWnd))
-	//{	// 最大化时，计算当前显示器最适合宽高度
-	//	MONITORINFO oMonitor = {};
-	//	oMonitor.cbSize = sizeof(oMonitor);
-	//	::GetMonitorInfo(::MonitorFromWindow(*this, MONITOR_DEFAULTTONEAREST), &oMonitor);
-	//	RECT rcWork = oMonitor.rcWork;
-	//	RECT rcMonitor = oMonitor.rcMonitor;
-	//	rcWork.Offset(-oMonitor.rcMonitor.left, -oMonitor.rcMonitor.top);
-
-	//	pRect->right = pRect->left + rcWork.GetWidth();
-	//	pRect->bottom = pRect->top + rcWork.GetHeight();
-	//	return WVR_REDRAW;
-	//}
-
-	return 0;
-}
 
 LRESULT EasyLayeredWindow::OnNcActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 {
@@ -780,33 +666,6 @@ LRESULT EasyLayeredWindow::OnNcActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 
 LRESULT EasyLayeredWindow::OnActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 {
-	return 0;
-}
-
-LRESULT EasyLayeredWindow::OnGetMinMaxInfo(UINT, WPARAM, LPARAM lp, BOOL&)
-{
-	auto pmmi = reinterpret_cast<PMINMAXINFO>(lp);
-	RECT rcScr;
-	SystemParametersInfo(SPI_GETWORKAREA, 0, &rcScr, 0);
-	pmmi->ptMaxSize.x = rcScr.right - rcScr.left;
-	pmmi->ptMaxSize.y = rcScr.bottom - rcScr.top;
-	pmmi->ptMaxPosition.x = rcScr.left;
-	pmmi->ptMaxPosition.y = rcScr.top;
-
-	return 0;
-}
-
-LRESULT EasyLayeredWindow::OnClose(UINT msg, WPARAM wp, LPARAM lp, BOOL& h)
-{
-	/*if (m_browser)
-	{
-		m_browser->GetHost()->CloseBrowser(false);
-	}
-	else*/
-	{
-		h = FALSE;
-	}
-
 	return 0;
 }
 
@@ -878,34 +737,16 @@ void EasyLayeredWindow::OnFinalMessage(HWND)
 }
 
 
-
-void EasyLayeredWindow::SetDraggableRegion(const std::vector<CefDraggableRegion>& regions)
+void EasyLayeredWindow::SetAlpha(BYTE alpha, bool bRepaint)
 {
-	::SetRectRgn(draggable_region_, 0, 0, 0, 0);
-
-	// Determine new draggable region.
-	std::vector<CefDraggableRegion>::const_iterator it = regions.begin();
-	for (; it != regions.end(); ++it) {
-		HRGN region = ::CreateRectRgn(it->bounds.x, it->bounds.y,
-			it->bounds.x + it->bounds.width,
-			it->bounds.y + it->bounds.height);
-		::CombineRgn(draggable_region_, draggable_region_, region,
-			it->draggable ? RGN_OR : RGN_DIFF);
-
-		::DeleteObject(region);
+	m_info.SetAlpha(alpha);
+	if (bRepaint)
+	{
+		PostMessage(WM_PAINT);
 	}
-
-	//// Subclass child window procedures in order to do hit-testing.
-	//// This will be a no-op, if it is already subclassed.
-	//if (hwnd_) {
-	//	WNDENUMPROC proc =
-	//		!regions.empty() ? SubclassWindowsProc : UnSubclassWindowsProc;
-	//	::EnumChildWindows(hwnd_, proc,
-	//		reinterpret_cast<LPARAM>(draggable_region_));
-	//}
 }
 
-void EasyLayeredWindow::SetToolTip(CefString& str)
+void EasyLayeredWindow::SetToolTip(const CefString& str)
 {
 	if (!m_hToolTip)
 	{

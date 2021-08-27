@@ -121,7 +121,7 @@ namespace wrapQweb {
 
 		WebViewExtraAttr ExtAttr;
 		ExtAttr.alpha = alpha;
-		ExtAttr.transparent = /*trans*/true;
+		ExtAttr.transparent = trans;
 
 		ExtAttr.taskbar = taskbar;
 

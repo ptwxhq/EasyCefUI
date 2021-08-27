@@ -90,6 +90,9 @@
     <ClInclude Include="LegacyExports.h">
       <Filter>Exports</Filter>
     </ClInclude>
+    <ClInclude Include="EasyUIWindow.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -159,6 +162,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="EasyIPCWorks.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyUIWindow.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

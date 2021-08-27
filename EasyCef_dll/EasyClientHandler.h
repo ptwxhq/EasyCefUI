@@ -6,22 +6,17 @@
 
 //主进程
 
-//class WebViewControl;
-//class WebViewTransparentUIControl;
-
 
 class EasyClientHandler :
     public CefClient,
     public CefLifeSpanHandler,
     public CefDisplayHandler,
     public CefLoadHandler,
-    public CefRenderHandler,
     public CefContextMenuHandler,
     public CefRequestHandler,
     public CefDragHandler,
     public CefDownloadHandler
 {
-    friend class WebViewTransparentUIControl;
 public:
 
 
@@ -67,6 +62,12 @@ public:
 
     bool OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text) override;
 
+    bool OnCursorChange(CefRefPtr<CefBrowser> browser,
+        CefCursorHandle cursor,
+        cef_cursor_type_t type,
+        const CefCursorInfo& custom_cursor_info) override;
+
+
 
     /////////////////////////////////////////
 
@@ -97,80 +98,8 @@ public:
         //CefRenderHandler 这边主要提供给透明UI，其他情况不使用
     CefRefPtr<CefRenderHandler> GetRenderHandler() override;
 
-
-    bool GetRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
-
-    void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
-
-
-    void OnPaint(CefRefPtr<CefBrowser> browser,
-        PaintElementType type,
-        const RectList& dirtyRects,
-        const void* buffer,
-        int width,
-        int height) override;
-
-
-    CefRefPtr<CefAccessibilityHandler> GetAccessibilityHandler() override {
-        return nullptr;
-    }
-  
-    bool GetScreenPoint(CefRefPtr<CefBrowser> browser,
-        int viewX,
-        int viewY,
-        int& screenX,
-        int& screenY) override;
-
-   
-    bool GetScreenInfo(CefRefPtr<CefBrowser> browser,
-        CefScreenInfo& screen_info) override {
-        return false;
-    }
-
-    void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) override;
-
-    void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect) override;
-
-    //加速，目前应该没有
-    void OnAcceleratedPaint(CefRefPtr<CefBrowser> browser,
-        PaintElementType type,
-        const RectList& dirtyRects,
-        void* shared_handle) override {}
-
-    //来自CefDisplayHandler
-    bool OnCursorChange(CefRefPtr<CefBrowser> browser,
-        CefCursorHandle cursor,
-        cef_cursor_type_t type,
-        const CefCursorInfo& custom_cursor_info) override;
-
- 
-    bool StartDragging(CefRefPtr<CefBrowser> browser,
-        CefRefPtr<CefDragData> drag_data,
-        CefRenderHandler::DragOperationsMask allowed_ops,
-        int x,
-        int y) override;
-
-    void UpdateDragCursor(CefRefPtr<CefBrowser> browser,
-        DragOperation operation) override;
-
-
-    void OnScrollOffsetChanged(CefRefPtr<CefBrowser> browser,
-        double x,
-        double y) override {}
-
-    void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser,
-        const CefRange& selected_range,
-        const RectList& character_bounds) override;
-
-    void OnTextSelectionChanged(CefRefPtr<CefBrowser> browser,
-        const CefString& selected_text,
-        const CefRange& selected_range) override;
-
-    void OnVirtualKeyboardRequested(CefRefPtr<CefBrowser> browser,
-        TextInputMode input_mode) override {}
-
-
     //////////////////////////////////////////
+
 
     //右键菜单
     CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
@@ -227,21 +156,15 @@ public:
         const CefString& suggested_name,
         CefRefPtr<CefBeforeDownloadCallback> callback) override;
 
-
-
-
-
-
-
-
-
-
     void SetManualHandle(wvhandle handle) {
         m_hManualCreateHandle = handle;
     }
 
+    void SetUIWindowInfo(CefRefPtr<WebViewUIControl> webui, bool bTransparent);
+
 protected:
     bool m_bIsUIControl = false;
+    bool m_bIsUITransparent = false;
 
     //typedef std::list<CefRefPtr<CefBrowser>> BrowserList;
     //BrowserList m_popbrowsers;
@@ -251,7 +174,7 @@ protected:
     wvhandle m_hManualCreateHandle = 0;
     std::unordered_map<std::wstring,wvhandle> m_preCreatePopHandle;
 
-    CefRefPtr<WebViewTransparentUIControl> m_webuicontrol;
+    CefRefPtr<WebViewUIControl> m_webuicontrol;
 
     IMPLEMENT_REFCOUNTING(EasyClientHandler);
 
@@ -260,11 +183,6 @@ protected:
         CefRefPtr<CefFrame> frame,
         CefProcessId source_process,
         CefRefPtr<CefProcessMessage> message) override;
-
-
-    void ClearPopupRects();
-    CefRect GetPopupRectInWebView(const CefRect& original_rect);
-
 
 
 };

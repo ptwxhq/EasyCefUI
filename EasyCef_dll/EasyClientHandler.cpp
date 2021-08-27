@@ -83,7 +83,9 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
 
     extra_info = CefDictionaryValue::Create();
 
-    extra_info->SetInt(IpcBrowserServerKeyName, (int)EasyIPCServer::GetInstance().GetHandle());
+    const auto tmpVal = EasyIPCServer::GetInstance().GetHandle();
+    auto valKeyName = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
+    extra_info->SetBinary(IpcBrowserServerKeyName, valKeyName);
     extra_info->SetBool(ExtraKeyNameIsManagedPopup, true);
 
 
@@ -183,9 +185,6 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
     if (item)
     {
         item->SetBrowser(browser);
-
-        if (m_bIsUIControl && m_webuicontrol)
-             m_webuicontrol->m_pWindow->SetBrowser(browser);
     }
 
 
@@ -297,7 +296,13 @@ void EasyClientHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefSt
 {
     if (m_bIsUIControl)
     {
-        SetWindowTextW(browser->GetHost()->GetWindowHandle(), title.c_str());
+        auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+        if (!item)
+            return;
+
+        HWND hWnd = item->GetHWND();
+
+        SetWindowTextW(hWnd, title.c_str());
     }
     else
     {
@@ -327,13 +332,36 @@ void EasyClientHandler::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const 
 
 bool EasyClientHandler::OnTooltip(CefRefPtr<CefBrowser> browser, CefString& text)
 {
-    if (m_bIsUIControl && m_webuicontrol)
+    if (m_bIsUIControl && m_bIsUITransparent)
     {
-        m_webuicontrol->m_pWindow->SetToolTip(text);
-        return true;
+        CefRefPtr<WebViewTransparentUIControl> item = dynamic_cast<WebViewTransparentUIControl*>(EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier()).get());
+        if (item)
+        {
+            item->SetToolTip(text);
+            return true;
+        }
     }
 
     return false;
+}
+
+bool EasyClientHandler::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info)
+{
+    CEF_REQUIRE_UI_THREAD();
+
+    if (!(m_bIsUIControl && m_bIsUITransparent))
+        return false;
+
+    HWND hWnd = browser->GetHost()->GetWindowHandle();
+
+    if (!::IsWindow(hWnd))
+        return false;
+
+    // Change the plugin window's cursor.
+    SetClassLongPtr(hWnd, GCLP_HCURSOR,
+        static_cast<LONG>(reinterpret_cast<LONG_PTR>(cursor)));
+    SetCursor(cursor);
+    return true;
 }
 
 void EasyClientHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward)
@@ -354,7 +382,11 @@ void EasyClientHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
 
 void EasyClientHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
 {
-    HWND hWnd = browser->GetHost()->GetWindowHandle();
+    auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+    if (!item)
+        return;
+
+    HWND hWnd = item->GetHWND();
     auto uifunmap = WebkitEcho::getUIFunMap();
     auto webcfunmap = WebkitEcho::getFunMap();
 
@@ -398,216 +430,14 @@ void EasyClientHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
 
 CefRefPtr<CefRenderHandler> EasyClientHandler::GetRenderHandler()
 {
-    if (m_bIsUIControl)
+    if (m_bIsUIControl && m_bIsUITransparent)
     {
-        return this;
+        return dynamic_cast<WebViewTransparentUIControl*>(m_webuicontrol.get());
     }
 
     return nullptr;
 }
 
-bool EasyClientHandler::GetRootScreenRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
-{
-    //RECT window_rect = { 0 };
-    //HWND root_window = GetAncestor(browser->GetHost()->GetWindowHandle(), GA_ROOT);
-    //if (::GetWindowRect(root_window, &window_rect)) {
-    //    rect = CefRect(window_rect.left,
-    //        window_rect.top,
-    //        window_rect.right - window_rect.left,
-    //        window_rect.bottom - window_rect.top);
-    //    return true;
-    //}
-
-    return false;
-}
-
-void EasyClientHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
-{
-    RECT rc = {};
-    GetClientRect(browser->GetHost()->GetWindowHandle(), &rc);
-
-    rect = { 0,0, rc.right,rc.bottom };
-}
-
-void EasyClientHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height)
-{
-    int a;
-    a = 1;
-
-    if (!m_webuicontrol)
-        return;
-
-    if (dirtyRects.size() > 1)
-    {
-        //目前好像没见过这种情况
-        int a;
-        a = 1;
-    }
-
-    //static bool bTestSkip = false;
-    //if (bTestSkip)
-    //{
-    //    bTestSkip = false;
-    //    return;
-    //}
-
-    //RECT rcNow = {};
-    //m_webuicontrol->m_pWindow->GetClientRect(&rcNow);
-
-    for (auto& it: dirtyRects)
-    //{
-    //    if (type == PET_POPUP)
-    //    {
-    //        OutputDebugStringA(std::format("aera p({}) :x:{},y:{},w:{},h:{}[x:{},y:{}]\n", dirtyRects.size(),
-    //            m_webuicontrol->m_pWindow->popup_rect_.x + it.x,
-    //            m_webuicontrol->m_pWindow->popup_rect_.y + it.y,
-    //            it.width, it.height,
-    //            it.x, it.y).c_str());
-
-
-    //    }
-    //    else
-    //    {
-  //          OutputDebugStringA(std::format("{} aera n({}) :x:{},y:{},w:{},h:{}\n", (int)browser->GetIdentifier(), dirtyRects.size(), it.x, it.y, it.width, it.height).c_str());
-    //    }
-
- 
-    //}
-
-
-    //m_webuicontrol->m_pWindow->Render();
-
-    //return;
-
-
-    if (type == PET_VIEW)
-    {
-        int old_width = m_webuicontrol->m_pWindow->view_width_;
-        int old_height = m_webuicontrol->m_pWindow->view_height_;
-
-        if (old_width != width || old_height != height ||
-            (dirtyRects.size() == 1 &&
-                dirtyRects[0] == CefRect(0, 0, width, height)))
-        {
-            m_webuicontrol->m_pWindow->SetBitmapData(buffer, width, height);
-        }
-        else
-        {
-            for (auto& it : dirtyRects)
-            {
-                m_webuicontrol->m_pWindow->SetBitmapData((BYTE*)buffer, it.x, it.y, it.width, it.height, true);
-            }
-        }
-
-        if (!m_webuicontrol->m_pWindow->popup_rect_.IsEmpty())
-        {
-            browser->GetHost()->Invalidate(PET_POPUP);
-            return;
-        }
-
-
-    }
-    else //PET_POPUP
-    {
-        m_webuicontrol->m_pWindow->SetBitmapData((BYTE*)buffer, m_webuicontrol->m_pWindow->popup_rect_.x, m_webuicontrol->m_pWindow->popup_rect_.y, width, height, false);
-
-    }
-
-    m_webuicontrol->m_pWindow->Render();
-
-}
-
-bool EasyClientHandler::GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY)
-{
-    HWND root_window = GetAncestor(browser->GetHost()->GetWindowHandle(), GA_ROOT);
-    POINT pt = { viewX, viewY };
-    ClientToScreen(root_window, &pt);
-    screenX = pt.x;
-    screenY = pt.y;
-
-    return true;
-}
-
-bool EasyClientHandler::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorHandle cursor, cef_cursor_type_t type, const CefCursorInfo& custom_cursor_info)
-{
-    CEF_REQUIRE_UI_THREAD();
-
-    if (!m_bIsUIControl)
-        return false;
-
-    HWND hWnd = browser->GetHost()->GetWindowHandle();
-
-    if (!::IsWindow(hWnd))
-        return false;
-
-    // Change the plugin window's cursor.
-    SetClassLongPtr(hWnd, GCLP_HCURSOR,
-        static_cast<LONG>(reinterpret_cast<LONG_PTR>(cursor)));
-    SetCursor(cursor);
-    return true;
-}
-
-void EasyClientHandler::ClearPopupRects() {
-
-    m_webuicontrol->m_pWindow->popup_rect_.Set(0, 0, 0, 0);
-    m_webuicontrol->m_pWindow->original_popup_rect_.Set(0, 0, 0, 0);
-}
-
-CefRect EasyClientHandler::GetPopupRectInWebView(const CefRect& original_rect) {
-    CefRect rc(original_rect);
-    // if x or y are negative, move them to 0.
-    if (rc.x < 0)
-        rc.x = 0;
-    if (rc.y < 0)
-        rc.y = 0;
-    // if popup goes outside the view, try to reposition origin
-    if (rc.x + rc.width > m_webuicontrol->m_pWindow->view_width_)
-        rc.x = m_webuicontrol->m_pWindow->view_width_ - rc.width;
-    if (rc.y + rc.height > m_webuicontrol->m_pWindow->view_height_)
-        rc.y = m_webuicontrol->m_pWindow->view_height_ - rc.height;
-    // if x or y became negative, move them to 0 again.
-    if (rc.x < 0)
-        rc.x = 0;
-    if (rc.y < 0)
-        rc.y = 0;
-    return rc;
-}
-
-void EasyClientHandler::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show)
-{
-    if (!show) {
-        // Clear the popup rectangle.
-        ClearPopupRects();
-        browser->GetHost()->Invalidate(PET_VIEW);
-    }
-}
-
-void EasyClientHandler::OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect)
-{
-    if (rect.width <= 0 || rect.height <= 0)
-        return;
-    m_webuicontrol->m_pWindow->original_popup_rect_ = rect;
-    m_webuicontrol->m_pWindow->popup_rect_ = GetPopupRectInWebView(m_webuicontrol->m_pWindow->original_popup_rect_);
-}
-
-bool EasyClientHandler::StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> drag_data, CefRenderHandler::DragOperationsMask allowed_ops, int x, int y)
-{
-    return false;
-}
-
-void EasyClientHandler::UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperation operation)
-{
-}
-
-void EasyClientHandler::OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds)
-{
-    if (m_bIsUIControl && m_webuicontrol)
-        m_webuicontrol->m_pWindow->ImePosChange(selected_range, character_bounds);
-}
-
-void EasyClientHandler::OnTextSelectionChanged(CefRefPtr<CefBrowser> browser, const CefString& selected_text, const CefRange& selected_range)
-{
-}
 
 void EasyClientHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefContextMenuParams> params, CefRefPtr<CefMenuModel> model)
 {
@@ -617,48 +447,49 @@ void EasyClientHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRe
     {
         if (params->IsEditable())
         {
-            if (m_webuicontrol)
-            {
-                int x = params->GetXCoord();
-                int y = params->GetYCoord();
+            auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+            if (!item)
+                return;
+
+            HWND hWnd = item->GetHWND();
+            
+            int x = params->GetXCoord();
+            int y = params->GetYCoord();
                                  
-                HWND hWnd = m_webuicontrol->GetHWND();
-                auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
-                std::wstring strAttr;
-                if (item)
+            std::wstring strAttr;
+            if (hWnd)
+            {
+                if (QueryNodeAttrib(item, x, y, "data-nc", strAttr))
                 {
-                    if (QueryNodeAttrib(item, x, y, "data-nc", strAttr))
+                    const int size = 64;
+                    auto menus = std::make_unique<wrapQweb::WRAP_CEF_MENU_COMMAND>(size);
+                    memset(menus.get(), 0, sizeof(wrapQweb::WRAP_CEF_MENU_COMMAND) * size);
+                    const auto fun = WebkitEcho::getUIFunMap();
+                    if (fun)
                     {
-                        const int size = 64;
-                        auto menus = std::make_unique<wrapQweb::WRAP_CEF_MENU_COMMAND>(size);
-                        memset(menus.get(), 0, sizeof(wrapQweb::WRAP_CEF_MENU_COMMAND) * size);
-                        const auto fun = WebkitEcho::getUIFunMap();
-                        if (fun)
+                        fun->insertMenu(hWnd, strAttr.c_str(), menus.get());
+                        for (int i = 0; i < size; ++i)
                         {
-                            fun->insertMenu(hWnd, strAttr.c_str(), menus.get());
-                            for (int i = 0; i < size; ++i)
+                            if (menus.get()[i].command > 0)
                             {
-                                if (menus.get()[i].command > 0)
+                                if (menus.get()[i].top)
                                 {
-                                    if (menus.get()[i].top)
-                                    {
-                                        model->InsertItemAt(0, menus.get()[i].command, menus.get()[i].szTxt);
-                                    }
-                                    else {
-                                        model->AddItem(menus.get()[i].command, menus.get()[i].szTxt);
-                                    }
-                                    model->SetEnabled(menus.get()[i].command, menus.get()[i].bEnable);
+                                    model->InsertItemAt(0, menus.get()[i].command, menus.get()[i].szTxt);
                                 }
                                 else {
-                                    break;
+                                    model->AddItem(menus.get()[i].command, menus.get()[i].szTxt);
                                 }
+                                model->SetEnabled(menus.get()[i].command, menus.get()[i].bEnable);
+                            }
+                            else {
+                                break;
                             }
                         }
                     }
-
                 }
 
             }
+
         }
         else
         {
@@ -730,7 +561,11 @@ bool EasyClientHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
             if (m_bIsUIControl)
             {
                 bool bExec = false;
-                HWND hWnd = browser->GetHost()->GetWindowHandle();
+                auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+                if (!item)
+                    return false;
+
+                HWND hWnd = item->GetHWND();
                 if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->doMenuCommand)
                 {
                     bExec = WebkitEcho::getUIFunMap()->doMenuCommand(hWnd, command_id);
@@ -778,9 +613,13 @@ void EasyClientHandler::OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser,
 {
     CEF_REQUIRE_UI_THREAD();
 
-    if (m_bIsUIControl && m_webuicontrol && frame->IsMain())
+    if (m_bIsUIControl && frame->IsMain())
     {
-        m_webuicontrol->m_pWindow->SetDraggableRegion(regions);
+        CefRefPtr<WebViewUIControl> item = dynamic_cast<WebViewUIControl*>(EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier()).get());
+        if (!item)
+            return;
+
+        item->SetDraggableRegion(regions);
     }
 
 }
@@ -806,5 +645,12 @@ void EasyClientHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPt
             return path;
             
             }(suggested_name.ToWString()), true);
+}
+
+void EasyClientHandler::SetUIWindowInfo(CefRefPtr<WebViewUIControl> webui, bool bTransparent)
+{
+    m_bIsUIControl = true;
+    m_webuicontrol = webui;
+    m_bIsUITransparent = bTransparent;
 }
 

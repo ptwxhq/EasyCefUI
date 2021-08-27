@@ -20,7 +20,7 @@ public:
 		CefRefPtr<CefClient> clientHandler;
 	};
 
-	bool SetBrowser(CefRefPtr<CefBrowser> browser);
+	virtual bool SetBrowser(CefRefPtr<CefBrowser> browser);
 
 	CefRefPtr<CefBrowser> GetBrowser() {
 		return m_browser;
@@ -83,7 +83,7 @@ class WebViewBrowserControl : public WebViewControl
 public:
 	void InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams) override;
 
-	bool IsUIControl() override {
+	bool IsUIControl() final {
 		return false;
 	}
 
@@ -91,29 +91,96 @@ public:
 
 };
 
-class WebViewOpaqueUIControl : public WebViewBrowserControl
+
+class WebViewUIControl : public WebViewControl
+{
+	IMPLEMENT_REFCOUNTING(WebViewUIControl);
+public:
+	bool IsUIControl() final {
+		return true;
+	}
+
+	//这里透明指的是使用cef windowless的窗口
+	virtual bool IsTransparentUI() = 0;
+
+	HWND GetHWND() override;
+
+	void SetDraggableRegion(const std::vector<CefDraggableRegion>& regions);
+
+	bool SetBrowser(CefRefPtr<CefBrowser> browser) override;
+
+	void SetEdgeNcAera(EasyUIWindowBase::HT_INFO ht, const std::vector<RECT>& vecRc);
+
+	void SetAlpha(BYTE alpha);
+
+protected:
+	virtual EasyUIWindowBase* GetWindowPtr() = 0;
+
+};
+
+
+class WebViewOpaqueUIControl : public WebViewUIControl
 {
 	IMPLEMENT_REFCOUNTING(WebViewOpaqueUIControl);
 public:
-	bool IsUIControl() override {
-		return true;
-	}
-};
-
-class WebViewTransparentUIControl : public WebViewControl
-{
-	friend class EasyClientHandler;
-	IMPLEMENT_REFCOUNTING(WebViewTransparentUIControl);
-public:
-	WebViewTransparentUIControl() = default;
 	void InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams) override;
 
-	bool IsUIControl() override {
+	bool IsTransparentUI() final {
+		return false;
+	}
+private:
+
+	EasyUIWindowBase* GetWindowPtr() override {
+		return m_pWindow.get();
+	}
+
+	std::unique_ptr<EasyOpaqueWindow> m_pWindow;
+};
+
+class WebViewTransparentUIControl : public WebViewUIControl, public CefRenderHandler
+{
+	IMPLEMENT_REFCOUNTING(WebViewTransparentUIControl);
+public:
+	
+	bool IsTransparentUI() final {
 		return true;
 	}
 
-	virtual HWND GetHWND() override;
+	void InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams) override;
 
-//private:
+	void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override;
+
+	void OnPaint(CefRefPtr<CefBrowser> browser,
+		PaintElementType type,
+		const RectList& dirtyRects,
+		const void* buffer,
+		int width,
+		int height) override;
+
+	bool GetScreenPoint(CefRefPtr<CefBrowser> browser,
+		int viewX,
+		int viewY,
+		int& screenX,
+		int& screenY) override;
+
+	void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) override;
+
+	void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect) override;
+
+	void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser,
+		const CefRange& selected_range,
+		const RectList& character_bounds) override;
+
+	void SetToolTip(const CefString& str);
+
+private:
+
+	void ClearPopupRects();
+	CefRect GetPopupRectInWebView(const CefRect& original_rect);
+
+	EasyUIWindowBase* GetWindowPtr() override {
+		return m_pWindow.get();
+	}
+
 	std::unique_ptr<EasyLayeredWindow> m_pWindow;
 };

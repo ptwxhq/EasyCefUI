@@ -189,6 +189,7 @@
     <ClInclude Include="EasyRenderWorks.h" />
     <ClInclude Include="EasySchemes.h" />
     <ClInclude Include="EasyStructs.h" />
+    <ClInclude Include="EasyUIWindow.h" />
     <ClInclude Include="EasyWebViewMgr.h" />
     <ClInclude Include="Export.h" />
     <ClInclude Include="framework.h" />
@@ -215,6 +216,7 @@
     <ClCompile Include="EasyRenderWorks.cpp" />
     <ClCompile Include="EasySchemes.cpp" />
     <ClCompile Include="EasyStructs.cpp" />
+    <ClCompile Include="EasyUIWindow.cpp" />
     <ClCompile Include="EasyWebViewMgr.cpp" />
     <ClCompile Include="Export.cpp" />
     <ClCompile Include="LegacyExports.cpp" />

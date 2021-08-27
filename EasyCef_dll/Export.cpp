@@ -217,7 +217,8 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 			strRenderPath = lpRender;
 		}
 
-		if (_waccess(strRenderPath.c_str(), 0) == 0)
+		//if (_waccess(strRenderPath.c_str(), 0) == 0) 
+		//已经设置了如果文件丢失打不开界面就好，如果直接使用自身更容易出问题
 		{
 			//设置渲染进程exe
 			CefString(&settings.browser_subprocess_path).FromWString(strRenderPath);

@@ -59,8 +59,12 @@ void EasyCefAppRender::OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr
 	if (!bSetServer)
 	{
 		bSetServer = true;
-		auto ServerHandle = extra_info->GetInt(IpcBrowserServerKeyName);
-		EasyIPCClient::GetInstance().SetServer((EasyIPCBase::IPCHandle)ServerHandle);
+
+		EasyIPCBase::IPCHandle ServerHandle = nullptr;
+		auto valKeyName = extra_info->GetBinary(IpcBrowserServerKeyName);
+		valKeyName->GetData(&ServerHandle, valKeyName->GetSize(), 0);
+
+		EasyIPCClient::GetInstance().SetServer(ServerHandle);
 
 		EasyIPCClient::GetInstance().SetWorkCall(std::bind(&EasyRenderWorks::CommWork, &EasyRenderWorks::GetInstance(), std::placeholders::_1, std::placeholders::_2));
 
