@@ -154,6 +154,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ApiFilter.h" />
     <ClInclude Include="EasyRender.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
@@ -161,6 +162,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ApiFilter.cpp" />
     <ClCompile Include="EasyRender.cpp" />
     <ClCompile Include="SpeedBox.cpp" />
   </ItemGroup>

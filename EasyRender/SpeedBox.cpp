@@ -2,7 +2,6 @@
 #include <detours/detours.h>
 #include "SpeedBox.h"
 
-//#pragma comment(lib, "detours.lib")
 #pragma comment(lib, "Winmm.lib")
 
 extern "C" {

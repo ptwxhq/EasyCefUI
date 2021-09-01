@@ -14,6 +14,7 @@
 #else
 #pragma comment(lib, "Release/easycef.lib")
 #endif // DEBUG
+#include "ApiFilter.h"
 
 
 void SpeedWork(float val)
@@ -60,6 +61,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     using namespace EASYCEF;
 
     SetSpeedUpWork(SpeedWork);
+
+    BlockFlashNotSandboxedCmd();
 
     EASYCEF::EasyInitConfig config;
     config.ProcessType = 2;

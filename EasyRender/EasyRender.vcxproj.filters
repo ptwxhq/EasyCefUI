@@ -30,12 +30,18 @@
     <ClInclude Include="SpeedBox.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ApiFilter.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="EasyRender.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="SpeedBox.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="ApiFilter.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

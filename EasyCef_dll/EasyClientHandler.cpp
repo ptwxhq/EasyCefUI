@@ -461,8 +461,8 @@ void EasyClientHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRe
             {
                 if (QueryNodeAttrib(item, x, y, "data-nc", strAttr))
                 {
-                    const int size = 64;
-                    auto menus = std::make_unique<wrapQweb::WRAP_CEF_MENU_COMMAND>(size);
+                    constexpr int size = 32;
+                    auto menus = std::make_unique<wrapQweb::WRAP_CEF_MENU_COMMAND[]>(size);
                     memset(menus.get(), 0, sizeof(wrapQweb::WRAP_CEF_MENU_COMMAND) * size);
                     const auto fun = WebkitEcho::getUIFunMap();
                     if (fun)
