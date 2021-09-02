@@ -169,10 +169,13 @@ protected:
     //typedef std::list<CefRefPtr<CefBrowser>> BrowserList;
     //BrowserList m_popbrowsers;
 
+    //共用handler的数量
+    int m_BrowserCount = 0;
+
     CefRefPtr<CefBrowser> m_browser;
 
     wvhandle m_hManualCreateHandle = 0;
-    std::unordered_map<std::wstring,wvhandle> m_preCreatePopHandle;
+    std::list<wvhandle> m_preCreatePopHandle;
 
     CefRefPtr<WebViewUIControl> m_webuicontrol;
 

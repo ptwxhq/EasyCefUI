@@ -245,10 +245,19 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
     CefRefPtr<CefRequestContext> request_context;
 
  //   browser_settings.javascript_close_windows = STATE_ENABLED;
+    WCHAR strFonts[64] = {};
+    GetPrivateProfileStringW(L"Settings", L"Fonts", L"", strFonts, _countof(strFonts), g_BrowserGlobalVar.BrowserSettingsPath.c_str());
+    if (strFonts[0])
+    {
+        CefString(&browser_settings.standard_font_family).FromWString(strFonts);
+        CefString(&browser_settings.serif_font_family).FromWString(strFonts);
+        CefString(&browser_settings.sans_serif_font_family).FromWString(strFonts);
+    }
+
 
     if (pParams->clientHandler)
     {
-        
+        pParams->bRet = true;
     }
     else
     {
@@ -307,6 +316,7 @@ bool WebViewBrowserControl::CreatePopup(wvhandle hWebview, HWND hParent, const R
     pParams->hWebview = hWebview;
     pParams->rc = rc;
     pParams->url = url;
+    pParams->clientHandler = clientHandler;
 
     InitBrowserImpl(pParams);
 

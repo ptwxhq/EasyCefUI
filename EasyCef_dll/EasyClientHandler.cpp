@@ -112,19 +112,24 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
                 bCancel = WebkitEcho::getFunMap()->webkitNewTab(item->GetBrowserId(), target_url.ToWString().c_str(), &hAttchWnd);
             }
 
-            if (!bCancel && IsWindow(hAttchWnd))
+            if (bCancel && IsWindow(hAttchWnd))
             {
-                RECT rect;
+                RECT rect = {};
                 GetClientRect(hAttchWnd, &rect);
+                windowInfo.SetAsChild(hAttchWnd, rect);
 
                 //这边得使用相同的handler
-                auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(hAttchWnd, rect, target_url.ToWString().c_str(), this);
-                m_preCreatePopHandle.insert(std::make_pair(target_url.ToWString(), handle));
-                return false;
+                auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(hAttchWnd, RECT(), target_url.ToWString().c_str(), this);
+                if (handle)
+                {
+                    m_preCreatePopHandle.push_back(handle);
+                    return false;
+                }
+    
             }
 
             //?
-            if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitOpenNewUrl)
+            if (!bCancel && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitOpenNewUrl)
             {
                 auto request_context = browser->GetHost()->GetRequestContext();
                 std::wstring strCachePath;
@@ -140,7 +145,7 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
 
             //均未设置的情况下使用默认弹出的方式
             auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(nullptr, {0,0,640,480}, target_url.ToWString().c_str(), this);
-            m_preCreatePopHandle.insert(std::make_pair(target_url.ToWString(), handle));
+            m_preCreatePopHandle.push_back(handle);
 
             return false;
 
@@ -160,19 +165,20 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
     CEF_REQUIRE_UI_THREAD();
 
-    // Add to the list of existing browsers.
+    ++m_BrowserCount;
 
-    wvhandle handler;
+    wvhandle handler = m_hManualCreateHandle;
 
     if (browser->IsPopup())
     {
-        auto url = browser->GetMainFrame()->GetURL();
-        auto it = m_preCreatePopHandle.find(url.ToWString());
-        handler = it->second;
-        m_preCreatePopHandle.erase(it);
-     //   m_popbrowsers.push_back(browser);
+        if (m_preCreatePopHandle.empty())
+        {
+            ASSERT(0);
+        }
 
-     //   return;
+        handler = m_preCreatePopHandle.front();
+     
+        m_preCreatePopHandle.pop_front();
     }
     else
     {
@@ -187,13 +193,12 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
         item->SetBrowser(browser);
     }
 
-
     auto browserhost = browser->GetHost();
     if (browserhost)
     {
         HWND hWnd = browserhost->GetWindowHandle();
 
-        EasyWebViewMgr::GetInstance().AsyncSetIndexInfo(m_hManualCreateHandle, browser->GetIdentifier(), hWnd);
+        EasyWebViewMgr::GetInstance().AsyncSetIndexInfo(handler, browser->GetIdentifier(), hWnd);
 
 
         //SetBrowser
@@ -235,6 +240,8 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 
     //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnBeforeClose:(" << browser << ")  ";
 
+    --m_BrowserCount;
+
     bool bIsPop = browser->IsPopup();
 
     if (bIsPop)
@@ -250,24 +257,23 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
     }
     else
     {
+        //webui目前不会有popup，直接这样吧
         if(m_bIsUIControl)
             m_webuicontrol = nullptr;
     }
 
-    EasyIPCServer::GetInstance().RemoveClient(browser->GetIdentifier());
+    if (m_BrowserCount < 1)
+    {
+        EasyIPCServer::GetInstance().RemoveClient(browser->GetIdentifier());
 
-    //这边如果是浏览器内部自己关透明UI窗口的话会有点问题，目前在EasyLayeredWindow析构前判断窗口存在解决，后续看还有么问题
-    //目前这个调用在了对应窗口销毁之后，此时不再有问题了
-   // if(!m_webuicontrol)
         EasyWebViewMgr::GetInstance().RemoveWebViewByBrowserId(browser->GetIdentifier());
-
+    }
 
     if (m_browser && m_browser->IsSame(browser))
     {
         //防止关闭时仍然有引用导致无法检查异常
         m_browser = nullptr;
     }
-
 
      //CefBrowser
     if (!EasyIPCServer::GetInstance().GetClientsCount()) {
@@ -377,11 +383,12 @@ void EasyClientHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool
 
 void EasyClientHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type)
 {
-    //LOG(INFO) << GetCurrentProcessId() << "] OnLoadStart name:" << frame->GetName() << "(((" << transition_type << "||" << frame->GetURL() << "\n";
+   // LOG(INFO) << GetCurrentProcessId() << "] OnLoadStart name:" << frame->GetName() << "(((" << transition_type << "||" << frame->GetURL() << "\n";
 }
 
 void EasyClientHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
 {
+   // LOG(INFO) << GetCurrentProcessId() << "] OnLoadEnd name:" << frame->GetName() << "(((" << httpStatusCode << "||" << frame->GetURL() << "\n";
     auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
     if (!item)
         return;

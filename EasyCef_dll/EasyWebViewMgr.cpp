@@ -97,10 +97,17 @@ wvhandle EasyWebViewMgr::CreatePopWebViewControl(HWND hParent, const RECT& rc, L
 	auto id = GetNewHandleId();
 	CefRefPtr<WebViewBrowserControl> pItem = new WebViewBrowserControl;
 
-	pItem->CreatePopup(id, hParent, rc, lpszUrl, clientHandler);
+	if (pItem->CreatePopup(id, hParent, rc, lpszUrl, clientHandler))
+	{
+		m_mutex.lock();
+		m_WebViewList.insert(std::make_pair(id, pItem));
 
+		m_mutex.unlock();
 
-	return id;
+		return id;
+	}
+
+	return 0;
 }
 
 wvhandle EasyWebViewMgr::CreateWebViewControl(HWND hParent, const RECT& rc, LPCWSTR lpszUrl, LPCWSTR lpszCookie, const WebViewExtraAttr* pExt)

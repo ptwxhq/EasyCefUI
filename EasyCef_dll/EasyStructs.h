@@ -48,6 +48,8 @@ struct BrowserGlobalVar
 
 	std::wstring FlashPluginPath;
 
+	std::wstring BrowserSettingsPath;
+
 
 	EasyCefFunctionFlag FunctionFlag;
 

@@ -30,4 +30,6 @@ void GetLocalPaths()
 
 	g_BrowserGlobalVar.DllPath = strFileName.get();
 
+	g_BrowserGlobalVar.BrowserSettingsPath = g_BrowserGlobalVar.FileDir + L"EasyCefSettings.ini";
+
 }
