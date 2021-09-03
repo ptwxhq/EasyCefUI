@@ -68,11 +68,15 @@ class EasyOpaqueWindow : public EasyUIWindowBase, public CWindowImpl<EasyOpaqueW
     <WS_OVERLAPPED, 0>>
 {
 public:
+    ~EasyOpaqueWindow();
+
     DECLARE_WND_CLASS_EX(g_BrowserGlobalVar.WebViewClassName.c_str(), 0, COLOR_WINDOW)
 
     BEGIN_MSG_MAP(0)
         CHAIN_MSG_MAP(EasyUIWindowBase)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
+
+        MESSAGE_HANDLER(WM_CLOSE, OnClose)
 
     END_MSG_MAP()
 
@@ -81,6 +85,7 @@ public:
     };
 
     LRESULT OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
+    LRESULT OnClose(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
 
     void OnFinalMessage(HWND) override;
 

@@ -724,8 +724,6 @@ void EasyLayeredWindow::Render()
 
 void EasyLayeredWindow::OnFinalMessage(HWND)
 {
-	//DEBUG版容易出现内部错误，为了方便调试，就先屏蔽了
-#ifndef _DEBUG
 	if (m_browser)
 	{
 		auto host = m_browser->GetHost();
@@ -733,7 +731,6 @@ void EasyLayeredWindow::OnFinalMessage(HWND)
 
 		host->CloseBrowser(true);
 	}
-#endif
 }
 
 

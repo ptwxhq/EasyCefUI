@@ -244,6 +244,14 @@ BOOL EasyUIWindowBase::ProcessWindowMessage(HWND hWnd, UINT uMsg, WPARAM wParam,
 	return FALSE;
 }
 
+EasyOpaqueWindow::~EasyOpaqueWindow()
+{
+	if (IsWindow())
+	{
+		CWindow::DestroyWindow();
+	}
+}
+
 LRESULT EasyOpaqueWindow::OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle)
 {
 	const int width = LOWORD(lParam);
@@ -254,6 +262,20 @@ LRESULT EasyOpaqueWindow::OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& h
 	}
 
 	handle = FALSE;
+
+	return 0;
+}
+
+LRESULT EasyOpaqueWindow::OnClose(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle)
+{
+	handle = FALSE;
+	if (m_browser)
+	{
+		//先解除关系，避免先调用OnBeforeClose
+		HWND h = m_browser->GetHost()->GetWindowHandle();
+		::ShowWindow(h, SW_HIDE);
+		::SetParent(h, nullptr);
+	}
 
 	return 0;
 }
