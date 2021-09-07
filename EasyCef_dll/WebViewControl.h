@@ -12,12 +12,13 @@ public:
 		bool bSyncCreate = false;
 		wvhandle hWebview = 0;
 		HWND hParent = nullptr;
-		const WebViewExtraAttr* pExt = nullptr;
+		//const WebViewExtraAttr* pExt = nullptr;
 		RECT rc = {};
 		CefString url;
 		CefString cookie;
 		std::promise<void> signal;
 		CefRefPtr<CefClient> clientHandler;
+		std::unique_ptr<WebViewExtraAttr> pExt;
 	};
 
 	virtual bool SetBrowser(CefRefPtr<CefBrowser> browser);
@@ -113,8 +114,16 @@ public:
 
 	void SetAlpha(BYTE alpha);
 
+	bool IsAllowDragFiles() {
+		return m_bAllowDragFiles;
+	}
+
 protected:
 	virtual EasyUIWindowBase* GetWindowPtr() = 0;
+
+	void InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams) override;
+
+	bool m_bAllowDragFiles = false;
 
 };
 
@@ -170,6 +179,15 @@ public:
 	void OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser,
 		const CefRange& selected_range,
 		const RectList& character_bounds) override;
+
+	bool StartDragging(CefRefPtr<CefBrowser> browser,
+		CefRefPtr<CefDragData> drag_data,
+		DragOperationsMask allowed_ops,
+		int x,
+		int y) override;
+
+	void UpdateDragCursor(CefRefPtr<CefBrowser> browser,
+		DragOperation operation) override;
 
 	void SetToolTip(const CefString& str);
 

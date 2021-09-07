@@ -200,14 +200,6 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 
         EasyWebViewMgr::GetInstance().AsyncSetIndexInfo(handler, browser->GetIdentifier(), hWnd);
 
-
-        //SetBrowser
-       // CHECK(m_webcontrol);
-        //透明UI窗口
-        //if(m_webuicontrol)
-        //    m_webuicontrol->SetBrowser(browser);
-
-
         if (!m_bIsUIControl && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitAfterCreate)
         {
             //检查是Chrome_WidgetWin_0 还是 RenderWidgeHostHWND，已确认是前者
@@ -277,6 +269,13 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 
      //CefBrowser
     if (!EasyIPCServer::GetInstance().GetClientsCount()) {
+
+        //保存下cookies
+        auto request_context = CefRequestContext::GetGlobalContext();
+        auto cookie_mgr = request_context->GetCookieManager(nullptr);
+        if (cookie_mgr)
+            cookie_mgr->FlushStore(nullptr);
+
         // All browser windows have closed. Quit the application message loop.
         //CefQuitMessageLoop();
         if (g_BrowserGlobalVar.funcCloseCallback)
@@ -614,6 +613,49 @@ background-color:white;}
 void EasyClientHandler::OnDocumentAvailableInMainFrame(CefRefPtr<CefBrowser> browser)
 {
      //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnDocumentAvailableInMainFrame:(" << browser << ")";
+}
+
+bool EasyClientHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
+{
+    return false;
+}
+
+bool EasyClientHandler::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url, CefRequestHandler::WindowOpenDisposition target_disposition, bool user_gesture)
+{
+    if (m_bIsUIControl)
+    {
+        //阻止拖拽文件导致页面跳转
+        if (user_gesture && target_disposition == WOD_NEW_FOREGROUND_TAB && target_url.ToString().substr(0, 4) == "file")
+        {
+            return true;
+        }
+    }
+
+
+    return false;
+}
+
+bool EasyClientHandler::OnDragEnter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> dragData, CefDragHandler::DragOperationsMask mask)
+{
+    if (m_bIsUIControl)
+    {
+        if ((mask & DRAG_OPERATION_LINK) && !dragData->IsFragment())
+        {
+            if (dragData->IsFile())
+            {
+                if (m_webuicontrol && m_webuicontrol->IsAllowDragFiles())
+                {
+                    return false;
+                }
+            }
+
+            //blocks dragging of URLs and files
+            return true;
+        }
+
+    }
+
+    return false;
 }
 
 void EasyClientHandler::OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const std::vector<CefDraggableRegion>& regions)

@@ -65,6 +65,8 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 
 	DomainPackInfo::Uri url_parts(request->GetURL());
 
+	const std::wstring strDecodedPath = CefURIDecode(url_parts.Path_, false, (cef_uri_unescape_rule_t)(UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
+
 
 	enum class STATUSCODE {
 		E_UNSET,
@@ -95,7 +97,7 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 					break;
 				}
 
-				std::wstring strPathInZip = url_parts.Path_;
+				std::wstring strPathInZip = strDecodedPath;
 
 				if (strPathInZip.empty())
 				{
@@ -149,7 +151,8 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 			break;
 		case EasyResourceHandler::RESTYPE::FILE:
 			{
-				std::wstring strPath = url_parts.Path_;
+				std::wstring strPath = strDecodedPath;
+				
 				std::replace(strPath.begin(), strPath.end(), L'/', L'\\');
 				if (strPath.front() == '\\')
 					strPath.erase(0, 1);

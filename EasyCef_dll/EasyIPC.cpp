@@ -216,7 +216,7 @@ void EasyIPCBase::Run()
 
 	m_bIsRunning = true;
 
-	SetWindowLongW(m_hAsServerHandle, GWL_USERDATA, (LONG)this);
+	SetUserDataPtr(m_hAsServerHandle, this);
 
 	MSG msg;
 	BOOL bRet;
@@ -393,7 +393,7 @@ LRESULT EasyIPCBase::WORKPROC(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 	{
 	case UM_IPC_SEND_WORK_INFO:
 		{
-			auto pThis = (EasyIPCBase*)GetWindowLongW(h, GWL_USERDATA);
+			auto pThis = GetUserDataPtr<EasyIPCBase*>(h);
 
 			IPCHandle hSrcHandle = (IPCHandle)lp;
 
@@ -472,7 +472,7 @@ LRESULT EasyIPCBase::WORKPROC(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 		break;
 	case UM_IPC_CLIENT_CONNECT:
 		{
-			auto pThis = (EasyIPCServer*)GetWindowLongW(h, GWL_USERDATA);
+			auto pThis = GetUserDataPtr<EasyIPCServer*>(h);
 			if (pThis)
 			{
 				pThis->m_clients.insert(std::make_pair(lp, (IPCHandle)wp));

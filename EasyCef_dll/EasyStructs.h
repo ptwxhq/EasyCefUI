@@ -31,8 +31,6 @@ struct BrowserGlobalVar
 
 	void* funcSpeedupCallback = nullptr;
 
-	HWND hWndHidden = nullptr;	//隐藏窗口，用于部分处理
-
 	//仅限分层窗口时使用
 	std::wstring WebViewClassName = L"EasyCefUIClass";
 	std::wstring UserAgent;

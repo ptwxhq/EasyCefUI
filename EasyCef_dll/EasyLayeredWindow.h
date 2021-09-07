@@ -1,12 +1,12 @@
 #pragma once
 
 #include "EasyUIWindow.h"
-
-#define VERIFYHR(x) VERIFY(SUCCEEDED(x))
+#include "cefclient/osr_dragdrop_events.h"
 
 
 namespace client {
     class OsrImeHandlerWin;
+    class DropTargetWin;
 }
 
 
@@ -124,7 +124,8 @@ class EasyLayeredWindow :
     < WS_OVERLAPPED, WS_EX_LAYERED>>
     //<WS_POPUP | WS_SYSMENU, WS_EX_NOREDIRECTIONBITMAP>>   //测试，win8+
     ,
-    public EasyUIWindowBase
+    public EasyUIWindowBase,
+    public client::OsrDragEvents
 {
 public:
     LayeredWindowInfo m_info;
@@ -172,6 +173,7 @@ public:
         MESSAGE_HANDLER(WM_CHAR, OnKeyEvent)
 
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
+        MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 
         //CEF windowless窗口中还是有些bug，比如框架页里面baidu搜索框无法输入
         MESSAGE_HANDLER(WM_IME_SETCONTEXT, OnIMESetContext)
@@ -209,7 +211,8 @@ public:
     LRESULT OnCaptureLost(UINT, WPARAM, LPARAM, BOOL&);
     LRESULT OnKeyEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&);
 
-    LRESULT OnCreate(UINT, WPARAM, LPARAM, BOOL&);
+    LRESULT OnCreate(UINT, WPARAM, LPARAM, BOOL& handle);
+    LRESULT OnDestroy(UINT, WPARAM, LPARAM, BOOL& handle);
     LRESULT OnIMESetContext(UINT, WPARAM, LPARAM, BOOL&);
     LRESULT OnIMEStartComposition(UINT, WPARAM, LPARAM, BOOL&);
     LRESULT OnIMEComposition(UINT, WPARAM, LPARAM lp, BOOL&);
@@ -220,7 +223,7 @@ public:
     LRESULT OnNcActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h);
     LRESULT OnActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h);
 
-    LRESULT OnSysCommand(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle);
+
 
     LRESULT OnPaint(UINT, WPARAM, LPARAM, BOOL& handle);
 
@@ -231,7 +234,7 @@ public:
     void Render();
 
 
-    virtual void OnFinalMessage(HWND /*hWnd*/) override;
+    void OnFinalMessage(HWND /*hWnd*/) override;
 
     //LRESULT OnTime(UINT, WPARAM wp, LPARAM, BOOL&);
 
@@ -241,6 +244,12 @@ public:
     void SetToolTip(const CefString& str);
 
     void ImePosChange(const CefRange& selected_range, const CefRenderHandler::RectList& character_bounds);
+
+    bool StartDragging(CefRefPtr<CefDragData> drag_data, CefRenderHandler::DragOperationsMask allowed_ops, int x, int y);
+
+    void UpdateDragCursor(CefRenderHandler::DragOperationsMask operation) {
+        current_drag_op_ = operation;
+    }
 
     HWND GetSafeHwnd() final {
         return m_hWnd;
@@ -255,6 +264,18 @@ public:
     CefRect original_popup_rect_;
 
 private:
+
+    CefBrowserHost::DragOperationsMask OnDragEnter(
+        CefRefPtr<CefDragData> drag_data,
+        CefMouseEvent ev,
+        CefBrowserHost::DragOperationsMask effect) override;
+    CefBrowserHost::DragOperationsMask OnDragOver(
+        CefMouseEvent ev,
+        CefBrowserHost::DragOperationsMask effect) override;
+    void OnDragLeave() override;
+    CefBrowserHost::DragOperationsMask OnDrop(
+        CefMouseEvent ev,
+        CefBrowserHost::DragOperationsMask effect) override;
 
     bool IsOverPopupWidget(int x, int y) const;
     void ApplyPopupOffset(int& x, int& y) const;
@@ -281,5 +302,8 @@ private:
 
     // Class that encapsulates IMM32 APIs and controls IMEs attached to a window.
     scoped_ptr<client::OsrImeHandlerWin> ime_handler_;
+
+    CComPtr<client::DropTargetWin> drop_target_;
+    CefRenderHandler::DragOperation current_drag_op_ = DRAG_OPERATION_NONE;
 
 };

@@ -19,6 +19,9 @@
     <Filter Include="Exports">
       <UniqueIdentifier>{2c3fa676-eae2-460d-a262-9602a49be981}</UniqueIdentifier>
     </Filter>
+    <Filter Include="cefclient">
+      <UniqueIdentifier>{91b0c87c-0c33-476f-b09e-26ae60e0b210}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -72,9 +75,6 @@
     <ClInclude Include="Export.h">
       <Filter>Exports</Filter>
     </ClInclude>
-    <ClInclude Include="osr_ime_handler_win.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="EasyRenderBrowserInfo.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -92,6 +92,18 @@
     </ClInclude>
     <ClInclude Include="EasyUIWindow.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="cefclient\bytes_write_handler.h">
+      <Filter>cefclient</Filter>
+    </ClInclude>
+    <ClInclude Include="cefclient\osr_dragdrop_events.h">
+      <Filter>cefclient</Filter>
+    </ClInclude>
+    <ClInclude Include="cefclient\osr_dragdrop_win.h">
+      <Filter>cefclient</Filter>
+    </ClInclude>
+    <ClInclude Include="cefclient\osr_ime_handler_win.h">
+      <Filter>cefclient</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -146,9 +158,6 @@
     <ClCompile Include="Export.cpp">
       <Filter>Exports</Filter>
     </ClCompile>
-    <ClCompile Include="osr_ime_handler_win.cc">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="LegacyExports.cpp">
       <Filter>Exports</Filter>
     </ClCompile>
@@ -166,6 +175,15 @@
     </ClCompile>
     <ClCompile Include="EasyUIWindow.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="cefclient\bytes_write_handler.cc">
+      <Filter>cefclient</Filter>
+    </ClCompile>
+    <ClCompile Include="cefclient\osr_dragdrop_win.cc">
+      <Filter>cefclient</Filter>
+    </ClCompile>
+    <ClCompile Include="cefclient\osr_ime_handler_win.cc">
+      <Filter>cefclient</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -62,9 +62,6 @@ void QuitMsgLoop()
 	//关闭服务
 	EasyIPCServer::GetInstance().Stop();
 
-	DestroyWindow(g_BrowserGlobalVar.hWndHidden);
-	g_BrowserGlobalVar.hWndHidden = nullptr;
-
 	CefQuitMessageLoop();
 }
 
@@ -138,8 +135,6 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 	{
 		app = new EasyCefAppBrowser;
 		g_BrowserGlobalVar.IsBrowserProcess = true;
-
-		g_BrowserGlobalVar.hWndHidden = CreateWindowExW(0, L"STATIC", L"", 0, 0, 0, 0, 0, nullptr, nullptr, nullptr, nullptr);
 	}
 	else
 	{

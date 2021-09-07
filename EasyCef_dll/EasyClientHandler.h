@@ -131,6 +131,19 @@ public:
 
     void OnDocumentAvailableInMainFrame(CefRefPtr<CefBrowser> browser) override;
 
+    bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        CefRefPtr<CefRequest> request,
+        bool user_gesture,
+        bool is_redirect) override;
+
+    bool OnOpenURLFromTab(CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        const CefString& target_url,
+        CefRequestHandler::WindowOpenDisposition target_disposition,
+        bool user_gesture) override;
+
+
     /////////////////
     //±ÍÃ‚Õœ∂Ø
 
@@ -138,9 +151,7 @@ public:
 
     bool OnDragEnter(CefRefPtr<CefBrowser> browser,
         CefRefPtr<CefDragData> dragData,
-        CefDragHandler::DragOperationsMask mask) override {
-        return false;
-    }
+        CefDragHandler::DragOperationsMask mask) override;
 
     void OnDraggableRegionsChanged(
         CefRefPtr<CefBrowser> browser,

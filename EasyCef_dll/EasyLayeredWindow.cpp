@@ -1,12 +1,14 @@
 ﻿#include "pch.h"
 #include "EasyLayeredWindow.h"
-#include "osr_ime_handler_win.h"
+#include "cefclient/osr_ime_handler_win.h"
+#include "cefclient/osr_dragdrop_win.h"
 #include "EasyWebViewMgr.h"
 #include <dwmapi.h>
 
 #pragma comment(lib, "Dwmapi.lib")
 #pragma comment(lib, "UxTheme.lib")
 
+#define VERIFYHR(x) VERIFY(SUCCEEDED(x))
 
 
 
@@ -155,6 +157,61 @@ void EasyLayeredWindow::ImePosChange(const CefRange& selected_range, const CefRe
 {
 	if(ime_handler_)
 		ime_handler_->ChangeCompositionRange(selected_range, character_bounds);
+}
+
+bool EasyLayeredWindow::StartDragging(CefRefPtr<CefDragData> drag_data, CefRenderHandler::DragOperationsMask allowed_ops, int x, int y)
+{
+	if (!drop_target_)
+		return false;
+
+	current_drag_op_ = DRAG_OPERATION_NONE;
+	CefBrowserHost::DragOperationsMask result =
+		drop_target_->StartDragging(m_browser, drag_data, allowed_ops, x, y);
+	current_drag_op_ = DRAG_OPERATION_NONE;
+	POINT pt = {};
+	GetCursorPos(&pt);
+	ScreenToClient(&pt);
+
+	m_browser->GetHost()->DragSourceEndedAt(
+		DeviceToLogical(pt.x, device_scale_factor_),
+		DeviceToLogical(pt.y, device_scale_factor_), result);
+	m_browser->GetHost()->DragSourceSystemDragEnded();
+	return true;
+}
+
+CefBrowserHost::DragOperationsMask EasyLayeredWindow::OnDragEnter(CefRefPtr<CefDragData> drag_data, CefMouseEvent ev, CefBrowserHost::DragOperationsMask effect)
+{
+	if (m_browser) {
+		DeviceToLogical(ev, device_scale_factor_);
+		m_browser->GetHost()->DragTargetDragEnter(drag_data, ev, effect);
+		m_browser->GetHost()->DragTargetDragOver(ev, effect);
+	}
+	return current_drag_op_;
+}
+
+CefBrowserHost::DragOperationsMask EasyLayeredWindow::OnDragOver(CefMouseEvent ev, CefBrowserHost::DragOperationsMask effect)
+{
+	if (m_browser) {
+		DeviceToLogical(ev, device_scale_factor_);
+		m_browser->GetHost()->DragTargetDragOver(ev, effect);
+	}
+	return current_drag_op_;
+}
+
+void EasyLayeredWindow::OnDragLeave()
+{
+	if (m_browser)
+		m_browser->GetHost()->DragTargetDragLeave();
+}
+
+CefBrowserHost::DragOperationsMask EasyLayeredWindow::OnDrop(CefMouseEvent ev, CefBrowserHost::DragOperationsMask effect)
+{
+	if (m_browser) {
+		DeviceToLogical(ev, device_scale_factor_);
+		m_browser->GetHost()->DragTargetDragOver(ev, effect);
+		m_browser->GetHost()->DragTargetDrop(ev);
+	}
+	return current_drag_op_;
 }
 
 bool EasyLayeredWindow::IsOverPopupWidget(int x, int y) const {
@@ -524,8 +581,9 @@ LRESULT EasyLayeredWindow::OnKeyEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
 	return 0;
 }
 
-LRESULT EasyLayeredWindow::OnCreate(UINT, WPARAM, LPARAM lp, BOOL&)
+LRESULT EasyLayeredWindow::OnCreate(UINT, WPARAM, LPARAM lp, BOOL& handle)
 {
+	handle = FALSE;
 	if (g_BrowserGlobalVar.FunctionFlag.bUIImeFollow)
 		ime_handler_.reset(new client::OsrImeHandlerWin(m_hWnd));
 
@@ -538,6 +596,22 @@ LRESULT EasyLayeredWindow::OnCreate(UINT, WPARAM, LPARAM lp, BOOL&)
 	//LOG(INFO) << GetCurrentProcessId() << "] OnCreate new:" << pCREATESTRUCT->x << pCREATESTRUCT->y << pCREATESTRUCT->cx << pCREATESTRUCT->cy << "\n";
 
 	//SetWindowThemeNonClientAttributes(m_hWnd, WTNCA_NODRAWCAPTION, WTNCA_NODRAWCAPTION);
+
+	drop_target_ = client::DropTargetWin::Create(this, m_hWnd);
+	VERIFYHR(RegisterDragDrop(m_hWnd, drop_target_));
+
+
+	return 0;
+}
+
+LRESULT EasyLayeredWindow::OnDestroy(UINT, WPARAM, LPARAM, BOOL& handle)
+{
+	handle = FALSE;
+
+	RevokeDragDrop(m_hWnd);
+	drop_target_ = nullptr;
+
+	ime_handler_.reset();
 
 	return 0;
 }

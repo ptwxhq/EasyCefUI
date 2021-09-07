@@ -124,9 +124,15 @@ bool WebViewControl::InitBrowser(wvhandle hWebview, HWND hParent, const RECT& rc
     pParams->cookie = cookie;
     pParams->hParent = hParent;
     pParams->hWebview = hWebview;
-    pParams->pExt = pExt;    //TODO 注意如果使用同步方式这里得额外处理下
     pParams->rc = rc;
     pParams->url = url;
+
+    if (pExt)
+    {
+        pParams->pExt = std::make_unique<WebViewExtraAttr>();
+        memcpy(pParams->pExt.get(), pExt, sizeof(WebViewExtraAttr));
+    }
+
 
     if (Sync && !CefCurrentlyOn(TID_UI))
     {
@@ -371,21 +377,25 @@ void WebViewUIControl::SetAlpha(BYTE alpha)
     }
     else
     {
-        //TODO 调整窗口
         auto pWnd = static_cast<EasyOpaqueWindow*>(GetWindowPtr());
-        if (!(pWnd->GetExStyle() & WS_EX_LAYERED))
+        const bool bIsLayered = (pWnd->GetExStyle() & WS_EX_LAYERED);
+        if (alpha == 255)
         {
-            pWnd->ModifyStyleEx(0, WS_EX_LAYERED, SWP_FRAMECHANGED);
+            if (bIsLayered)
+                pWnd->ModifyStyleEx(WS_EX_LAYERED, 0, SWP_FRAMECHANGED);
+        }
+        else
+        {
+            if (!bIsLayered)
+                pWnd->ModifyStyleEx(0, WS_EX_LAYERED, SWP_FRAMECHANGED);
+
             SetLayeredWindowAttributes(*pWnd, 0, alpha, LWA_ALPHA);
         }
     }
    
 }
 
-
-
-
-void WebViewOpaqueUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams)
+void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams)
 {
     m_itemHandle = pParams->hWebview;
 
@@ -417,7 +427,7 @@ void WebViewOpaqueUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> 
 
     clientHandler->SetManualHandle(m_itemHandle);
 
-    clientHandler->SetUIWindowInfo(this, false);
+    clientHandler->SetUIWindowInfo(this, IsTransparentUI());
 
     auto extra_info = CefDictionaryValue::Create();
 
@@ -428,9 +438,11 @@ void WebViewOpaqueUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> 
     extra_info->SetBool(ExtraKeyNameIsUIBrowser, IsUIControl());
 
 
-    m_pWindow = std::make_unique<EasyOpaqueWindow>(/*m_itemHandle*/);
+    auto pWindow = dynamic_cast<CWindowImplRoot<CWindow>*>(GetWindowPtr());
+    auto pOpaqueUIWnd = dynamic_cast<EasyOpaqueWindow*>(GetWindowPtr());
+    auto pLayeredUIWnd = dynamic_cast<EasyLayeredWindow*>(GetWindowPtr());
 
-    DWORD dwStyle = /*WS_VISIBLE |*/ WS_SYSMENU | WS_POPUP;
+    DWORD dwStyle = WS_SYSMENU | WS_POPUP;
     DWORD dwExStyle = 0;
 
     int nCmdShow = SW_NORMAL;
@@ -444,49 +456,86 @@ void WebViewOpaqueUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> 
         //允许拖拽
         constexpr auto ENABLE_DRAG_DROP = 1;
 
-        if ((pParams->pExt->windowinitstatus & 0x000f) == WIDGET_MIN_SIZE)
+        if ((pParams->pExt->windowinitstatus & 0b10) == WIDGET_MIN_SIZE)
         {
             nCmdShow = SW_SHOWMINIMIZED;
         }
-        else if ((pParams->pExt->windowinitstatus & 0x000f) == WIDGET_MAX_SIZE)
+        else if ((pParams->pExt->windowinitstatus & 0b100) == WIDGET_MAX_SIZE)
         {
             nCmdShow = SW_SHOWMAXIMIZED;
         }
 
+        if ((pParams->pExt->windowinitstatus & 0b1) == ENABLE_DRAG_DROP)
+        {
+            m_bAllowDragFiles = true;
+        }
+
         //以便可以实现aero snap. 放外面了
-        //dwStyle |= WS_MAXIMIZEBOX  | WS_THICKFRAME;
         dwStyle |= pParams->pExt->dwAddStyle;
         dwExStyle |= pParams->pExt->dwAddExStyle;
 
-        if (!pParams->pExt->taskbar)
+        if (IsTransparentUI())
         {
-            dwStyle &= ~(WS_CAPTION | WS_SYSMENU);
-            dwStyle |= WS_POPUP;
-
-            dwExStyle &= ~WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
-            dwExStyle |= WS_EX_TOOLWINDOW;
+            pLayeredUIWnd->SetAlpha(pParams->pExt->alpha, false);
         }
+        else
+        {
+            if (!pParams->pExt->taskbar)
+            {
+                dwStyle &= ~(WS_CAPTION | WS_SYSMENU);
+                dwStyle |= WS_POPUP;
+
+                dwExStyle &= ~WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;
+                dwExStyle |= WS_EX_TOOLWINDOW;
+            }
+        }
+
 
 
     }
 
-    VERIFY(m_pWindow->Create(pParams->hParent, (LPRECT)&pParams->rc, L"EasyUI Loading...", dwStyle, dwExStyle)); // parent
+    if (IsTransparentUI())
+    {
+        VERIFY(pLayeredUIWnd->Create(pParams->hParent, (LPRECT)&pParams->rc, L"EasyUI Loading...", dwStyle, dwExStyle)); // parent
+    }
+    else
+    {
+        VERIFY(pOpaqueUIWnd->Create(pParams->hParent, (LPRECT)&pParams->rc, L"EasyUI Loading...", dwStyle, dwExStyle)); // parent
+    }
+ 
 
     //win11下自动圆角了，恢复下
-    m_pWindow->SetWindowRgn(NULL);
-
-
-    RECT rcCef = { 0, 0, pParams->rc.right - pParams->rc.left, pParams->rc.bottom - pParams->rc.top };
+    pWindow->SetWindowRgn(NULL);
 
     CefWindowInfo window_info;
-    window_info.SetAsChild(*m_pWindow, rcCef);
+
+    if (IsTransparentUI())
+    {
+        window_info.SetAsWindowless(*pWindow);
+
+        if (pParams->pExt)
+        {
+            ////不能在创建时就加入属性，否则UpdateLayeredWindow会失败，why？
+            if (!pParams->pExt->taskbar)
+            {
+                pLayeredUIWnd->ModifyStyle(WS_CAPTION | WS_SYSMENU, WS_POPUP);
+                pLayeredUIWnd->ModifyStyleEx(WS_EX_APPWINDOW | WS_EX_WINDOWEDGE, WS_EX_TOOLWINDOW, SWP_FRAMECHANGED);
+            }
+        }
+    }
+    else
+    {
+        RECT rcCef = { 0, 0, pParams->rc.right - pParams->rc.left, pParams->rc.bottom - pParams->rc.top };
+        window_info.SetAsChild(*pWindow, rcCef);
+    }
+
 
     if (pParams->bSyncCreate)
     {
         //如果要用自己创建窗口再附着上去的方式也得要求在主UI线程调用，那干脆直接使用同步方式创建Browser好了，省事
         m_browser = CefBrowserHost::CreateBrowserSync(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
 
-        m_pWindow->SetBrowser(m_browser);
+        GetWindowPtr()->SetBrowser(m_browser);
 
         pParams->bRet = m_browser;
 
@@ -497,151 +546,29 @@ void WebViewOpaqueUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> 
         pParams->bRet = CefBrowserHost::CreateBrowser(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
     }
 
-    m_pWindow->ShowWindow(nCmdShow);
+    pWindow->ShowWindow(nCmdShow);
 
+    if (IsTransparentUI())
+    {
+        pLayeredUIWnd->Render();
+    }
+}
+
+
+
+
+void WebViewOpaqueUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams)
+{
+    m_pWindow = std::make_unique<EasyOpaqueWindow>();
+    WebViewUIControl::InitBrowserImpl(pParams);
 }
 
 
 
 void WebViewTransparentUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams)
 {
-    m_itemHandle = pParams->hWebview;
-
-    CefBrowserSettings browser_settings;
-    CefRefPtr<CefRequestContext> request_context;
-
-    browser_settings.javascript_close_windows = STATE_ENABLED;
-    browser_settings.plugins = STATE_ENABLED;
-    browser_settings.universal_access_from_file_urls = STATE_ENABLED;
-  //  browser_settings.file_access_from_file_urls = STATE_ENABLED;
-  //  browser_settings.web_security = STATE_DISABLED;
-
-    if (pParams->cookie.length())
-    {
-        CefRequestContextSettings req_settings;
-        CefString(&req_settings.cache_path) = pParams->cookie;
-        //TODO 这里CefRequestContextHandler目前用不上
-        request_context = CefRequestContext::CreateContext(req_settings, nullptr);
-
-        SetRequestDefaultSettings(request_context);
-    }
-    else
-    {
-        request_context = CefRequestContext::GetGlobalContext();
-    }
-
-
-    ASSERT(CefCurrentlyOn(TID_UI));
-    CefRefPtr<EasyClientHandler> clientHandler = new EasyClientHandler;
-    m_clientHandler = clientHandler;
-
-    clientHandler->SetManualHandle(m_itemHandle);
-
-    clientHandler->SetUIWindowInfo(this, true);
-
-    auto extra_info = CefDictionaryValue::Create();
-
-
-    const auto tmpVal = EasyIPCServer::GetInstance().GetHandle();
-    auto valKeyName = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
-    extra_info->SetBinary(IpcBrowserServerKeyName, valKeyName);
-
-    extra_info->SetBool(ExtraKeyNameIsUIBrowser, IsUIControl());
-
-
-    m_pWindow = std::make_unique<EasyLayeredWindow>(/*m_itemHandle*/);
-
-    DWORD dwStyle = /*WS_VISIBLE |*/ WS_SYSMENU | WS_POPUP;
-    DWORD dwExStyle = 0;
-
-    int nCmdShow = SW_NORMAL;
-
-    if (pParams->pExt)
-    {
-        m_pWindow->SetAlpha(pParams->pExt->alpha, false);
-
-    //创建窗口时最小化
-constexpr auto WIDGET_MIN_SIZE = 1 << 1;
-    //创建窗口时最大化
-constexpr auto WIDGET_MAX_SIZE = 1 << 2;
-    //允许拖拽
-constexpr auto ENABLE_DRAG_DROP = 1;
-
-        if ((pParams->pExt->windowinitstatus & 0x000f) == WIDGET_MIN_SIZE)
-        {
-            //dwStyle |= WS_MINIMIZE;
-            nCmdShow = SW_SHOWMINIMIZED;
-        }
-        else if ((pParams->pExt->windowinitstatus & 0x000f) == WIDGET_MAX_SIZE)
-        {
-            //dwStyle |= WS_MAXIMIZE;
-            nCmdShow = SW_SHOWMAXIMIZED;
-        }
-
-
-
-        //以便可以实现aero snap. 放外面了
-        //dwStyle |= WS_MAXIMIZEBOX  | WS_THICKFRAME;
-        dwStyle |= pParams->pExt->dwAddStyle;
-        dwExStyle |= pParams->pExt->dwAddExStyle;
-
-        //TODO 后续补充下
-        //if ((pExt->windowinitstatus & 0x000f) == ENABLE_DRAG_DROP)
-        //{
-        //    //HRESULT register_res = RegisterDragDrop();
-        // 
-        //dwExStyle|= WS_EX_ACCEPTFILES
-        //}
-
-        //不知道为啥WS_EX_TOOLWINDOW设置了还是不行，只能使用一个隐藏窗口来处理了
-        // 窗口首次显示前修改可以了 
-        //if (!pParams->pExt->taskbar)
-         //pParams->hParent = g_BrowserGlobalVar.hWndHidden;
-
-    }
-
-    //dwStyle &= ~WS_CAPTION;
-
-
-    VERIFY(m_pWindow->Create(pParams->hParent, (LPRECT)&pParams->rc, L"EasyUI Loading...", dwStyle, dwExStyle)); // parent
-   
-    //win11下自动圆角了，恢复下
-    m_pWindow->SetWindowRgn(NULL);
-
-
-    if (pParams->pExt)
-    {
-        ////不能在创建时就加入属性，否则UpdateLayeredWindow会失败，why？
-        if (!pParams->pExt->taskbar)
-        {
-            m_pWindow->ModifyStyle(WS_CAPTION| WS_SYSMENU, WS_POPUP);
-            m_pWindow->ModifyStyleEx(WS_EX_APPWINDOW | WS_EX_WINDOWEDGE, WS_EX_TOOLWINDOW, SWP_FRAMECHANGED );
-        }
-    }
-
-    CefWindowInfo window_info;
-    window_info.SetAsWindowless(*m_pWindow);
-    //window_info.style = 0;
-
-
-    if (pParams->bSyncCreate)
-    {
-        //如果要用自己创建窗口再附着上去的方式也得要求在主UI线程调用，那干脆直接使用同步方式创建Browser好了，省事
-        m_browser = CefBrowserHost::CreateBrowserSync(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
-
-        m_pWindow->SetBrowser(m_browser);
-
-        pParams->bRet = m_browser;
-
-        pParams->signal.set_value();
-    }
-    else
-    {
-        pParams->bRet = CefBrowserHost::CreateBrowser(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
-    }
-
-    m_pWindow->ShowWindow(nCmdShow);
-    m_pWindow->Render();
+    m_pWindow = std::make_unique<EasyLayeredWindow>();
+    WebViewUIControl::InitBrowserImpl(pParams);
 }
 
 
@@ -754,5 +681,15 @@ void WebViewTransparentUIControl::OnPopupSize(CefRefPtr<CefBrowser> browser, con
 void WebViewTransparentUIControl::OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds)
 {
     m_pWindow->ImePosChange(selected_range, character_bounds);
+}
+
+bool WebViewTransparentUIControl::StartDragging(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> drag_data, DragOperationsMask allowed_ops, int x, int y)
+{
+    return m_pWindow->StartDragging(drag_data, allowed_ops, x, y);
+}
+
+void WebViewTransparentUIControl::UpdateDragCursor(CefRefPtr<CefBrowser> browser, DragOperation operation)
+{
+    m_pWindow->UpdateDragCursor(operation);
 }
 

@@ -3,7 +3,7 @@
 // governed by a BSD-style license that can be found in the LICENSE file.
 
 // Implementation based on ui/base/ime/win/imm32_manager.cc from Chromium.
-
+#include "pch.h"
 #include <msctf.h>
 #include <windowsx.h>
 

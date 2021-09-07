@@ -177,6 +177,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="cefclient\bytes_write_handler.h" />
+    <ClInclude Include="cefclient\osr_dragdrop_events.h" />
+    <ClInclude Include="cefclient\osr_dragdrop_win.h" />
+    <ClInclude Include="cefclient\osr_ime_handler_win.h" />
     <ClInclude Include="EasyBrowserWorks.h" />
     <ClInclude Include="EasyCef.h" />
     <ClInclude Include="EasyCefAppBrowser.h" />
@@ -197,12 +201,14 @@
     <ClInclude Include="LegacyImplement.h" />
     <ClInclude Include="NativeV8Accessor.h" />
     <ClInclude Include="NativeV8Handler.h" />
-    <ClInclude Include="osr_ime_handler_win.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Utility.h" />
     <ClInclude Include="WebViewControl.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="cefclient\bytes_write_handler.cc" />
+    <ClCompile Include="cefclient\osr_dragdrop_win.cc" />
+    <ClCompile Include="cefclient\osr_ime_handler_win.cc" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="EasyBrowserWorks.cpp" />
     <ClCompile Include="EasyCef.cpp" />
@@ -223,10 +229,6 @@
     <ClCompile Include="LegacyImplement.cpp" />
     <ClCompile Include="NativeV8Accessor.cpp" />
     <ClCompile Include="NativeV8Handler.cpp" />
-    <ClCompile Include="osr_ime_handler_win.cc">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
