@@ -75,9 +75,6 @@ public:
     BEGIN_MSG_MAP(0)
         CHAIN_MSG_MAP(EasyUIWindowBase)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
-
-        MESSAGE_HANDLER(WM_CLOSE, OnClose)
-
     END_MSG_MAP()
 
     HWND GetSafeHwnd() final {
@@ -85,7 +82,6 @@ public:
     };
 
     LRESULT OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
-    LRESULT OnClose(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
 
     void OnFinalMessage(HWND) override;
 

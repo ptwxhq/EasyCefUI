@@ -139,24 +139,24 @@ namespace wrapQweb {
 	}FunMap;
 
 	//在InitLibrary之前调用，之后调用无效
-	EASYCEF_EXP_API void SetUserAgent(LPCWSTR ua);
+	//EASYCEF_EXP_API void SetUserAgent(LPCWSTR ua);
 
-	__declspec(deprecated("建议使用新的api[InitEasyCef]代替"))
-		EASYCEF_EXP_API int InitLibrary(HINSTANCE hInstance, LPCWSTR lpRender = NULL, LPCWSTR szLocal = L"zh-CN", bool bShareNPPlugin = false);
+	//__declspec(deprecated("建议使用新的api[InitEasyCef]代替"))
+	//	EASYCEF_EXP_API int InitLibrary(HINSTANCE hInstance, LPCWSTR lpRender = NULL, LPCWSTR szLocal = L"zh-CN", bool bShareNPPlugin = false);
 
-	__declspec(deprecated("建议使用新的api[ShutEasyCef]代替"))
-	EASYCEF_EXP_API void FreeLibary();
+	//__declspec(deprecated("建议使用新的api[ShutEasyCef]代替"))
+	//EASYCEF_EXP_API void FreeLibary();
 
 	EASYCEF_EXP_API void InitQWeb(FunMap* map);
 
-	__declspec(deprecated("建议使用新的api[RunMsgLoop]代替"))
-	EASYCEF_EXP_API void RunLoop();
+	//__declspec(deprecated("建议使用新的api[RunMsgLoop]代替"))
+	//EASYCEF_EXP_API void RunLoop();
 
-	__declspec(deprecated("建议使用新的api[QuitMsgLoop]代替"))
-	EASYCEF_EXP_API void QuitLoop();
+	//__declspec(deprecated("建议使用新的api[QuitMsgLoop]代替"))
+	//EASYCEF_EXP_API void QuitLoop();
 
-	__declspec(deprecated("建议使用新的api[SetCloseHandler/QuitMsgLoop]代替"))
-	EASYCEF_EXP_API bool TryQuitLoop();
+	//__declspec(deprecated("建议使用新的api[SetCloseHandler/QuitMsgLoop]代替"))
+	//EASYCEF_EXP_API bool TryQuitLoop();
 
 	EASYCEF_EXP_API void CloseWebview(HWND);
 

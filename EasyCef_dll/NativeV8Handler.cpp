@@ -8,6 +8,15 @@
 
 void call_FrameStateChanged(CefRefPtr<CefFrame>& frame, const char* frameName, const char* url, const int& code, bool didComit);
 
+HWND JsGetWindowHwnd()
+{
+	auto context = CefV8Context::GetCurrentContext();
+	auto frame = context->GetFrame();
+	auto bid = frame->GetBrowser()->GetIdentifier();
+	auto hWnd = EasyRenderBrowserInfo::GetInstance().GetHwnd(bid);
+	return hWnd;
+}
+
 
 static void FowardRender2Browser(bool bSync, const CefString& name, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
 {
@@ -482,6 +491,59 @@ namespace JSCallFunctions
 		FowardRender2Browser(false, __func__, args, retval, exception);
 	
 	}
+
+
+
+	void setWindowSize(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
+	{
+		HWND hWnd = JsGetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			int x = arguments[0]->GetIntValue();
+			int y = arguments[1]->GetIntValue();
+			int width = arguments[2]->GetIntValue();
+			int height = arguments[3]->GetIntValue();
+
+			SetWindowPos(hWnd, nullptr, x, y, width, height, SWP_NOZORDER | SWP_ASYNCWINDOWPOS);
+		}
+	}
+
+	void minWindow(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
+	{
+		HWND hWnd = JsGetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			PostMessage(hWnd, WM_SYSCOMMAND, SC_MINIMIZE, NULL);
+		}
+	}
+
+	void maxWindow(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
+	{
+		HWND hWnd = JsGetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			PostMessage(hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
+		}
+	}
+
+	void restoreWindow(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
+	{
+		HWND hWnd = JsGetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			PostMessage(hWnd, WM_SYSCOMMAND, SC_RESTORE, NULL);
+		}
+	}
+
+	void setWindowText(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
+	{
+		HWND hWnd = JsGetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			SetWindowTextW(hWnd, arguments[0]->GetStringValue().ToWString().c_str());
+		}
+	}
+
 	
 }
 
@@ -557,11 +619,9 @@ void NativeV8Handler::RegisterFunctions(CefRefPtr<CefV8Value> obj, int BrowserTy
 	REG_SYNCJS_FUN(getProfile, 3);
 	REG_SYNCJS_FUN(getSoftwareAttribute, 1);
 
+
 	//不需要返回值，改异步处理
-	REG_ASYNCJS_FUN(minWindow, 1);
-	REG_ASYNCJS_FUN(maxWindow, 1);
-	REG_ASYNCJS_FUN(restoreWindow, 1);
-	REG_ASYNCJS_FUN(setWindowSize, 1);
+
 	REG_ASYNCJS_FUN(setWindowPos, 1);
 	//REG_ASYNCJS_FUN(fullScreen, 1);
 	REG_ASYNCJS_FUN(createWindow, 1);
@@ -571,19 +631,11 @@ void NativeV8Handler::RegisterFunctions(CefRefPtr<CefV8Value> obj, int BrowserTy
 
 
 	REG_ASYNCJS_FUN(closeWindow, 1);
-	REG_ASYNCJS_FUN(setWindowText, 1);
 
 	REG_ASYNCJS_FUN(asyncCrossInvokeWebMethod, 1);
 	REG_ASYNCJS_FUN(asyncCrossInvokeWebMethod2, 1);
 
 	REG_ASYNCJS_FUN(asyncCallMethod, 3); 
-
-
-	if (g_BrowserGlobalVar.Debug)
-	{
-		REG_ASYNCJS_FUN(addCrossOriginWhitelistEntry, 1);//本次新增
-		REG_ASYNCJS_FUN(removeCrossOriginWhitelistEntry, 1);//本次新增
-	}
 
 
 
@@ -595,15 +647,12 @@ void NativeV8Handler::RegisterFunctions(CefRefPtr<CefV8Value> obj, int BrowserTy
 
 	REG_JS_FUN(queryProduct, 2);
 
-
-
-
-
-	//以下接口另外处理或者废弃
-	//REG_JS_FUN(pushMessage, 1);	 //原先就实现，应该是用不上废弃
-	//REG_SYNCJS_FUN(launchServerData, 1);//提交post请求，可以直接实现，这里废弃
-	//REG_SYNCJS_FUN(abortServerData, 1);//旧版未实现，这里废弃
-	//REG_SYNCJS_FUN(collectAllGarbage, 1); //未知是否还有意义，暂时先不接入
+	//这几个调整一下直接放本进程处理
+	REG_JS_FUN(minWindow, 1);
+	REG_JS_FUN(maxWindow, 1);
+	REG_JS_FUN(restoreWindow, 1);
+	REG_JS_FUN(setWindowSize, 1);
+	REG_JS_FUN(setWindowText, 1);
 
 }
 

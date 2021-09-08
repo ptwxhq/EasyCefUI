@@ -197,6 +197,11 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 		{
 			g_BrowserGlobalVar.WebViewClassName = pConf->strWebViewClassName;
 		}
+
+		if (pConf->strUILoadingTitle && pConf->strUILoadingTitle[0])
+		{
+			g_BrowserGlobalVar.UILoadingWindowTitle = pConf->strUILoadingTitle;
+		}
 	}
 
 	//其余情况将使用自身同名进程

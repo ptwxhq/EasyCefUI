@@ -136,7 +136,7 @@ wvhandle EasyWebViewMgr::CreateWebViewUI(HWND hParent, const RECT& rc, LPCWSTR l
 	auto id = GetNewHandleId();
 	CefRefPtr<WebViewControl> pItem/* = nullptr*/;
 
-	if (pExt && pExt->transparent)
+	if (pExt && pExt->transparent && g_BrowserGlobalVar.SupportLayerWindow)
 	{
 		pItem = new WebViewTransparentUIControl;
 	}

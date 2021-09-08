@@ -36,3 +36,4 @@ Debug
 Release
 
 EasyCef_dll/cef.props
+*.aps

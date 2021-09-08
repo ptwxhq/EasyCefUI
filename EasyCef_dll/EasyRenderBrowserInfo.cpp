@@ -4,9 +4,9 @@
 
 
 
-void EasyRenderBrowserInfo::AddBrowser(int id, CefRefPtr<CefBrowser> browser, EasyRenderBrowserInfo::BrsData::TYPE type)
+void EasyRenderBrowserInfo::AddBrowser(int id, CefRefPtr<CefBrowser> browser, EasyRenderBrowserInfo::BrsData::TYPE type, HWND hwnd)
 {
-	m_mapBrowsers.insert(std::make_pair(id, std::make_unique<BrsData>(type, browser)));
+	m_mapBrowsers.insert(std::make_pair(id, std::make_unique<BrsData>(type, browser, hwnd)));
 }
 
 bool EasyRenderBrowserInfo::RemoveBrowser(int id)
@@ -38,6 +38,17 @@ CefRefPtr<CefBrowser> EasyRenderBrowserInfo::GetBrowser(int id)
 	if (item != m_mapBrowsers.end())
 	{
 		return item->second->browser;
+	}
+
+	return nullptr;
+}
+
+HWND EasyRenderBrowserInfo::GetHwnd(int id) const
+{
+	auto item = m_mapBrowsers.find(id);
+	if (item != m_mapBrowsers.end())
+	{
+		return item->second->hUIWnd;
 	}
 
 	return nullptr;

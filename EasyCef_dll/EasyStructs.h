@@ -31,8 +31,9 @@ struct BrowserGlobalVar
 
 	void* funcSpeedupCallback = nullptr;
 
-	//仅限分层窗口时使用
+	//仅限UI窗口时使用
 	std::wstring WebViewClassName = L"EasyCefUIClass";
+	std::wstring UILoadingWindowTitle = L"EasyUI Loading...";
 	std::wstring UserAgent;
 
 	std::wstring FilePath; //exe文件完整路径
@@ -75,3 +76,4 @@ extern BrowserGlobalVar g_BrowserGlobalVar;
 
 extern const char* ExtraKeyNameIsManagedPopup;
 extern const char* ExtraKeyNameIsUIBrowser;
+extern const char* ExtraKeyNameUIWndHwnd;

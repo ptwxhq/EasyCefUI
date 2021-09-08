@@ -17,95 +17,28 @@ bool QueryNodeAttrib(CefRefPtr<WebViewControl> item, int x, int y, std::string n
 
 namespace wrapQweb {
 
-	void SetUserAgent(LPCWSTR ua)
-	{
-		g_BrowserGlobalVar.UserAgent = ua;
-	}
-
-	int InitLibrary(HINSTANCE hInstance, LPCWSTR lpRender, LPCWSTR szLocal, bool bShareNPPlugin)
-	{
-		EASYCEF::EasyInitConfig config;
-
-		config.bShareNPPlugin = bShareNPPlugin;
-		config.bSupportLayerWindow = true;
-	
-		config.strLocal = szLocal;
-
-		if (!g_BrowserGlobalVar.UserAgent.empty())
-		{
-			config.strUserAgent = g_BrowserGlobalVar.UserAgent.c_str();
-		}
-
-		//config.strWebViewClassName = L"WebViewWindowClass";
-
-
-		return EASYCEF::InitEasyCef(hInstance, lpRender, &config);
-	}
-
-	void FreeLibary()
-	{
-		EASYCEF::ShutEasyCef();
-	}
-
 	void InitQWeb(FunMap* map)
 	{
 		WebkitEcho::SetUIFunMap(map);
 	}
 
-	void RunLoop()
-	{
-		EASYCEF::RunMsgLoop();
-	}
-
-	void QuitLoop()
-	{
-		EASYCEF::QuitMsgLoop();
-	}
-
-	bool TryQuitLoop()
-	{
-		if (!g_BrowserGlobalVar.BrowserExist)
-		{
-			EASYCEF::QuitMsgLoop();
-			return true;
-		}
-		return false;
-	}
 
 	void CloseWebview(HWND hWnd)
 	{
-		//TODO 待转换为间接调用形式
-
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
 		if (item && item->GetBrowser())
 		{
-			item->GetBrowser()->GetHost()->CloseBrowser(false);
+			item->GetBrowser()->GetHost()->CloseBrowser(true);
 		}
-
-
 	}
 
 	void CloseAllWebView()
 	{
-		//TODO 待转换为间接调用形式
-		//未实现
-		
-
 		EasyWebViewMgr::GetInstance().RemoveAllItems();
-
-		//EasyWebViewMgr::GetInstance().ForEachDoWork([] (CefRefPtr<WebViewControl> control) {
-
-		//	control->CloseBrowser();
-
-		//	return true;
-		//	});
-
 	}
 
 	bool UILoadUrl(HWND hwnd, LPCWSTR url)
 	{
-		//TODO 待转换为间接调用形式
-
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{
@@ -117,8 +50,6 @@ namespace wrapQweb {
 
 	HWND CreateWebView(int x, int y, int width, int height, LPCWSTR lpResource, int alpha, bool taskbar, bool trans, int winCombination)
 	{
-		//TODO 待补充
-
 		WebViewExtraAttr ExtAttr;
 		ExtAttr.alpha = alpha;
 		ExtAttr.transparent = trans;
@@ -158,8 +89,6 @@ namespace wrapQweb {
 
 	void SetFouceWebView(HWND hWnd, bool fouce)
 	{  
-		//TODO 待转换为间接调用形式
-
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
 		if (item && item->GetBrowser())
 		{
@@ -195,7 +124,7 @@ namespace wrapQweb {
 
 			auto send = QuickMakeIpcParms(item->GetBrowser()->GetIdentifier(), frameid, "invokedJSMethod", valueList);
 			std::string ret;
-			if (ipcSvr./*Legacy*/SendData(hipcli, send, ret))
+			if (ipcSvr.SendData(hipcli, send, ret))
 			{
 				CefString tmp(ret);
 				std::wstring wtemp = tmp.ToWString();
@@ -303,7 +232,7 @@ namespace wrapQweb {
 	}*/
 
 	bool GetViewZoomLevel(HWND hwnd, double& level)
-	{	 		//TODO 待转换为间接调用形式
+	{
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{
@@ -314,7 +243,7 @@ namespace wrapQweb {
 	}
 
 	bool SetViewZoomLevel(HWND hwnd, double level)
-	{	 		//TODO 待转换为间接调用形式
+	{
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{
@@ -332,8 +261,6 @@ namespace wrapQweb {
 	//	}
 	//	return false;
 	//}
-
-	//TODO 下面的重新整理下
 
 	void PrepareSetCachePath(const LPCWSTR path)
 	{
@@ -372,7 +299,6 @@ namespace wrapQweb {
 
 	bool GoBack(HWND hwnd)
 	{
-		//TODO 待转换为间接调用形式
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{
@@ -384,7 +310,7 @@ namespace wrapQweb {
 	}
 
 	bool GoForward(HWND hwnd)
-	{	   		//TODO 待转换为间接调用形式
+	{
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{
@@ -396,7 +322,6 @@ namespace wrapQweb {
 
 	bool Reload(HWND hwnd)
 	{
-		//TODO 待转换为间接调用形式
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{
@@ -408,7 +333,6 @@ namespace wrapQweb {
 
 	bool ReloadIgnoreCache(HWND hwnd)
 	{
-		//TODO 待转换为间接调用形式
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{
@@ -420,7 +344,6 @@ namespace wrapQweb {
 
 	bool IsAudioMuted(HWND hwnd)
 	{
-		//TODO 待转换为间接调用形式
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{
@@ -430,7 +353,7 @@ namespace wrapQweb {
 	}
 
 	void SetAudioMuted(HWND hwnd, bool bMute)
-	{	 		//TODO 待转换为间接调用形式
+	{
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{
@@ -439,7 +362,7 @@ namespace wrapQweb {
 	}
 
 	bool Stop(HWND hwnd)
-	{				//TODO 待转换为间接调用形式
+	{
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hwnd);
 		if (item)
 		{

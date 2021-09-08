@@ -176,92 +176,6 @@ namespace BrowserSyncWorkFunctions {
 
 namespace BrowserSyncWorkJSKeys
 {
-	void window_x(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			RECT rc;
-			GetWindowRect(hWnd, &rc);
-			retval = std::to_string(rc.left);
-		}
-	}
-
-	void window_y(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			RECT rc;
-			GetWindowRect(hWnd, &rc);
-			retval = std::to_string(rc.top);
-		}
-	}
-
-	void window_w(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			RECT rc;
-			GetWindowRect(hWnd, &rc);
-			retval = std::to_string(rc.right - rc.left);
-		}
-	}
-
-	void window_h(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			RECT rc;
-			GetWindowRect(hWnd, &rc);
-			retval = std::to_string(rc.bottom - rc.top);
-		}
-	}
-
-	void is_zoomed(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			retval = std::to_string(IsZoomed(hWnd) & 1);
-		}
-	}
-
-	void is_iconic(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			retval = std::to_string(IsIconic(hWnd) & 1);
-		}
-	}
-
 	void appDataPath(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
 	{
 		retval = g_BrowserGlobalVar.CachePath;
@@ -272,24 +186,6 @@ namespace BrowserSyncWorkJSKeys
 
 
 namespace BrowserAsyncWorkFunctions {
-
-	void setWindowSize(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			int x = args->GetInt(0);
-			int y = args->GetInt(1);
-			int width = args->GetInt(2);
-			int height = args->GetInt(3);
-
-			SetWindowPos(hWnd, nullptr, x, y, width, height, SWP_NOZORDER | SWP_FRAMECHANGED);
-		}
-	}
 
 	void setWindowPos(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
@@ -462,44 +358,7 @@ namespace BrowserAsyncWorkFunctions {
 	}
 
 
-	void minWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			PostMessage(hWnd, WM_SYSCOMMAND, SC_MINIMIZE, NULL);
-		}
-	}
-
-	void maxWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			PostMessage(hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
-		}
-	}
-
-	void restoreWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			PostMessage(hWnd, WM_SYSCOMMAND, SC_RESTORE, NULL);
-		}
-	}
+	
 
 
 	void closeWindow(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
@@ -514,49 +373,6 @@ namespace BrowserAsyncWorkFunctions {
 			WebkitEcho::getUIFunMap()->closeWindow(hWnd);
 		}
 	}
-
-	void setWindowText(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	{
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-		if (IsWindow(hWnd))
-		{
-			SetWindowTextW(hWnd, args->GetString(0).ToWString().c_str());
-		}
-	}
-
-	//void fullScreen(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	//{
-	//	//HWND hRoot = ::GetAncestor(browser->GetHost()->GetWindowHandle(), GA_ROOT);
-	//	//if (hRoot)
-	//	//{
-	//	//	bool bFull = args->GetBool(0);
-	//	//	UINT nCmdShow = bFull ? SW_SHOWMAXIMIZED : SW_NORMAL;
-
-	//	//	ShowWindow(hRoot, nCmdShow);
-	//	//}
-
-	//	CefRefPtr<WebViewTransparentUIControl> item = dynamic_cast<WebViewTransparentUIControl*>(EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier()).get());
-
-	//	if (!item)
-	//		return;
-
-	//	bool bFull = args->GetBool(0);
-
-	//	if (bFull)
-	//	{
-	//		item->m_pWindow->ModifyStyle(WS_THICKFRAME| WS_DLGFRAME, 0, SWP_FRAMECHANGED);
-	//		item->m_pWindow->ShowWindow(SW_SHOWMAXIMIZED);
-	//	}
-	//	else
-	//	{
-	//		item->m_pWindow->ModifyStyle(0, WS_THICKFRAME);
-	//		item->m_pWindow->ShowWindow(SW_NORMAL);
-	//	}
-	//}
 
 	void asyncCrossInvokeWebMethod(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
@@ -687,32 +503,6 @@ namespace BrowserAsyncWorkFunctions {
 
 	}
 
-	void addCrossOriginWhitelistEntry(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	{
-		auto source_origin = args->GetString(0);
-		auto target_protocol = args->GetString(1);
-		auto target_domain = args->GetString(2);
-		bool allow_target_subdomains = args->GetBool(3);
-
-		if (CefAddCrossOriginWhitelistEntry(source_origin, target_protocol, target_domain, allow_target_subdomains))
-		{
-			OutputDebugStringA("add succ");
-		}
-		else
-		{
-			OutputDebugStringA("add fail");
-		}
-	}
-	
-	void removeCrossOriginWhitelistEntry(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	{
-		auto source_origin = args->GetString(0);
-		auto target_protocol = args->GetString(1);
-		auto target_domain = args->GetString(2);
-		bool allow_target_subdomains = args->GetBool(3);
-
-		CefRemoveCrossOriginWhitelistEntry(source_origin, target_protocol, target_domain, allow_target_subdomains);
-	}
 	
 }
 
@@ -806,46 +596,27 @@ EasyBrowserWorks::EasyBrowserWorks()
 	//集中用于获取属性值，然后下面的才有效
 	REG_SYNCWORK_FUNCTION(__V8AccessorAttribKeys__);
 
-	REG_SYNCWORK_JSKEY(window_x);
-	REG_SYNCWORK_JSKEY(window_y);
-	REG_SYNCWORK_JSKEY(window_w);
-	REG_SYNCWORK_JSKEY(window_h);
-	REG_SYNCWORK_JSKEY(is_zoomed);
-	REG_SYNCWORK_JSKEY(is_iconic);
-
 	REG_SYNCWORK_JSKEY(appDataPath);
 	
 
 
 
 	//异步
-	REG_ASYNCWORK_FUNCTION(setWindowSize);
 	REG_ASYNCWORK_FUNCTION(createWindow);
 	REG_ASYNCWORK_FUNCTION(createModalWindow);
 	REG_ASYNCWORK_FUNCTION(createModalWindow2);
 	REG_ASYNCWORK_FUNCTION(setAlpha);
 	REG_ASYNCWORK_FUNCTION(setWindowPos);
 
-	REG_ASYNCWORK_FUNCTION(minWindow);
-	REG_ASYNCWORK_FUNCTION(maxWindow);
-	REG_ASYNCWORK_FUNCTION(restoreWindow);
 	REG_ASYNCWORK_FUNCTION(closeWindow);
-	REG_ASYNCWORK_FUNCTION(setWindowText);
 	REG_ASYNCWORK_FUNCTION(asyncCrossInvokeWebMethod);
 	REG_ASYNCWORK_FUNCTION(asyncCrossInvokeWebMethod2);
 	REG_ASYNCWORK_FUNCTION(asyncCallMethod);
-
-	
-//	REG_ASYNCWORK_FUNCTION(fullScreen);
 
 	REG_ASYNCWORK_FUNCTION(__DOMContentLoaded__);
 
 	REG_ASYNCWORK_FUNCTION(__V8AccessorSetAttribKeys__);
 
-	//REG_ASYNCWORK_FUNCTION(__crossInvokeWebMethod__specia);
-
-	REG_ASYNCWORK_FUNCTION(addCrossOriginWhitelistEntry);
-	REG_ASYNCWORK_FUNCTION(removeCrossOriginWhitelistEntry);
 
 
 	REG_ASYNCWORK_JSKEY(nc_setalledge);

@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "NativeV8Accessor.h"
 #include "EasyIPC.h"
+#include "EasyRenderBrowserInfo.h"
+
+HWND JsGetWindowHwnd();
 
 namespace JSKeysGet
 {
@@ -37,6 +40,15 @@ namespace JSKeysGet
 		}
 
 		return false;
+	}
+
+	HWND GetWindowHwnd()
+	{
+		auto context = CefV8Context::GetCurrentContext();
+		auto frame = context->GetFrame();
+		auto bid = frame->GetBrowser()->GetIdentifier();
+		auto hWnd = EasyRenderBrowserInfo::GetInstance().GetHwnd(bid);
+		return hWnd;
 	}
 
 
@@ -78,14 +90,42 @@ namespace JSKeysGet
 
 	bool screen_w(CefRefPtr<CefV8Value>& retval)
 	{
-		int val = GetSystemMetrics(SM_CXSCREEN);
+		int val = 0;
+		HWND hWnd = GetWindowHwnd();
+		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+
+		MONITORINFO MoInfo = { sizeof(MoInfo) };
+
+		if (GetMonitorInfoW(hMoni, &MoInfo))
+		{
+			val = MoInfo.rcMonitor.right - MoInfo.rcMonitor.left;
+		}
+		else
+		{
+			val = GetSystemMetrics(SM_CXSCREEN);
+		}
+
 		retval = CefV8Value::CreateInt(val);
 		return true;
 	}
 
 	bool screen_h(CefRefPtr<CefV8Value>& retval)
 	{
-		int val = GetSystemMetrics(SM_CYSCREEN);
+		int val = 0;
+		HWND hWnd = GetWindowHwnd();
+		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+
+		MONITORINFO MoInfo = { sizeof(MoInfo) };
+
+		if (GetMonitorInfoW(hMoni, &MoInfo))
+		{
+			val = MoInfo.rcMonitor.bottom - MoInfo.rcMonitor.top;
+		}
+		else
+		{
+			val = GetSystemMetrics(SM_CYSCREEN);
+		}
+
 		retval = CefV8Value::CreateInt(val);
 		return true;
 	}
@@ -93,7 +133,21 @@ namespace JSKeysGet
 	bool desktop_w(CefRefPtr<CefV8Value>& retval)
 	{
 		RECT rcScr;
-		SystemParametersInfo(SPI_GETWORKAREA, 0, &rcScr, 0);
+
+		HWND hWnd = GetWindowHwnd();
+		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+
+		MONITORINFO MoInfo = { sizeof(MoInfo) };
+
+		if (GetMonitorInfoW(hMoni, &MoInfo))
+		{
+			CopyRect(&rcScr, &MoInfo.rcWork);
+		}
+		else
+		{
+			SystemParametersInfo(SPI_GETWORKAREA, 0, &rcScr, 0);
+		}
+
 		retval = CefV8Value::CreateInt(rcScr.right - rcScr.left);
 		return true;
 	}
@@ -101,17 +155,104 @@ namespace JSKeysGet
 	bool desktop_h(CefRefPtr<CefV8Value>& retval)
 	{
 		RECT rcScr;
-		SystemParametersInfo(SPI_GETWORKAREA, 0, &rcScr, 0);
+
+		HWND hWnd = GetWindowHwnd();
+		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+
+		MONITORINFO MoInfo = { sizeof(MoInfo) };
+
+		if (GetMonitorInfoW(hMoni, &MoInfo))
+		{
+			CopyRect(&rcScr, &MoInfo.rcWork);
+		}
+		else
+		{
+			SystemParametersInfo(SPI_GETWORKAREA, 0, &rcScr, 0);
+		}
+
 		retval = CefV8Value::CreateInt(rcScr.bottom - rcScr.top);
 		return true;
 	}
 
-	DEFINE_GETKEY_SYNC_IMPL(window_x)
-	DEFINE_GETKEY_SYNC_IMPL(window_y)
-	DEFINE_GETKEY_SYNC_IMPL(window_w)
-	DEFINE_GETKEY_SYNC_IMPL(window_h)
-	DEFINE_GETKEY_SYNC_IMPL(is_zoomed)
-	DEFINE_GETKEY_SYNC_IMPL(is_iconic)
+	bool window_x(CefRefPtr<CefV8Value>& retval)
+	{
+		HWND hWnd = GetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			RECT rc = {};
+			GetWindowRect(hWnd, &rc);
+			retval = CefV8Value::CreateInt(rc.left);
+			return true;
+		}
+
+		return false;
+	}
+
+	bool window_y(CefRefPtr<CefV8Value>& retval)
+	{
+		HWND hWnd = GetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			RECT rc = {};
+			GetWindowRect(hWnd, &rc);
+			retval = CefV8Value::CreateInt(rc.top);
+			return true;
+		}
+
+		return false;
+	}
+
+	bool window_w(CefRefPtr<CefV8Value>& retval)
+	{
+		HWND hWnd = GetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			RECT rc = {};
+			GetWindowRect(hWnd, &rc);
+			retval = CefV8Value::CreateInt(rc.right - rc.left);
+			return true;
+		}
+
+		return false;
+	}
+
+	bool window_h(CefRefPtr<CefV8Value>& retval)
+	{
+		HWND hWnd = GetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			RECT rc = {};
+			GetWindowRect(hWnd, &rc);
+			retval = CefV8Value::CreateInt(rc.bottom - rc.top);
+			return true;
+		}
+
+		return false;
+	}
+
+	bool is_zoomed(CefRefPtr<CefV8Value>& retval)
+	{
+		HWND hWnd = GetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			retval = CefV8Value::CreateInt(IsZoomed(hWnd) & 1);
+			return true;
+		}
+
+		return false;
+	}
+
+	bool is_iconic(CefRefPtr<CefV8Value>& retval)
+	{
+		HWND hWnd = GetWindowHwnd();
+		if (IsWindow(hWnd))
+		{
+			retval = CefV8Value::CreateInt(IsIconic(hWnd) & 1);
+			return true;
+		}
+
+		return false;
+	}
 
 	DEFINE_GETKEY_SYNC_IMPL(appDataPath)
 

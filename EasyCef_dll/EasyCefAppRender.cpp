@@ -73,9 +73,18 @@ void EasyCefAppRender::OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr
 
 	if (extra_info->HasKey(ExtraKeyNameIsUIBrowser))
 	{
+		HWND hUIWnd = nullptr;
+
 		auto IsUIBrowser = extra_info->GetBool(ExtraKeyNameIsUIBrowser);
+
+		if (IsUIBrowser)
+		{
+			auto binHwnd = extra_info->GetBinary(ExtraKeyNameUIWndHwnd);
+			binHwnd->GetData(&hUIWnd, binHwnd->GetSize(), 0);
+		}
+
 		EasyRenderBrowserInfo::GetInstance().AddBrowser(browser->GetIdentifier(), browser,
-			IsUIBrowser ? EasyRenderBrowserInfo::BrsData::BROWSER_UI : EasyRenderBrowserInfo::BrsData::BROWSER_WEB);
+			IsUIBrowser ? EasyRenderBrowserInfo::BrsData::BROWSER_UI : EasyRenderBrowserInfo::BrsData::BROWSER_WEB, hUIWnd);
 
 		//通知设置
 		EasyIPCClient::GetInstance().NotifyConnect(browser->GetIdentifier());

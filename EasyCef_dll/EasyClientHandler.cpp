@@ -213,13 +213,18 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 bool EasyClientHandler::DoClose(CefRefPtr<CefBrowser> browser)
 {
     CEF_REQUIRE_UI_THREAD();
-    // Closing the main window requires special handling. See the DoClose()
-  // documentation in the CEF header for a detailed destription of this
-  // process.
-    //if (browser_list_.size() == 1) {
-    //    // Set a flag to indicate that the window close should be allowed.
 
-    //}
+    if (m_bIsUIControl)
+    {
+        if (!m_bIsUITransparent)
+        {
+            HWND hWnd = m_webuicontrol->GetHWND();
+            HWND hBrs = browser->GetHost()->GetWindowHandle();
+            ShowWindow(hBrs, SW_HIDE);
+            SetParent(hBrs, nullptr);
+            DestroyWindow(hWnd);
+        }
+    }
 
     // Allow the close. For windowed browsers this will result in the OS close
     // event being sent.
@@ -250,8 +255,10 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
     else
     {
         //webui目前不会有popup，直接这样吧
-        if(m_bIsUIControl)
+        if (m_bIsUIControl)
+        {
             m_webuicontrol = nullptr;
+        }
     }
 
     if (m_BrowserCount < 1)
@@ -367,6 +374,11 @@ bool EasyClientHandler::OnCursorChange(CefRefPtr<CefBrowser> browser, CefCursorH
         static_cast<LONG>(reinterpret_cast<LONG_PTR>(cursor)));
     SetCursor(cursor);
     return true;
+}
+
+bool EasyClientHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_severity_t level, const CefString& message, const CefString& source, int line)
+{
+    return !g_BrowserGlobalVar.Debug;
 }
 
 void EasyClientHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward)
@@ -518,13 +530,6 @@ void EasyClientHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRe
         model->AddItem(MENU_ID_RELOAD, GetLabel(IDS_CONTENT_CONTEXT_RELOAD));
         model->AddItem(MENU_ID_RELOAD_NOCACHE, "Reload NoCache");
         
-
-        //if (!frame->IsMain())
-        //{
-        //    model->AddItem(CLIENT_ID_ROLOAD_FRAME, "Reload Frame");
-        //}
-
-        
     }
 
 
@@ -537,12 +542,13 @@ bool EasyClientHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
     switch (command_id)
     {
     case CLIENT_ID_SHOW_DEVTOOLS:
+    case CLIENT_ID_INSPECT_ELEMENT:
         {
             if (!browser->GetHost()->HasDevTools())
             {
                 CefWindowInfo windowInfo;
                 windowInfo.SetAsPopup(nullptr, L"dev");
-                browser->GetHost()->ShowDevTools(windowInfo, nullptr, CefBrowserSettings(), CefPoint());
+                browser->GetHost()->ShowDevTools(windowInfo, nullptr, CefBrowserSettings(), command_id == CLIENT_ID_INSPECT_ELEMENT ? CefPoint(params->GetXCoord(), params->GetYCoord()) : CefPoint());
             }
             
         }
@@ -551,17 +557,7 @@ bool EasyClientHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
         if (browser->GetHost()->HasDevTools())
             browser->GetHost()->CloseDevTools();
         return true;
-    case CLIENT_ID_INSPECT_ELEMENT:
-        {
-            if (!browser->GetHost()->HasDevTools())
-            {
-                CefWindowInfo windowInfo;
-                windowInfo.SetAsPopup(nullptr, L"dev");
-                browser->GetHost()->ShowDevTools(windowInfo, nullptr, CefBrowserSettings(), CefPoint(params->GetXCoord(), params->GetYCoord()));
-            }
-          
-        }
-        return true;
+
     default:
         {
             if (m_bIsUIControl)
@@ -625,12 +621,11 @@ bool EasyClientHandler::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPt
     if (m_bIsUIControl)
     {
         //阻止拖拽文件导致页面跳转
-        if (user_gesture && target_disposition == WOD_NEW_FOREGROUND_TAB && target_url.ToString().substr(0, 4) == "file")
+        if (user_gesture && target_disposition == WOD_NEW_FOREGROUND_TAB)
         {
             return true;
         }
     }
-
 
     return false;
 }
@@ -641,6 +636,11 @@ bool EasyClientHandler::OnDragEnter(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
     {
         if ((mask & DRAG_OPERATION_LINK) && !dragData->IsFragment())
         {
+            if (dragData->IsLink())
+            {
+                //要放过链接，否则页面内自身的拖拽会被受限
+                return false;
+            }
             if (dragData->IsFile())
             {
                 if (m_webuicontrol && m_webuicontrol->IsAllowDragFiles())

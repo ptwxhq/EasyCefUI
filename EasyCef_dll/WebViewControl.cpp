@@ -429,15 +429,6 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 
     clientHandler->SetUIWindowInfo(this, IsTransparentUI());
 
-    auto extra_info = CefDictionaryValue::Create();
-
-    const auto tmpVal = EasyIPCServer::GetInstance().GetHandle();
-    auto valKeyName = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
-    extra_info->SetBinary(IpcBrowserServerKeyName, valKeyName);
-
-    extra_info->SetBool(ExtraKeyNameIsUIBrowser, IsUIControl());
-
-
     auto pWindow = dynamic_cast<CWindowImplRoot<CWindow>*>(GetWindowPtr());
     auto pOpaqueUIWnd = dynamic_cast<EasyOpaqueWindow*>(GetWindowPtr());
     auto pLayeredUIWnd = dynamic_cast<EasyLayeredWindow*>(GetWindowPtr());
@@ -494,18 +485,38 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 
     }
 
+    HWND hUIWnd = nullptr;
+
+#define CREATEUI(type) VERIFY(hUIWnd = type->Create(pParams->hParent, (LPRECT)&pParams->rc, g_BrowserGlobalVar.UILoadingWindowTitle.c_str(), dwStyle, dwExStyle))
+
     if (IsTransparentUI())
     {
-        VERIFY(pLayeredUIWnd->Create(pParams->hParent, (LPRECT)&pParams->rc, L"EasyUI Loading...", dwStyle, dwExStyle)); // parent
+        CREATEUI(pLayeredUIWnd);
     }
     else
     {
-        VERIFY(pOpaqueUIWnd->Create(pParams->hParent, (LPRECT)&pParams->rc, L"EasyUI Loading...", dwStyle, dwExStyle)); // parent
+        CREATEUI(pOpaqueUIWnd);
     }
+
+    auto extra_info = CefDictionaryValue::Create();
+
+    {
+        auto tmpVal = EasyIPCServer::GetInstance().GetHandle();
+        auto valKey = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
+        extra_info->SetBinary(IpcBrowserServerKeyName, valKey);
+    }
+
+    {
+        auto valKey = CefBinaryValue::Create(&hUIWnd, sizeof(hUIWnd));
+        extra_info->SetBinary(ExtraKeyNameUIWndHwnd, valKey);
+    }
+
+    extra_info->SetBool(ExtraKeyNameIsUIBrowser, IsUIControl());
+
  
 
-    //win11下自动圆角了，恢复下
-    pWindow->SetWindowRgn(NULL);
+    //win11早期版本下自动圆角了，恢复下
+    //pWindow->SetWindowRgn(NULL);
 
     CefWindowInfo window_info;
 

@@ -157,6 +157,7 @@ EasyUIWindowBase::~EasyUIWindowBase()
 UINT EasyUIWindowBase::Cls_OnNCHitTest(HWND hwnd, int x, int y)
 {
 	const auto hit = DefWindowProcW(hwnd, WM_NCHITTEST, 0, MAKELONG(x, y));
+	//bool bIsSize = false && (hit >= HTSIZEFIRST && hit <= HTSIZELAST);
 	if (hit == HTCLIENT)
 	{
 		POINT point = { x, y };
@@ -181,6 +182,12 @@ UINT EasyUIWindowBase::Cls_OnNCHitTest(HWND hwnd, int x, int y)
 			// dragging.
 			return HTCAPTION;
 		}
+
+		//if (bIsSize)
+		//{
+		//	return HTCLIENT;
+		//}
+
 	}
 
 	return hit;
@@ -235,6 +242,28 @@ BOOL EasyUIWindowBase::ProcessWindowMessage(HWND hWnd, UINT uMsg, WPARAM wParam,
 		return TRUE;
 	case WM_NCCALCSIZE:
 		lResult = 0;
+
+		/*if (wParam)
+		{
+			auto pNcP = (NCCALCSIZE_PARAMS*)lParam;
+			RECT aRect;
+			RECT bRect;
+			RECT bcRect;
+			CopyRect(&aRect, &pNcP->rgrc[1]);
+			CopyRect(&bRect, &pNcP->rgrc[0]);
+
+			CopyRect(&bcRect, &bRect);
+			bcRect.left = bRect.left ;
+			bcRect.top = bRect.top;
+			bcRect.right = bRect.right;
+			bcRect.bottom = bRect.bottom- 1;
+
+			CopyRect(&pNcP->rgrc[0], &bcRect);
+			CopyRect(&pNcP->rgrc[1], &bRect);
+			CopyRect(&pNcP->rgrc[2], &aRect);
+			return TRUE;
+		}*/
+
 		return TRUE;
 	default:
 		return FALSE;
@@ -262,20 +291,6 @@ LRESULT EasyOpaqueWindow::OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& h
 	}
 
 	handle = FALSE;
-
-	return 0;
-}
-
-LRESULT EasyOpaqueWindow::OnClose(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle)
-{
-	handle = FALSE;
-	if (m_browser)
-	{
-		//先解除关系，避免先调用OnBeforeClose
-		HWND h = m_browser->GetHost()->GetWindowHandle();
-		::ShowWindow(h, SW_HIDE);
-		::SetParent(h, nullptr);
-	}
 
 	return 0;
 }

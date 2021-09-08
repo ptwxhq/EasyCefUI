@@ -72,11 +72,11 @@ typedef void(*CloseHandler)();
 typedef struct EasyInitConfig
 {
 	bool bSupportLayerWindow; //如果项目不需要分层窗口（可鼠标穿透）则不需要启用，性能更好
-	bool bShareNPPlugin;	//旧接口里面的，还不知道干嘛用的
 	int ProcessType;	//手动指定进程类型，0自动识别，1主进程，2render，3或其他
 	LPCWSTR strLocal;		//L"zh-CN"
 	LPCWSTR strUserAgent;
 	LPCWSTR strWebViewClassName;
+	LPCWSTR strUILoadingTitle;
 
 	EasyInitConfig() {
 		memset(this, 0, sizeof(EasyInitConfig));

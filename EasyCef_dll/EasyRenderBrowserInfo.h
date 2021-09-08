@@ -17,9 +17,10 @@ public:
 			BROWSER_WEB = 2,
 			BROWSER_ALL = BROWSER_UI | BROWSER_WEB
 		} type = BROWSER_NONE;
+		HWND hUIWnd = nullptr;
 		CefRefPtr<CefBrowser> browser;
 
-		BrsData(TYPE t, CefRefPtr<CefBrowser> b) :type(t), browser(b) {}
+		BrsData(TYPE t, CefRefPtr<CefBrowser> b, HWND h = nullptr) :type(t), browser(b), hUIWnd(h) {}
 	};
 
 
@@ -29,12 +30,14 @@ public:
 		return obj;
 	}
 
-	void AddBrowser(int id, CefRefPtr<CefBrowser> browser, EasyRenderBrowserInfo::BrsData::TYPE type);
+	void AddBrowser(int id, CefRefPtr<CefBrowser> browser, EasyRenderBrowserInfo::BrsData::TYPE type, HWND hwnd = nullptr);
 	bool RemoveBrowser(int id);
 
 	BrsData::TYPE GetType(int id) const;
 
 	CefRefPtr<CefBrowser> GetBrowser(int id);
+
+	HWND GetHwnd(int id) const;
 
 private:
 	DISALLOW_COPY_AND_ASSIGN(EasyRenderBrowserInfo);
