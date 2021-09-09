@@ -1,10 +1,10 @@
 #pragma once
 
-#include <windowsx.h>
 
-class EasyUIWindowBase
+class EasyUIWindowBase : public CWindowImpl<EasyUIWindowBase, CWindow, CWinTraits <WS_OVERLAPPED, 0>>
 {
 public:
+
     enum HT_INFO
     {
         E_HTLEFT,        //10
@@ -20,6 +20,9 @@ public:
         E_HTBASE = HTLEFT
     };
 
+    DECLARE_WND_CLASS_EX(g_BrowserGlobalVar.WebViewClassName.c_str(), 0, COLOR_WINDOW)
+
+
     void SetBrowser(CefRefPtr<CefBrowser> browser) {
         m_browser = browser;
     }
@@ -30,7 +33,7 @@ public:
 
     void SubclassChildHitTest(bool bSet);
 
-    virtual HWND GetSafeHwnd() = 0;
+    virtual void SetAlpha(BYTE alpha, bool bRepaint) = 0;
 
     EasyUIWindowBase();
     virtual ~EasyUIWindowBase();
@@ -55,35 +58,31 @@ protected:
 
     CefRefPtr<CefBrowser> m_browser;
 
+    using CWindow::m_hWnd;
+
 
 private:
-    HRGN m_EdgeRegions[E_END] = {};
+    HRGN m_EdgeRegions[HT_INFO::E_END] = {};
 
 };
 
 
 
-class EasyOpaqueWindow : public EasyUIWindowBase, public CWindowImpl<EasyOpaqueWindow,
-    CWindow, CWinTraits
-    <WS_OVERLAPPED, 0>>
+class EasyOpaqueWindow : public EasyUIWindowBase
 {
 public:
     ~EasyOpaqueWindow();
-
-    DECLARE_WND_CLASS_EX(g_BrowserGlobalVar.WebViewClassName.c_str(), 0, COLOR_WINDOW)
 
     BEGIN_MSG_MAP(0)
         CHAIN_MSG_MAP(EasyUIWindowBase)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
     END_MSG_MAP()
 
-    HWND GetSafeHwnd() final {
-        return m_hWnd;
-    };
-
     LRESULT OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
 
     void OnFinalMessage(HWND) override;
+
+    void SetAlpha(BYTE alpha, bool) override;
 
 };
 

@@ -342,7 +342,11 @@ void WebViewUIControl::SetDraggableRegion(const std::vector<CefDraggableRegion>&
 
 bool WebViewUIControl::SetBrowser(CefRefPtr<CefBrowser> browser)
 {
-    GetWindowPtr()->SetBrowser(browser);
+    if (GetWindowPtr())
+    {
+        GetWindowPtr()->SetBrowser(browser);
+    }
+
     return __super::SetBrowser(browser);
 }
 
@@ -351,7 +355,7 @@ HWND WebViewUIControl::GetHWND()
 {
     if (GetWindowPtr())
     {
-        return GetWindowPtr()->GetSafeHwnd();
+        return *GetWindowPtr();
     }
 
     return WebViewControl::GetHWND();
@@ -370,29 +374,11 @@ void WebViewUIControl::SetEdgeNcAera(EasyUIWindowBase::HT_INFO ht, const std::ve
 
 void WebViewUIControl::SetAlpha(BYTE alpha)
 {
-    if (IsTransparentUI())
+    if (GetWindowPtr())
     {
-        auto pWnd = static_cast<EasyLayeredWindow*>(GetWindowPtr());
-        pWnd->SetAlpha(alpha, true);
+        GetWindowPtr()->SetAlpha(alpha, true);
     }
-    else
-    {
-        auto pWnd = static_cast<EasyOpaqueWindow*>(GetWindowPtr());
-        const bool bIsLayered = (pWnd->GetExStyle() & WS_EX_LAYERED);
-        if (alpha == 255)
-        {
-            if (bIsLayered)
-                pWnd->ModifyStyleEx(WS_EX_LAYERED, 0, SWP_FRAMECHANGED);
-        }
-        else
-        {
-            if (!bIsLayered)
-                pWnd->ModifyStyleEx(0, WS_EX_LAYERED, SWP_FRAMECHANGED);
 
-            SetLayeredWindowAttributes(*pWnd, 0, alpha, LWA_ALPHA);
-        }
-    }
-   
 }
 
 void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams)
@@ -429,9 +415,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 
     clientHandler->SetUIWindowInfo(this, IsTransparentUI());
 
-    auto pWindow = dynamic_cast<CWindowImplRoot<CWindow>*>(GetWindowPtr());
-    auto pOpaqueUIWnd = dynamic_cast<EasyOpaqueWindow*>(GetWindowPtr());
-    auto pLayeredUIWnd = dynamic_cast<EasyLayeredWindow*>(GetWindowPtr());
+    auto pWindow = GetWindowPtr();
 
     DWORD dwStyle = WS_SYSMENU | WS_POPUP;
     DWORD dwExStyle = 0;
@@ -467,7 +451,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 
         if (IsTransparentUI())
         {
-            pLayeredUIWnd->SetAlpha(pParams->pExt->alpha, false);
+            pWindow->SetAlpha(pParams->pExt->alpha, false);
         }
         else
         {
@@ -480,23 +464,17 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
                 dwExStyle |= WS_EX_TOOLWINDOW;
             }
         }
+    }
 
-
-
+    if (IsTransparentUI())
+    {
+        //由于基类属性调整，只能放外面处理了
+        dwExStyle |= WS_EX_LAYERED;
     }
 
     HWND hUIWnd = nullptr;
 
-#define CREATEUI(type) VERIFY(hUIWnd = type->Create(pParams->hParent, (LPRECT)&pParams->rc, g_BrowserGlobalVar.UILoadingWindowTitle.c_str(), dwStyle, dwExStyle))
-
-    if (IsTransparentUI())
-    {
-        CREATEUI(pLayeredUIWnd);
-    }
-    else
-    {
-        CREATEUI(pOpaqueUIWnd);
-    }
+    VERIFY(hUIWnd = pWindow->Create(pParams->hParent, (LPRECT)&pParams->rc, g_BrowserGlobalVar.UILoadingWindowTitle.c_str(), dwStyle, dwExStyle));
 
     auto extra_info = CefDictionaryValue::Create();
 
@@ -529,8 +507,8 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
             ////不能在创建时就加入属性，否则UpdateLayeredWindow会失败，why？
             if (!pParams->pExt->taskbar)
             {
-                pLayeredUIWnd->ModifyStyle(WS_CAPTION | WS_SYSMENU, WS_POPUP);
-                pLayeredUIWnd->ModifyStyleEx(WS_EX_APPWINDOW | WS_EX_WINDOWEDGE, WS_EX_TOOLWINDOW, SWP_FRAMECHANGED);
+                pWindow->ModifyStyle(WS_CAPTION | WS_SYSMENU, WS_POPUP);
+                pWindow->ModifyStyleEx(WS_EX_APPWINDOW | WS_EX_WINDOWEDGE, WS_EX_TOOLWINDOW, SWP_FRAMECHANGED);
             }
         }
     }
@@ -561,6 +539,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 
     if (IsTransparentUI())
     {
+        auto pLayeredUIWnd = dynamic_cast<EasyLayeredWindow*>(GetWindowPtr());
         pLayeredUIWnd->Render();
     }
 }

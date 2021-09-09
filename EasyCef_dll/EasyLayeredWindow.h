@@ -119,11 +119,6 @@ public:
 
 
 class EasyLayeredWindow :
-    public CWindowImpl<EasyLayeredWindow,
-    CWindow, CWinTraits
-    < WS_OVERLAPPED, WS_EX_LAYERED>>
-    //<WS_POPUP | WS_SYSMENU, WS_EX_NOREDIRECTIONBITMAP>>   //≤‚ ‘£¨win8+
-    ,
     public EasyUIWindowBase,
     public client::OsrDragEvents
 {
@@ -138,8 +133,6 @@ public:
 
     EasyLayeredWindow();
     ~EasyLayeredWindow();
-
-    DECLARE_WND_CLASS_EX(g_BrowserGlobalVar.WebViewClassName.c_str(), 0, COLOR_WINDOW)
 
 
     BEGIN_MSG_MAP(EasyLayeredWindow)
@@ -238,7 +231,7 @@ public:
 
     //LRESULT OnTime(UINT, WPARAM wp, LPARAM, BOOL&);
 
-    void SetAlpha(BYTE alpha, bool bRepaint);
+    void SetAlpha(BYTE alpha, bool bRepaint) override;
 
 
     void SetToolTip(const CefString& str);
@@ -250,10 +243,6 @@ public:
     void UpdateDragCursor(CefRenderHandler::DragOperationsMask operation) {
         current_drag_op_ = operation;
     }
-
-    HWND GetSafeHwnd() final {
-        return m_hWnd;
-    };
 
     //¡Ÿ ±
 

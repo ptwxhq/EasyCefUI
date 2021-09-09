@@ -510,7 +510,7 @@ namespace BrowserAsyncWorkJSKeys {
 
 	void nc_setalledge(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		static std::unordered_map<std::string, EasyLayeredWindow::HT_INFO> mapInfo;
+		static std::unordered_map<std::string, EasyUIWindowBase::HT_INFO> mapInfo;
 		if (mapInfo.empty())
 		{
 			mapInfo.insert(std::make_pair("top", EasyUIWindowBase::E_HTTOP));

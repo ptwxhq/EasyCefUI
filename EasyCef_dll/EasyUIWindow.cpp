@@ -129,10 +129,10 @@ void EasyUIWindowBase::SubclassChildHitTest(bool bSet)
 {
 	//// Subclass child window procedures in order to do hit-testing.
 	//// This will be a no-op, if it is already subclassed.
-	if (GetSafeHwnd()) {
+	if (m_hWnd) {
 		WNDENUMPROC proc =
 			bSet ? SubclassWindowsProc : UnSubclassWindowsProc;
-		::EnumChildWindows(GetSafeHwnd(), proc,
+		::EnumChildWindows(m_hWnd, proc,
 			reinterpret_cast<LPARAM>(m_EdgeRegions));
 	}
 }
@@ -154,14 +154,15 @@ EasyUIWindowBase::~EasyUIWindowBase()
 	}
 }
 
+
 UINT EasyUIWindowBase::Cls_OnNCHitTest(HWND hwnd, int x, int y)
 {
-	const auto hit = DefWindowProcW(hwnd, WM_NCHITTEST, 0, MAKELONG(x, y));
+	const auto hit = DefWindowProc(WM_NCHITTEST, 0, MAKELONG(x, y));
 	//bool bIsSize = false && (hit >= HTSIZEFIRST && hit <= HTSIZELAST);
 	if (hit == HTCLIENT)
 	{
 		POINT point = { x, y };
-		ScreenToClient(hwnd, &point);
+		ScreenToClient(&point);
 
 		//顺序先从边角开始
 		static int nRound[] = {
@@ -218,7 +219,7 @@ LRESULT EasyUIWindowBase::Cls_OnDpiChanged(HWND hwnd, WPARAM wParam, LPARAM lPar
 
 	// Suggested size and position of the current window scaled for the new DPI.
 	const RECT* rect = reinterpret_cast<RECT*>(lParam);
-	SetWindowPos(hwnd, nullptr, rect->left, rect->top, rect->right - rect->left,
+	SetWindowPos(nullptr, rect->left, rect->top, rect->right - rect->left,
 		rect->bottom - rect->top, SWP_NOZORDER);
 
 	return 0;
@@ -303,5 +304,22 @@ void EasyOpaqueWindow::OnFinalMessage(HWND)
 		m_browser = nullptr;
 
 		host->CloseBrowser(true);
+	}
+}
+
+void EasyOpaqueWindow::SetAlpha(BYTE alpha, bool)
+{
+	const bool bIsLayered = GetExStyle() & WS_EX_LAYERED;
+	if (alpha == 255)
+	{
+		if (bIsLayered)
+			ModifyStyleEx(WS_EX_LAYERED, 0, SWP_FRAMECHANGED);
+	}
+	else
+	{
+		if (!bIsLayered)
+			ModifyStyleEx(0, WS_EX_LAYERED, SWP_FRAMECHANGED);
+
+		SetLayeredWindowAttributes(m_hWnd, 0, alpha, LWA_ALPHA);
 	}
 }

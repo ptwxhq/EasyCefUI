@@ -136,7 +136,22 @@ wvhandle EasyWebViewMgr::CreateWebViewUI(HWND hParent, const RECT& rc, LPCWSTR l
 	auto id = GetNewHandleId();
 	CefRefPtr<WebViewControl> pItem/* = nullptr*/;
 
+	bool bUseTransparent = false;
+	auto pExtCopy = const_cast<WebViewExtraAttr*>(pExt);
 	if (pExt && pExt->transparent && g_BrowserGlobalVar.SupportLayerWindow)
+	{
+		if (g_BrowserGlobalVar.SupportLayerWindow)
+		{
+			bUseTransparent = true;
+		}
+		else
+		{
+			pExtCopy = new WebViewExtraAttr(*pExt);
+			pExtCopy->transparent = false;
+		}
+	}
+
+	if (bUseTransparent)
 	{
 		pItem = new WebViewTransparentUIControl;
 	}
@@ -146,6 +161,12 @@ wvhandle EasyWebViewMgr::CreateWebViewUI(HWND hParent, const RECT& rc, LPCWSTR l
 	}
 
 	bool bSucc = pItem->InitBrowser(id, hParent, rc, lpszUrl, lpszCookie, pExt, false);
+
+	if (pExtCopy != pExt)
+	{
+		delete pExtCopy;
+	}
+
 
 	if (bSucc)
 	{
