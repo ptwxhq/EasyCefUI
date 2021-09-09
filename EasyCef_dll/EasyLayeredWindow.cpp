@@ -46,13 +46,7 @@ LayeredWindowInfo::LayeredWindowInfo(
 
 void LayeredWindowInfo::Update(__in HWND window, __in HDC source)
 {
-	//if (!m_size.cx || m_size.cy)
-	//{
-	//	return;
-	//}
-
 	m_info.hdcSrc = source;
-	//m_info.hdcDst = GetDC(window);
 
 	BOOL bRet = UpdateLayeredWindowIndirect(window, &m_info);
 	VERIFY(bRet);
@@ -77,13 +71,8 @@ void LayeredWindowInfo::Update(__in HWND window, __in HDC source)
 	
 	}
 
-	//ReleaseDC(window, m_info.hdcDst);
-	//m_info.hdcDst = nullptr;
-
 	//使用完毕复原避免漏掉
 	SetDirtyRect(nullptr);
-
-	//m_info.pptDst = nullptr;
 }
 
 
@@ -280,8 +269,6 @@ LRESULT EasyLayeredWindow::OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
 			int y = GET_Y_LPARAM(lp);
 			if (wp & MK_SHIFT) {
 				// Start rotation effect.
-				last_mouse_pos_.x = current_mouse_pos_.x = x;
-				last_mouse_pos_.y = current_mouse_pos_.y = y;
 				mouse_rotation_ = true;
 			}
 			else {
@@ -322,7 +309,6 @@ LRESULT EasyLayeredWindow::OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
 		if (mouse_rotation_) {
 			// End rotation effect.
 			mouse_rotation_ = false;
-	//		render_handler_->SetSpin(0, 0);
 		}
 		else {
 			int x = GET_X_LPARAM(lp);
@@ -353,13 +339,6 @@ LRESULT EasyLayeredWindow::OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
 			int y = GET_Y_LPARAM(lp);
 			if (mouse_rotation_) {
 				// Apply rotation effect.
-				current_mouse_pos_.x = x;
-				current_mouse_pos_.y = y;
-				//render_handler_->IncrementSpin(
-				//	current_mouse_pos_.x - last_mouse_pos_.x,
-				//	current_mouse_pos_.y - last_mouse_pos_.y);
-				//last_mouse_pos_.x = current_mouse_pos_.x;
-				//last_mouse_pos_.y = current_mouse_pos_.y;
 			}
 			else {
 				if (!mouse_tracking_) {
@@ -707,39 +686,6 @@ LRESULT EasyLayeredWindow::OnIMECancelCompositionEvent(UINT, WPARAM, LPARAM, BOO
 	{
 		h = FALSE;
 	}
-	return 0;
-}
-
-
-
-LRESULT EasyLayeredWindow::OnDwmCompositionChanged(UINT, WPARAM wp, LPARAM lp, BOOL&)
-{
-	MARGINS margins = { 0,0,1,0 };
-	HRESULT hr = S_OK;
-
-	// Extend the frame across the entire window.
-	hr = DwmExtendFrameIntoClientArea(m_hWnd, &margins);
-	VERIFYHR(hr);
-
-	DWORD dw = DWMNCRP_ENABLED;
-
-	DwmSetWindowAttribute(m_hWnd, DWMWA_NCRENDERING_POLICY,
-		&dw, sizeof(DWORD));
-
-
-	return 0;
-}
-
-
-
-LRESULT EasyLayeredWindow::OnNcActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h)
-{
-	if (::IsIconic(*this)) h = FALSE;
-	return (wp == 0) ? TRUE : FALSE;
-}
-
-LRESULT EasyLayeredWindow::OnActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h)
-{
 	return 0;
 }
 

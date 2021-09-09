@@ -173,26 +173,7 @@ public:
         MESSAGE_HANDLER(WM_IME_STARTCOMPOSITION, OnIMEStartComposition)
         MESSAGE_HANDLER(WM_IME_COMPOSITION, OnIMEComposition)
         MESSAGE_HANDLER(WM_IME_ENDCOMPOSITION, OnIMECancelCompositionEvent)
-   
-      //  MESSAGE_HANDLER(WM_TIMER, OnTime)
-        //可能需要补充的：
-        //WM_GETOBJECT
-        //WM_ERASEBKGND
-        //WM_TOUCH
 
-
-//        MESSAGE_HANDLER(WM_PAINT, OnPaint)
-
-
-        //以下需要UI非透明也要，后面看怎么处理下
-        // MESSAGE_HANDLER(WM_DWMCOMPOSITIONCHANGED, OnDwmCompositionChanged)
-
-        
-        //MESSAGE_HANDLER(WM_ACTIVATE, OnActivate)
-        //MESSAGE_HANDLER(WM_NCACTIVATE, OnNcActivate)
-
-
-       // MESSAGE_HANDLER(WM_CLOSE, OnClose)
     END_MSG_MAP()
 
     LRESULT OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&);
@@ -210,13 +191,6 @@ public:
     LRESULT OnIMEStartComposition(UINT, WPARAM, LPARAM, BOOL&);
     LRESULT OnIMEComposition(UINT, WPARAM, LPARAM lp, BOOL&);
     LRESULT OnIMECancelCompositionEvent(UINT, WPARAM, LPARAM, BOOL&);
-
-    LRESULT OnDwmCompositionChanged(UINT, WPARAM wp, LPARAM lp, BOOL&);
-    
-    LRESULT OnNcActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h);
-    LRESULT OnActivate(UINT, WPARAM wp, LPARAM lp, BOOL& h);
-
-
 
     LRESULT OnPaint(UINT, WPARAM, LPARAM, BOOL& handle);
 
@@ -276,8 +250,6 @@ private:
     int view_height_old_ = 0;
 
     // Mouse state tracking.
-    POINT last_mouse_pos_ = {};
-    POINT current_mouse_pos_ = {};
     bool mouse_rotation_ = {};
     bool mouse_tracking_ = {};
     int last_click_x_ = {};

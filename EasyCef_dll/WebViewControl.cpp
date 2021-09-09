@@ -535,13 +535,22 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
         pParams->bRet = CefBrowserHost::CreateBrowser(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
     }
 
-    pWindow->ShowWindow(nCmdShow);
-
     if (IsTransparentUI())
     {
         auto pLayeredUIWnd = dynamic_cast<EasyLayeredWindow*>(GetWindowPtr());
         pLayeredUIWnd->Render();
     }
+    else
+    {
+        if (pParams->pExt && pParams->pExt->alpha != 255)
+        {
+            pWindow->SetAlpha(pParams->pExt->alpha, false);
+        }
+       
+    }
+
+    pWindow->ShowWindow(nCmdShow);
+
 }
 
 
