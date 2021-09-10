@@ -20,12 +20,9 @@ public:
     //////////////////////////////////////
 
 
-    CefRefPtr<CefClient> GetDefaultClient() override;
-
     void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
 
 
-    CefRefPtr<EasyClientHandler> m_clienthandler;
 private:
 
 

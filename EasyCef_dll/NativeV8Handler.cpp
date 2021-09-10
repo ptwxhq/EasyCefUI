@@ -5,6 +5,7 @@
 #include "EasyRenderBrowserInfo.h"
 #include "LegacyImplement.h"
 #include "EasyIPCWorks.h"
+#include "EasySchemes.h"
 
 void call_FrameStateChanged(CefRefPtr<CefFrame>& frame, const char* frameName, const char* url, const int& code, bool didComit);
 
@@ -544,6 +545,26 @@ namespace JSCallFunctions
 		}
 	}
 
+	void ContinueUnsecure(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
+	{
+		//需要是主框架
+		auto context = CefV8Context::GetCurrentContext();
+		auto frame = context->GetFrame();
+
+		if (frame->IsMain())
+		{
+			DomainPackInfo::Uri url(frame->GetURL());
+			if (url.Protocol_ == EASYCEFSCHEMESW)
+			{
+				FowardRender2Browser(false, __func__, arguments, retval, exception);
+				return;
+			}
+		}
+
+		exception = "invalid request";
+	}
+
+
 	
 }
 
@@ -653,6 +674,10 @@ void NativeV8Handler::RegisterFunctions(CefRefPtr<CefV8Value> obj, int BrowserTy
 	REG_JS_FUN(restoreWindow, 1);
 	REG_JS_FUN(setWindowSize, 1);
 	REG_JS_FUN(setWindowText, 1);
+
+
+
+	REG_JS_FUN(ContinueUnsecure, 3);
 
 }
 

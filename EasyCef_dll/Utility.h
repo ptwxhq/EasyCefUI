@@ -48,6 +48,8 @@ std::string GetRandomString(size_t length);
 
 std::string GetDataURI(const std::string& data, const std::string& mime_type);
 
+std::string GetInternalPage(const std::string& data);
+
 //不要在render进程内调用
 std::wstring GetDefAppDataFolder();
 
@@ -58,4 +60,13 @@ CefRefPtr<CefValue> CefV8ValueToCefValue(CefRefPtr<CefV8Value> value);
 CefString CefV8ValueToString(CefRefPtr<CefV8Value> value);
 
 void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context);
+
+void SetAllowDarkMode();
+
+namespace webinfo {
+
+	std::string GetCertificateInformation(const std::string& url, CefRefPtr<CefX509Certificate> cert, cef_cert_status_t certstatus);
+	std::string GetErrorPage(const std::string& failed_url, const std::string& other_info, cef_errorcode_t error_code = (cef_errorcode_t)10000);
+	void LoadErrorPage(CefRefPtr<CefFrame> frame, const std::string& failed_url, cef_errorcode_t error_code, const std::string& other_info);
+}
 

@@ -10,6 +10,7 @@
 
 #include "include/base/cef_logging.h"
 #include <random>
+#include <format>
 
 void GetLocalPaths();
 
@@ -348,6 +349,13 @@ std::string GetDataURI(const std::string& data, const std::string& mime_type) {
         .ToString();
 }
 
+std::string GetInternalPage(const std::string& data)
+{
+    return EASYCEFPROTOCOL "info/" +
+        CefURIEncode(CefBase64Encode(data.data(), data.size()), false)
+        .ToString();
+}
+
 std::wstring GetDefAppDataFolder()
 {
     static std::wstring strPath;
@@ -528,4 +536,333 @@ void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context)
     request_context->SetPreference("webkit.webprefs.plugins_enabled", valtrue, errstr);
 
 #endif
+}
+
+void SetAllowDarkMode()
+{
+    const auto CheckWin10Version = [](DWORD dwBuildNumber)
+    {
+        OSVERSIONINFOEXW osvi = { sizeof(osvi), 0, 0, 0, 0, {0}, 0, 0 };
+        DWORDLONG        const dwlConditionMask = VerSetConditionMask(
+            VerSetConditionMask(
+                VerSetConditionMask(
+                    0, VER_MAJORVERSION, VER_GREATER_EQUAL),
+                VER_MINORVERSION, VER_GREATER_EQUAL),
+            VER_BUILDNUMBER, VER_GREATER_EQUAL);
+
+        osvi.dwMajorVersion = 10;
+        osvi.dwMinorVersion = 0;
+        osvi.dwBuildNumber = dwBuildNumber;
+
+        return VerifyVersionInfoW(&osvi, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, dwlConditionMask) != FALSE;
+    };
+
+    const auto DarkModeForApp = [] (bool bNewVer)
+    {
+        HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
+        if (hUxtheme)
+        {
+            auto ord135 = GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
+
+            if (bNewVer)
+            {
+                // 1903 18362
+                enum PreferredAppMode
+                {
+                    Default,
+                    AllowDark,
+                    ForceDark,
+                    ForceLight,
+                    Max
+                };
+                using fnSetPreferredAppMode = PreferredAppMode(WINAPI*)(PreferredAppMode appMode); // ordinal 135, in 1903
+                auto _SetPreferredAppMode = reinterpret_cast<fnSetPreferredAppMode>(ord135);
+                if (_SetPreferredAppMode)
+                    _SetPreferredAppMode(AllowDark);
+            }
+            else
+            {
+                using fnAllowDarkModeForApp = bool (WINAPI*)(bool allow); // ordinal 135, in 1809
+
+                auto _AllowDarkModeForApp = reinterpret_cast<fnAllowDarkModeForApp>(ord135);
+
+                if (_AllowDarkModeForApp)
+                    _AllowDarkModeForApp(true);
+            }
+        }
+    };
+
+    if (CheckWin10Version(18362))
+    {
+        DarkModeForApp(true);
+    }
+    else if (CheckWin10Version(17763))
+    {
+        DarkModeForApp(false);
+    }
+}
+
+
+namespace webinfo {
+
+std::string GetTimeString(const CefTime& value) {
+    if (value.GetTimeT() == 0)
+        return "Unspecified";
+
+    static const char* kMonths[] = {
+        "January", "February", "March",     "April",   "May",      "June",
+        "July",    "August",   "September", "October", "November", "December" };
+    std::string month;
+    if (value.month >= 1 && value.month <= 12)
+        month = kMonths[value.month - 1];
+    else
+        month = "Invalid";
+
+    return std::format("{} {}, {} {:02}:{:02}:{:02}", month, value.day_of_month, value.year, value.hour, value.minute, value.second);
+}
+
+std::string GetBinaryString(CefRefPtr<CefBinaryValue> value) {
+    if (!value.get())
+        return "&nbsp;";
+
+    // Retrieve the value.
+    const size_t size = value->GetSize();
+    std::string src;
+    src.resize(size);
+    value->GetData(const_cast<char*>(src.data()), size, 0);
+
+    // Encode the value.
+    return CefBase64Encode(src.data(), src.size());
+}
+
+#define FLAG(flag)                          \
+  if (status & flag) {                      \
+    result += std::string(#flag) + "<br/>"; \
+  }
+
+#define VALUE(val, def)       \
+  if (val == def) {           \
+    return std::string(#def); \
+  }
+
+std::string GetCertStatusString(cef_cert_status_t status) {
+    std::string result;
+
+    FLAG(CERT_STATUS_COMMON_NAME_INVALID);
+    FLAG(CERT_STATUS_DATE_INVALID);
+    FLAG(CERT_STATUS_AUTHORITY_INVALID);
+    FLAG(CERT_STATUS_NO_REVOCATION_MECHANISM);
+    FLAG(CERT_STATUS_UNABLE_TO_CHECK_REVOCATION);
+    FLAG(CERT_STATUS_REVOKED);
+    FLAG(CERT_STATUS_INVALID);
+    FLAG(CERT_STATUS_WEAK_SIGNATURE_ALGORITHM);
+    FLAG(CERT_STATUS_NON_UNIQUE_NAME);
+    FLAG(CERT_STATUS_WEAK_KEY);
+    FLAG(CERT_STATUS_PINNED_KEY_MISSING);
+    FLAG(CERT_STATUS_NAME_CONSTRAINT_VIOLATION);
+    FLAG(CERT_STATUS_VALIDITY_TOO_LONG);
+    FLAG(CERT_STATUS_IS_EV);
+    FLAG(CERT_STATUS_REV_CHECKING_ENABLED);
+    FLAG(CERT_STATUS_SHA1_SIGNATURE_PRESENT);
+    FLAG(CERT_STATUS_CT_COMPLIANCE_FAILED);
+
+    if (result.empty())
+        return "&nbsp;";
+    return result;
+}
+
+std::string GetSSLVersionString(cef_ssl_version_t version) {
+    VALUE(version, SSL_CONNECTION_VERSION_UNKNOWN);
+    VALUE(version, SSL_CONNECTION_VERSION_SSL2);
+    VALUE(version, SSL_CONNECTION_VERSION_SSL3);
+    VALUE(version, SSL_CONNECTION_VERSION_TLS1);
+    VALUE(version, SSL_CONNECTION_VERSION_TLS1_1);
+    VALUE(version, SSL_CONNECTION_VERSION_TLS1_2);
+    VALUE(version, SSL_CONNECTION_VERSION_TLS1_3);
+    VALUE(version, SSL_CONNECTION_VERSION_QUIC);
+    return std::string();
+}
+
+std::string GetContentStatusString(cef_ssl_content_status_t status) {
+    std::string result;
+
+    VALUE(status, SSL_CONTENT_NORMAL_CONTENT);
+    FLAG(SSL_CONTENT_DISPLAYED_INSECURE_CONTENT);
+    FLAG(SSL_CONTENT_RAN_INSECURE_CONTENT);
+
+    if (result.empty())
+        return "&nbsp;";
+    return result;
+}
+
+std::string GetCertificateInformation(const std::string& url,
+    CefRefPtr<CefX509Certificate> cert,
+    cef_cert_status_t certstatus) {
+    CefRefPtr<CefX509CertPrincipal> subject = cert->GetSubject();
+    CefRefPtr<CefX509CertPrincipal> issuer = cert->GetIssuer();
+
+    // Build a table showing certificate information. Various types of invalid
+    // certificates can be tested using https://badssl.com/.
+    std::stringstream ss;
+    ss << "<h3>X.509 Certificate Information:</h3>"
+        "<table border=1><tr><th>Field</th><th>Value</th></tr>";
+
+    if (certstatus != CERT_STATUS_NONE) {
+        ss << "<tr><td>Status</td><td>" << GetCertStatusString(certstatus)
+            << "</td></tr>";
+    }
+
+    ss << "<tr><td>Subject</td><td>"
+        << (subject.get() ? subject->GetDisplayName().ToString() : "&nbsp;")
+        << "</td></tr>"
+        "<tr><td>Issuer</td><td>"
+        << (issuer.get() ? issuer->GetDisplayName().ToString() : "&nbsp;")
+        << "</td></tr>"
+        //"<tr><td>Serial #*</td><td>"
+        //<< GetBinaryString(cert->GetSerialNumber()) << "</td></tr>"
+        << "<tr><td>Valid Start</td><td>" << GetTimeString(cert->GetValidStart())
+        << "</td></tr>"
+        "<tr><td>Valid Expiry</td><td>"
+        << GetTimeString(cert->GetValidExpiry()) << "</td></tr>";
+
+    /*CefX509Certificate::IssuerChainBinaryList der_chain_list;
+    CefX509Certificate::IssuerChainBinaryList pem_chain_list;
+    cert->GetDEREncodedIssuerChain(der_chain_list);
+    cert->GetPEMEncodedIssuerChain(pem_chain_list);
+    DCHECK_EQ(der_chain_list.size(), pem_chain_list.size());
+
+    der_chain_list.insert(der_chain_list.begin(), cert->GetDEREncoded());
+    pem_chain_list.insert(pem_chain_list.begin(), cert->GetPEMEncoded());
+
+    for (size_t i = 0U; i < der_chain_list.size(); ++i) {
+        ss << "<tr><td>DER Encoded*</td>"
+            "<td style=\"max-width:800px;overflow:scroll;\">"
+            << GetBinaryString(der_chain_list[i])
+            << "</td></tr>"
+            "<tr><td>PEM Encoded*</td>"
+            "<td style=\"max-width:800px;overflow:scroll;\">"
+            << GetBinaryString(pem_chain_list[i]) << "</td></tr>";
+    }
+
+    ss << "</table> * Displayed value is base64 encoded."; */
+    ss << "</table>";
+
+    if (!url.empty())
+    {
+        ss << R"_raw(<p><input type="button" value="Continue(unsecure)" onclick="nativeapp.ContinueUnsecure(')_raw" 
+            << url << R"_raw(')"/></p>)_raw";
+    }
+
+    
+
+    return ss.str();
+}
+
+std::string GetErrorPage(const std::string& failed_url, const std::string& other_info, cef_errorcode_t error_code)
+{
+
+    const auto GetErrorString = [](cef_errorcode_t code) ->std::string {
+        // Case condition that returns |code| as a string.
+#define CASE(code) \
+  case code:       \
+    return #code
+
+        switch (code) {
+            CASE(ERR_NONE);
+            CASE(ERR_FAILED);
+            CASE(ERR_ABORTED);
+            CASE(ERR_INVALID_ARGUMENT);
+            CASE(ERR_INVALID_HANDLE);
+            CASE(ERR_FILE_NOT_FOUND);
+            CASE(ERR_TIMED_OUT);
+            CASE(ERR_FILE_TOO_BIG);
+            CASE(ERR_UNEXPECTED);
+            CASE(ERR_ACCESS_DENIED);
+            CASE(ERR_NOT_IMPLEMENTED);
+            CASE(ERR_CONNECTION_CLOSED);
+            CASE(ERR_CONNECTION_RESET);
+            CASE(ERR_CONNECTION_REFUSED);
+            CASE(ERR_CONNECTION_ABORTED);
+            CASE(ERR_CONNECTION_FAILED);
+            CASE(ERR_NAME_NOT_RESOLVED);
+            CASE(ERR_INTERNET_DISCONNECTED);
+            CASE(ERR_SSL_PROTOCOL_ERROR);
+            CASE(ERR_ADDRESS_INVALID);
+            CASE(ERR_ADDRESS_UNREACHABLE);
+            CASE(ERR_SSL_CLIENT_AUTH_CERT_NEEDED);
+            CASE(ERR_TUNNEL_CONNECTION_FAILED);
+            CASE(ERR_NO_SSL_VERSIONS_ENABLED);
+            CASE(ERR_SSL_VERSION_OR_CIPHER_MISMATCH);
+            CASE(ERR_SSL_RENEGOTIATION_REQUESTED);
+            CASE(ERR_CERT_COMMON_NAME_INVALID);
+            CASE(ERR_CERT_DATE_INVALID);
+            CASE(ERR_CERT_AUTHORITY_INVALID);
+            CASE(ERR_CERT_CONTAINS_ERRORS);
+            CASE(ERR_CERT_NO_REVOCATION_MECHANISM);
+            CASE(ERR_CERT_UNABLE_TO_CHECK_REVOCATION);
+            CASE(ERR_CERT_REVOKED);
+            CASE(ERR_CERT_INVALID);
+            CASE(ERR_CERT_END);
+            CASE(ERR_INVALID_URL);
+            CASE(ERR_DISALLOWED_URL_SCHEME);
+            CASE(ERR_UNKNOWN_URL_SCHEME);
+            CASE(ERR_TOO_MANY_REDIRECTS);
+            CASE(ERR_UNSAFE_REDIRECT);
+            CASE(ERR_UNSAFE_PORT);
+            CASE(ERR_INVALID_RESPONSE);
+            CASE(ERR_INVALID_CHUNKED_ENCODING);
+            CASE(ERR_METHOD_NOT_SUPPORTED);
+            CASE(ERR_UNEXPECTED_PROXY_AUTH);
+            CASE(ERR_EMPTY_RESPONSE);
+            CASE(ERR_RESPONSE_HEADERS_TOO_BIG);
+            CASE(ERR_CACHE_MISS);
+            CASE(ERR_INSECURE_RESPONSE);
+        default:
+            return "UNKNOWN";
+        }
+    };
+
+
+    std::stringstream ss;
+    ss << R"(<html><head><title>Page failed to load</title></head><style>
+@media (prefers-color-scheme: light) {
+body {
+background-color: #f0f0f0;
+}}
+@media (prefers-color-scheme: dark) {
+body {
+background-color: #3e3e3e;
+color: #fff;
+}}
+.caption {-webkit-app-region: drag;}
+</style><body><h2 class="caption">Page failed to load.</h2>)";
+    if (!failed_url.empty())
+    {
+        ss << R"(URL: <a href=")"
+            << failed_url << "\">" << failed_url
+            << "</a><br/>";
+    }
+
+    if (error_code < 10000)
+    {
+        ss << "Error: " << GetErrorString(error_code) << " ("
+            << error_code << ")";
+    }
+
+    if (!other_info.empty())
+        ss << "<br/>" << other_info;
+
+    ss << "</body></html>";
+
+    return ss.str();
+}
+
+
+// Load a data: URI containing the error message.
+void LoadErrorPage(CefRefPtr<CefFrame> frame, const std::string& failed_url, cef_errorcode_t error_code, const std::string& other_info)
+{
+    frame->LoadURL(/*GetDataURI(ss.str(), "text/html")*/GetInternalPage(GetErrorPage(failed_url, other_info, error_code)));
+}
+
 }

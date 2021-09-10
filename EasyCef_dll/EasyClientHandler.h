@@ -1,7 +1,7 @@
 #pragma once
 
 #include <list>
-#include <unordered_map>
+#include <unordered_set>
 #include "WebViewControl.h"
 
 //主进程
@@ -149,6 +149,12 @@ public:
         CefRequestHandler::WindowOpenDisposition target_disposition,
         bool user_gesture) override;
 
+    bool OnCertificateError(CefRefPtr<CefBrowser> browser,
+        cef_errorcode_t cert_error,
+        const CefString& request_url,
+        CefRefPtr<CefSSLInfo> ssl_info,
+        CefRefPtr<CefRequestCallback> callback) override;
+
 
     /////////////////
     //标题拖动
@@ -197,6 +203,8 @@ protected:
     CefRefPtr<WebViewUIControl> m_webuicontrol;
 
     IMPLEMENT_REFCOUNTING(EasyClientHandler);
+
+    static inline std::unordered_set<std::wstring> s_listAllowUnsecure;
 
     //Cefclient 自己的
     bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,

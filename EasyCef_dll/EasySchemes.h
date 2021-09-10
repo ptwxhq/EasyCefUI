@@ -12,7 +12,8 @@ public:
 	{
 		UNKNOWN,
 		XPACK,
-		FILE
+		FILE,
+		INTERNALUI
 	};
 
 

@@ -20,6 +20,10 @@ void EasyCefAppBrowser::OnContextInitialized()
 
 	EasyIPCServer::GetInstance().SetMainThread(GetCurrentThreadId());
 	EasyIPCServer::GetInstance().SetWorkCall(std::bind(&EasyBrowserWorks::CommWork, &EasyBrowserWorks::GetInstance(), std::placeholders::_1, std::placeholders::_2));
+
+	//黑暗模式
+	SetAllowDarkMode();
+
 }
 
 void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line)
@@ -62,10 +66,6 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 
 }
 
-CefRefPtr<CefClient> EasyCefAppBrowser::GetDefaultClient()
-{
-	return m_clienthandler;
-}
 
 void EasyCefAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {

@@ -12,6 +12,8 @@ void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
 	registrar->AddCustomScheme("xpack", CEF_SCHEME_OPTION_LOCAL | CEF_SCHEME_OPTION_CORS_ENABLED /*| CEF_SCHEME_OPTION_CSP_BYPASSING*/);
 
+	registrar->AddCustomScheme(EASYCEFSCHEMES, CEF_SCHEME_OPTION_DISPLAY_ISOLATED);
+
 //	registrar->AddCustomScheme("file", CEF_SCHEME_OPTION_LOCAL);
 
 	//其他值： CEF_SCHEME_OPTION_CSP_BYPASSING	 CEF_SCHEME_OPTION_FETCH_ENABLED
@@ -27,6 +29,8 @@ void RegEasyCefSchemes()
 	//为了让xpack可以读取file协议，只能自己重写实现读取并注册了
 	CefRegisterSchemeHandlerFactory("file", "", factory);
 	CefRegisterSchemeHandlerFactory("disk", "", factory);
+
+	CefRegisterSchemeHandlerFactory(EASYCEFSCHEMES, "", factory);
 
 }
 
@@ -44,6 +48,11 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 	{
 		type = EasyResourceHandler::RESTYPE::FILE;
 	}
+	else if (scheme_name.compare(EASYCEFSCHEMES) == 0)
+	{
+		type = EasyResourceHandler::RESTYPE::INTERNALUI;
+	}
+	
 
 	return new EasyResourceHandler(type);
 }
@@ -65,7 +74,7 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 
 	DomainPackInfo::Uri url_parts(request->GetURL());
 
-	const std::wstring strDecodedPath = CefURIDecode(url_parts.Path_, false, (cef_uri_unescape_rule_t)(UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
+	const std::wstring strDecodedPath = CefURIDecode(url_parts.Path_, false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
 
 
 	enum class STATUSCODE {
@@ -181,6 +190,28 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 				bHaveFile = true;
 			}
 			break;
+		case EasyResourceHandler::RESTYPE::INTERNALUI:
+			{
+				if (url_parts.Host_ == L"info")
+				{
+					std::wstring strData = strDecodedPath;
+					if (strData[0] == '/')
+					{
+						strData.erase(0, 1);
+					}
+					
+					auto binhtml = CefBase64Decode(strData);
+					if (binhtml)
+					{
+						data_.resize(binhtml->GetSize());
+						binhtml->GetData(data_.data(), binhtml->GetSize(), 0);
+
+						bHaveFile = true;
+					}
+		
+				}
+			}
+			break;
 		default:
 			break;
 		}
@@ -205,6 +236,7 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 
 		if (!bHaveFile)
 		{
+			data_ = webinfo::GetErrorPage("", data_);
 			statuscode_ = (int)sCurrent;
 			mime_type_ = "text/html";
 			break;

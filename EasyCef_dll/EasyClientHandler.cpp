@@ -13,6 +13,7 @@
 #include "EasyBrowserWorks.h"
 #include "include/cef_resource_bundle.h"
 #include "include/cef_pack_strings.h"
+#include "EasySchemes.h"
 
 bool QueryNodeAttrib(CefRefPtr<WebViewControl> item, int x, int y, std::string name, std::wstring& outVal)
 {
@@ -70,6 +71,19 @@ CefString GetLabel(int message_id) {
 bool EasyClientHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
 {
     const std::string& message_name = message->GetName();
+
+    if (message_name == "ContinueUnsecure")
+    {
+        auto url = message->GetArgumentList()->GetString(0).ToWString();
+        if (!url.empty())
+        {
+            auto domain = DomainPackInfo::GetFormatedDomain(url.c_str());
+            s_listAllowUnsecure.insert(domain);
+            frame->LoadURL(url);
+            return true;
+        }
+        return false;
+    }
 
 
     return EasyBrowserWorks::GetInstance().DoAsyncWork(message_name, browser, frame, message->GetArgumentList());
@@ -295,11 +309,17 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 
 void EasyClientHandler::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url)
 {
+    std::wstring strUrl = url;
+    if (strUrl.substr(0, _countof(EASYCEFPROTOCOLW)).find(EASYCEFPROTOCOLW) == 0)
+    {
+        strUrl.clear();
+    }
+
     if (!m_bIsUIControl)
     {
         if (frame->IsMain() && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitChangeUrl)
         {
-            WebkitEcho::getFunMap()->webkitChangeUrl(browser->GetIdentifier(), url.ToWString().c_str());
+            WebkitEcho::getFunMap()->webkitChangeUrl(browser->GetIdentifier(), strUrl.c_str());
         }
     }
 }
@@ -437,13 +457,8 @@ void EasyClientHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
         return;
 
     // Display a load error message using a data: URI.
-    std::stringstream ss;
-    ss << "<html><title>Load Failed</title><body bgcolor=\"white\">"
-        "<h2>Failed to load URL "
-        << std::string(failedUrl) << " with error " << std::string(errorText)
-        << " (" << errorCode << ").</h2></body></html>";
 
-    frame->LoadURL(GetDataURI(ss.str(), "text/html"));
+    webinfo::LoadErrorPage(frame, failedUrl, errorCode, errorText);
 }
 
 CefRefPtr<CefRenderHandler> EasyClientHandler::GetRenderHandler()
@@ -592,16 +607,8 @@ void EasyClientHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
 
  
     auto frame = browser->GetMainFrame();
-    frame->LoadURL(GetDataURI(R"(
-<html><head><title>Crash</title><style>
-body{border-style:solid;
-border-width:2px;
-background-color:white;}
-</style></head>
-<body>
-<h1>Render Process was Terminated...</h1>
-</body></html>
-)", "text/html"));
+
+    webinfo::LoadErrorPage(frame, "", (cef_errorcode_t)100001, "Render Process was Terminated...");
 
     //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnRenderProcessTerminated:(" << browser << ") res: " << status;
 }
@@ -613,6 +620,18 @@ void EasyClientHandler::OnDocumentAvailableInMainFrame(CefRefPtr<CefBrowser> bro
 
 bool EasyClientHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
 {
+
+    if (frame->IsMain() && (request->GetTransitionType() & TT_FORWARD_BACK_FLAG) == TT_FORWARD_BACK_FLAG)
+    {
+        auto new_url = request->GetURL().ToString();
+
+        if (new_url.substr(0, _countof(EASYCEFPROTOCOL)).find(EASYCEFPROTOCOL) == 0)
+        {
+            browser->GoBack();
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -628,6 +647,43 @@ bool EasyClientHandler::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPt
     }
 
     return false;
+}
+
+bool EasyClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser, cef_errorcode_t cert_error, const CefString& request_url, CefRefPtr<CefSSLInfo> ssl_info, CefRefPtr<CefRequestCallback> callback)
+{
+    bool bAllowUnsecure = false;
+    auto domain = DomainPackInfo::GetFormatedDomain(request_url.ToWString().c_str());
+    if (!domain.empty())
+    {
+        bAllowUnsecure = s_listAllowUnsecure.find(domain) != s_listAllowUnsecure.end();
+    }
+
+    if (bAllowUnsecure)
+    {
+        callback->Continue(true);
+        return true;
+    }
+    else
+    {
+        CefRefPtr<CefX509Certificate> cert = ssl_info->GetX509Certificate();
+        if (cert.get()) {
+
+            if (!browser->CanGoBack())
+            {
+                browser->GetMainFrame()->LoadURL("about:blank");
+            }
+
+            // Load the error page.
+            webinfo::LoadErrorPage(browser->GetMainFrame(), request_url, cert_error,
+                webinfo::GetCertificateInformation(request_url, cert, ssl_info->GetCertStatus()));
+        }
+    }
+
+    
+
+    return false;  // Cancel the request.
+
+
 }
 
 bool EasyClientHandler::OnDragEnter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDragData> dragData, CefDragHandler::DragOperationsMask mask)
