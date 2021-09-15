@@ -132,8 +132,6 @@ private:
 public:
 
     EasyLayeredWindow();
-    ~EasyLayeredWindow();
-
 
     BEGIN_MSG_MAP(EasyLayeredWindow)
         CHAIN_MSG_MAP(EasyUIWindowBase)
@@ -200,8 +198,6 @@ public:
     void SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize);
     void Render();
 
-
-    void OnFinalMessage(HWND /*hWnd*/) override;
 
     //LRESULT OnTime(UINT, WPARAM wp, LPARAM, BOOL&);
 

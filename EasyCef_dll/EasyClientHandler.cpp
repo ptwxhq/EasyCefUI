@@ -228,18 +228,6 @@ bool EasyClientHandler::DoClose(CefRefPtr<CefBrowser> browser)
 {
     CEF_REQUIRE_UI_THREAD();
 
-    if (m_bIsUIControl)
-    {
-        if (!m_bIsUITransparent)
-        {
-            HWND hWnd = m_webuicontrol->GetHWND();
-            HWND hBrs = browser->GetHost()->GetWindowHandle();
-            ShowWindow(hBrs, SW_HIDE);
-            SetParent(hBrs, nullptr);
-            DestroyWindow(hWnd);
-        }
-    }
-
     // Allow the close. For windowed browsers this will result in the OS close
     // event being sent.
     return false;
@@ -271,6 +259,12 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
         //webui目前不会有popup，直接这样吧
         if (m_bIsUIControl)
         {
+            //如果窗口当前未销毁说明还在WM_CLOSE中，需要延长生命周期以便能正常释放窗口
+            if (IsWindow(m_webuicontrol->GetHWND()))
+            {
+                EasyWebViewMgr::GetInstance().AddDelayItem(m_webuicontrol);
+            }
+
             m_webuicontrol = nullptr;
         }
     }
@@ -608,7 +602,9 @@ void EasyClientHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
  
     auto frame = browser->GetMainFrame();
 
-    webinfo::LoadErrorPage(frame, "", (cef_errorcode_t)100001, "Render Process was Terminated...");
+    auto str = R"_raw(Render Process was Terminated... <a href="javascript:window.close();">Close</a>)_raw";
+
+    webinfo::LoadErrorPage(frame, "", (cef_errorcode_t)100001, str);
 
     //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnRenderProcessTerminated:(" << browser << ") res: " << status;
 }

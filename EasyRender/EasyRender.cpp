@@ -9,6 +9,9 @@
 #include "SpeedBox.h"
 
 #include "../EasyCef_dll/Export.h"
+
+//本进程需要sysver.manifest
+
 #ifdef _DEBUG
 #pragma comment(lib, "Debug/easycef_d.lib")
 #else

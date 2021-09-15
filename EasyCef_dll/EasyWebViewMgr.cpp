@@ -197,18 +197,6 @@ void EasyWebViewMgr::RemoveWebViewByBrowserId(int id)
 	}
 }
 
-bool EasyWebViewMgr::ForEachDoWork(WEBVIEWMGRWORK work)
-{
-	const bool bRes = !m_WebViewList.empty();
-	for (auto& it : m_WebViewList)
-	{
-		if (!work(it.second))
-			break;
-	}
-
-	return bRes;
-}
-
 void EasyWebViewMgr::RemoveAllItems()
 {
 	////这样粗暴清理好像会导致后续调用流程中一个个销毁出问题？
@@ -235,4 +223,17 @@ void EasyWebViewMgr::AsyncSetIndexInfo(wvhandle handle, int index, HWND hWnd)
 		m_WebViewIndex[index] = handle;
 		m_WebViewHWNDIndex[hWnd] = handle;
 	}
+}
+
+void EasyWebViewMgr::AddDelayItem(CefRefPtr<WebViewControl> item)
+{
+	if (item)
+	{
+		m_DelayCleanList.insert(std::make_pair(item->GetHWND(), item));
+	}
+}
+
+void EasyWebViewMgr::CleanDelayItem(HWND hWnd)
+{
+	m_DelayCleanList.erase(hWnd);
 }

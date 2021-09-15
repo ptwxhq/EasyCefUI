@@ -133,14 +133,6 @@ EasyLayeredWindow::EasyLayeredWindow(): m_info(1, 1)
 {
 }
 
-EasyLayeredWindow::~EasyLayeredWindow()
-{
-	if (IsWindow())
-	{
-		CWindow::DestroyWindow();
-	}
-
-}
 
 void EasyLayeredWindow::ImePosChange(const CefRange& selected_range, const CefRenderHandler::RectList& character_bounds)
 {
@@ -742,16 +734,6 @@ void EasyLayeredWindow::Render()
 		m_info.Update(m_hWnd, m_bitmap->GetDC());
 }
 
-void EasyLayeredWindow::OnFinalMessage(HWND)
-{
-	if (m_browser)
-	{
-		auto host = m_browser->GetHost();
-		m_browser = nullptr;
-
-		host->CloseBrowser(true);
-	}
-}
 
 
 void EasyLayeredWindow::SetAlpha(BYTE alpha, bool bRepaint)

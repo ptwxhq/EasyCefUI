@@ -540,23 +540,6 @@ void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context)
 
 void SetAllowDarkMode()
 {
-    const auto CheckWin10Version = [](DWORD dwBuildNumber)
-    {
-        OSVERSIONINFOEXW osvi = { sizeof(osvi), 0, 0, 0, 0, {0}, 0, 0 };
-        DWORDLONG        const dwlConditionMask = VerSetConditionMask(
-            VerSetConditionMask(
-                VerSetConditionMask(
-                    0, VER_MAJORVERSION, VER_GREATER_EQUAL),
-                VER_MINORVERSION, VER_GREATER_EQUAL),
-            VER_BUILDNUMBER, VER_GREATER_EQUAL);
-
-        osvi.dwMajorVersion = 10;
-        osvi.dwMinorVersion = 0;
-        osvi.dwBuildNumber = dwBuildNumber;
-
-        return VerifyVersionInfoW(&osvi, VER_MAJORVERSION | VER_MINORVERSION | VER_BUILDNUMBER, dwlConditionMask) != FALSE;
-    };
-
     const auto DarkModeForApp = [] (bool bNewVer)
     {
         HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
@@ -593,13 +576,25 @@ void SetAllowDarkMode()
         }
     };
 
-    if (CheckWin10Version(18362))
+    using fnRtlGetNtVersionNumbers = void (WINAPI*)(LPDWORD major, LPDWORD minor, LPDWORD build);
+    auto RtlGetNtVersionNumbers = reinterpret_cast<fnRtlGetNtVersionNumbers>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetNtVersionNumbers"));
+    if (RtlGetNtVersionNumbers)
     {
-        DarkModeForApp(true);
-    }
-    else if (CheckWin10Version(17763))
-    {
-        DarkModeForApp(false);
+        DWORD major, minor, build;
+        RtlGetNtVersionNumbers(&major, &minor, &build);
+        build &= ~0xF0000000;
+
+        if (major == 10 && minor == 0)
+        {
+            if (build >= 18362)
+            {
+                DarkModeForApp(true);
+            }
+            else if (build >= 17763)
+            {
+                DarkModeForApp(false);
+            }
+        }
     }
 }
 
@@ -751,7 +746,7 @@ std::string GetCertificateInformation(const std::string& url,
     if (!url.empty())
     {
         ss << R"_raw(<p><input type="button" value="Continue(unsecure)" onclick="nativeapp.ContinueUnsecure(')_raw" 
-            << url << R"_raw(')"/></p>)_raw";
+            << url << R"_raw(')"/> <input type="button" value="Go Back" onclick="javascript:history.back();"</p>)_raw";
     }
 
     
@@ -835,8 +830,11 @@ body {
 background-color: #3e3e3e;
 color: #fff;
 }}
+body {
+margin:10px 20px;
+}
 .caption {-webkit-app-region: drag;}
-</style><body><h2 class="caption">Page failed to load.</h2>)";
+</style><body><h1 class="caption">Page failed to load.</h1>)";
     if (!failed_url.empty())
     {
         ss << R"(URL: <a href=")"

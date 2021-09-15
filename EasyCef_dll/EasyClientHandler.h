@@ -189,9 +189,6 @@ protected:
     bool m_bIsUIControl = false;
     bool m_bIsUITransparent = false;
 
-    //typedef std::list<CefRefPtr<CefBrowser>> BrowserList;
-    //BrowserList m_popbrowsers;
-
     //共用handler的数量
     int m_BrowserCount = 0;
 

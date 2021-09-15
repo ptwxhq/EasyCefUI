@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "EasyUIWindow.h"
+#include "EasyWebViewMgr.h"
 #include <Windowsx.h>
 #undef SubclassWindow
 
@@ -147,11 +148,26 @@ EasyUIWindowBase::EasyUIWindowBase()
 
 EasyUIWindowBase::~EasyUIWindowBase()
 {
+	if (IsWindow())
+	{
+		CWindow::DestroyWindow();
+	}
+
 	for (int i = 0; i < _countof(m_EdgeRegions); i++)
 	{
 		DeleteObject(m_EdgeRegions[i]);
 		m_EdgeRegions[i] = nullptr;
 	}
+}
+
+void EasyUIWindowBase::OnFinalMessage(HWND h)
+{
+	if (m_browser)
+	{
+		m_browser->GetHost()->CloseBrowser(true);
+	}
+
+	EasyWebViewMgr::GetInstance().CleanDelayItem(h);
 }
 
 
@@ -274,13 +290,6 @@ BOOL EasyUIWindowBase::ProcessWindowMessage(HWND hWnd, UINT uMsg, WPARAM wParam,
 	return FALSE;
 }
 
-EasyOpaqueWindow::~EasyOpaqueWindow()
-{
-	if (IsWindow())
-	{
-		CWindow::DestroyWindow();
-	}
-}
 
 LRESULT EasyOpaqueWindow::OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle)
 {
@@ -294,17 +303,6 @@ LRESULT EasyOpaqueWindow::OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& h
 	handle = FALSE;
 
 	return 0;
-}
-
-void EasyOpaqueWindow::OnFinalMessage(HWND)
-{
-	if (m_browser)
-	{
-		auto host = m_browser->GetHost();
-		m_browser = nullptr;
-
-		host->CloseBrowser(true);
-	}
 }
 
 void EasyOpaqueWindow::SetAlpha(BYTE alpha, bool)

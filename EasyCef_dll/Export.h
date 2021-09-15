@@ -10,10 +10,6 @@
 #else
 #  define EASYCEF_EXP_API extern "C" __declspec(dllimport)
 #  define EASYCEF_EXP_CLASS __declspec(dllimport)
-
-#pragma message("!!!!!--注意：生成exe文件请务必添加包含compatibility的manifest文件，否则无法正常运行--!!!!!")
-#pragma message("生成后事件例: mt.exe -manifest \"compatibility.manifest\" -outputresource:\"xxx.exe\";#1")
-
 #endif
 #else
 #  define EASYCEF_EXP_API

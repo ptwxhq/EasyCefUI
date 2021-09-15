@@ -38,6 +38,8 @@ public:
     EasyUIWindowBase();
     virtual ~EasyUIWindowBase();
 
+    void OnFinalMessage(HWND h) override;
+
 private:
     UINT Cls_OnNCHitTest(HWND hwnd, int x, int y);
     void Cls_OnGetMinMaxInfo(HWND hwnd, LPMINMAXINFO lpMinMaxInfo);
@@ -71,7 +73,6 @@ private:
 class EasyOpaqueWindow : public EasyUIWindowBase
 {
 public:
-    ~EasyOpaqueWindow();
 
     BEGIN_MSG_MAP(0)
         CHAIN_MSG_MAP(EasyUIWindowBase)
@@ -80,7 +81,6 @@ public:
 
     LRESULT OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
 
-    void OnFinalMessage(HWND) override;
 
     void SetAlpha(BYTE alpha, bool) override;
 
