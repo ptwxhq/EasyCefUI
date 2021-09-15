@@ -165,7 +165,7 @@ void EasyCefAppRender::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
 			frameNam = RecordFrameName::getInst().GetRecord(browser->GetIdentifier(), frame->GetIdentifier());
 		}
 		std::hash<std::string> string_hash;
-		unsigned int id = string_hash(frameNam);
+		auto id = string_hash(frameNam);
 		if (DectetFrameLoad::getInst().hit(browser->GetIdentifier(), getFramePath(parent), id, -10086)) {
 			std::string url = frame->GetURL().ToString();
 			call_FrameStateChanged(parent, frameNam.c_str(), url.c_str(), -10086, false);
@@ -190,7 +190,7 @@ void EasyCefAppRender::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFra
 	{
 		std::hash<std::string> string_hash;
 		std::string frameNam = RecordFrameName::getInst().GetRecord(browser->GetIdentifier(), frame->GetIdentifier());
-		unsigned int id = string_hash(frameNam);
+		auto id = string_hash(frameNam);
 		if (DectetFrameLoad::getInst().hit(browser->GetIdentifier(), getFramePath(parent), id, httpStatusCode)) {
 			std::string url = frame->GetURL().ToString();
 			call_FrameStateChanged(parent, frameNam.c_str(), url.c_str(), httpStatusCode, true);
@@ -211,7 +211,7 @@ void EasyCefAppRender::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefF
 	{
 		std::hash<std::string> string_hash;
 		std::string frameNam = RecordFrameName::getInst().GetRecord(browser->GetIdentifier(), frame->GetIdentifier());
-		unsigned int id = string_hash(frameNam);
+		size_t id = string_hash(frameNam);
 		if (DectetFrameLoad::getInst().hit(browser->GetIdentifier(), getFramePath(parent), id, errorCode)) {
 			std::string url = frame->GetURL().ToString();
 			call_FrameStateChanged(parent, frameNam.c_str(), url.c_str(), errorCode, false);

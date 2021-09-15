@@ -1,4 +1,4 @@
-#include "pch.h"
+Ôªø#include "pch.h"
 #include "EasyBrowserWorks.h"
 #include "EasyWebViewMgr.h"
 #include "WebViewControl.h"
@@ -6,6 +6,7 @@
 #include "EasyIPC.h"
 
 
+#include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/cef_origin_whitelist.h"
 
@@ -123,7 +124,7 @@ namespace BrowserSyncWorkFunctions {
 		return false;
 	}
 
-	//Ωˆπ©“‘œ¬setProfile/getProfile π”√
+	//‰ªÖ‰æõ‰ª•‰∏ãsetProfile/getProfile‰ΩøÁî®
 	static std::unordered_map<size_t, std::wstring> g_tempprofile;
 	bool setProfile(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 	{
@@ -287,7 +288,7 @@ namespace BrowserAsyncWorkFunctions {
 			}
 			else
 			{
-				//Œﬁ∑®ªÒ»°‘≠ º◊÷∑˚¥Æ£ø≤Œ ˝∂ºΩ‚ø™¡À£¨ƒ«æÕ’‚—˘∞…
+				//Êó†Ê≥ïËé∑ÂèñÂéüÂßãÂ≠óÁ¨¶‰∏≤ÔºüÂèÇÊï∞ÈÉΩËß£ÂºÄ‰∫ÜÔºåÈÇ£Â∞±ËøôÊ†∑Âêß
 				WebkitEcho::getUIFunMap()->createWindow(hWnd, args->GetInt(0), args->GetInt(1), args->GetInt(2), args->GetInt(3), args->GetInt(4), args->GetInt(5), args->GetInt(6), args->GetInt(7), args->GetString(8).ToWString().c_str(), args->GetInt(9), args->GetInt(10), DEF_TRANS_VALUE, args->GetInt(11));
 			}
 			
@@ -313,7 +314,7 @@ namespace BrowserAsyncWorkFunctions {
 			}
 			else
 			{
-				//Œﬁ∑®ªÒ»°‘≠ º◊÷∑˚¥Æ£ø≤Œ ˝∂ºΩ‚ø™¡À£¨ƒ«æÕ’‚—˘∞…
+				//Êó†Ê≥ïËé∑ÂèñÂéüÂßãÂ≠óÁ¨¶‰∏≤ÔºüÂèÇÊï∞ÈÉΩËß£ÂºÄ‰∫ÜÔºåÈÇ£Â∞±ËøôÊ†∑Âêß
 				WebkitEcho::getUIFunMap()->createModalWindow(hWnd, args->GetInt(0), args->GetInt(1), args->GetInt(2), args->GetInt(3), args->GetInt(4), args->GetInt(5), args->GetInt(6), args->GetInt(7), args->GetString(8).ToWString().c_str(), args->GetInt(9), args->GetInt(10), DEF_TRANS_VALUE, args->GetInt(11));
 			}
 		}
@@ -338,7 +339,7 @@ namespace BrowserAsyncWorkFunctions {
 			}
 			else
 			{
-				//Œﬁ∑®ªÒ»°‘≠ º◊÷∑˚¥Æ£ø≤Œ ˝∂ºΩ‚ø™¡À£¨ƒ«æÕ’‚—˘∞…
+				//Êó†Ê≥ïËé∑ÂèñÂéüÂßãÂ≠óÁ¨¶‰∏≤ÔºüÂèÇÊï∞ÈÉΩËß£ÂºÄ‰∫ÜÔºåÈÇ£Â∞±ËøôÊ†∑Âêß
 				WebkitEcho::getUIFunMap()->createModalWindow2(hWnd, args->GetInt(0), args->GetInt(1), args->GetInt(2), args->GetInt(3), args->GetInt(4), args->GetInt(5), args->GetInt(6), args->GetInt(7), args->GetString(8).ToWString().c_str(), args->GetInt(9), args->GetInt(10), DEF_TRANS_VALUE, args->GetInt(11), args->GetInt(12));
 			}
 		}
@@ -452,7 +453,7 @@ namespace BrowserAsyncWorkFunctions {
 
 	void __DOMContentLoaded__(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
-		//‘≠œ»∫√œÒonDocLoaded∞—Õ¨≤Ω»•µÙ¡À£¨ƒ«÷±Ω”“Ï≤Ω¥¶¿ÌæÕ∫√¡À
+		//ÂéüÂÖàÂ•ΩÂÉèonDocLoadedÊääÂêåÊ≠•ÂéªÊéâ‰∫ÜÔºåÈÇ£Áõ¥Êé•ÂºÇÊ≠•Â§ÑÁêÜÂ∞±Â•Ω‰∫Ü
 
 		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
 		if (!item)
@@ -593,7 +594,7 @@ EasyBrowserWorks::EasyBrowserWorks()
 	REG_SYNCWORK_FUNCTION(getProfile);
 	REG_SYNCWORK_FUNCTION(getSoftwareAttribute);
 
-	//ºØ÷–”√”⁄ªÒ»° Ù–‘÷µ£¨»ª∫Ûœ¬√Êµƒ≤≈”––ß
+	//ÈõÜ‰∏≠Áî®‰∫éËé∑ÂèñÂ±ûÊÄßÂÄºÔºåÁÑ∂Âêé‰∏ãÈù¢ÁöÑÊâçÊúâÊïà
 	REG_SYNCWORK_FUNCTION(__V8AccessorAttribKeys__);
 
 	REG_SYNCWORK_JSKEY(appDataPath);
@@ -601,7 +602,7 @@ EasyBrowserWorks::EasyBrowserWorks()
 
 
 
-	//“Ï≤Ω
+	//ÂºÇÊ≠•
 	REG_ASYNCWORK_FUNCTION(createWindow);
 	REG_ASYNCWORK_FUNCTION(createModalWindow);
 	REG_ASYNCWORK_FUNCTION(createModalWindow2);
@@ -658,7 +659,7 @@ void EasyBrowserWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, b
 		m_UIWorkInstance = new BrowserUIWorks;
 	}
 
-	//»Áπ˚‘⁄÷˜œﬂ≥Ãµ˜”√invokedJSMethod£¨»ª∫Ûjs‘Ÿµ˜”√invokeMethodµƒª∞ª·µº÷¬÷±Ω”∑¢ÀÕ ß∞‹£¨–Ë“™œ¬√ÊµƒÃÿªØ¥¶¿Ì
+	//Â¶ÇÊûúÂú®‰∏ªÁ∫øÁ®ãË∞ÉÁî®invokedJSMethodÔºåÁÑ∂ÂêéjsÂÜçË∞ÉÁî®invokeMethodÁöÑËØù‰ºöÂØºËá¥Áõ¥Êé•ÂèëÈÄÅÂ§±Ë¥•ÔºåÈúÄË¶Å‰∏ãÈù¢ÁöÑÁâπÂåñÂ§ÑÁêÜ
 	if (bNeedUIThread /*&& pData->Name == "invokeMethod"*/)
 	{
 		auto& ipcserver = EasyIPCServer::GetInstance();
@@ -688,7 +689,7 @@ void EasyBrowserWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, b
 	if (bNeedUIThread && !CefCurrentlyOn(TID_UI))
 	{
 		// Execute on the UI thread.
-		bool bPostSucc = CefPostTask(TID_UI, base::Bind(&EasyBrowserWorks::UIWorks::DoWork, m_UIWorkInstance, pData));
+		bool bPostSucc = CefPostTask(TID_UI, CEF_FUNC_BIND(&EasyBrowserWorks::UIWorks::DoWork, m_UIWorkInstance, pData));
 
 		if (!bPostSucc)
 		{

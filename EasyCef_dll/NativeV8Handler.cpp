@@ -414,7 +414,7 @@ namespace JSCallFunctions
 
 		std::string id = arguments[0]->GetStringValue();
 		std::hash<std::string> string_hash;
-		unsigned int uid = string_hash(id);
+		auto uid = string_hash(id);
 		bool bAdd = DectetFrameLoad::getInst().Add(frame->GetBrowser()->GetIdentifier(), getFramePath(frame), uid, frame->GetIdentifier());
 		retval = CefV8Value::CreateInt(bAdd ? 1 : 0);
 	}
@@ -431,7 +431,7 @@ namespace JSCallFunctions
 
 		std::string id = arguments[0]->GetStringValue();
 		std::hash<std::string> string_hash;
-		unsigned int uid = string_hash(id);
+		auto uid = string_hash(id);
 		bool bAdd = DectetFrameLoad::getInst().Remove(frame->GetBrowser()->GetIdentifier(), getFramePath(frame), uid);
 		retval = CefV8Value::CreateInt(bAdd ? 1 : 0);
 	}
@@ -476,7 +476,7 @@ namespace JSCallFunctions
 				std::hash<std::string> string_hash;
 				//std::string frameNam = frame->GetName().ToString();
 				std::string frameNam = RecordFrameName::getInst().GetRecord(browser->GetIdentifier(), frame->GetIdentifier());
-				unsigned int id = string_hash(frameNam);
+				auto id = string_hash(frameNam);
 				if (DectetFrameLoad::getInst().hit(browser->GetIdentifier(), getFramePath(parent), id, 200)) {
 					call_FrameStateChanged(parent, frameNam.c_str(), url.c_str(), 200, false);
 				}

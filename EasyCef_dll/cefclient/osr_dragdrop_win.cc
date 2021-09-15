@@ -247,7 +247,7 @@ bool DragDataToDataObject(CefRefPtr<CefDragData> drag_data,
     curr_index++;
   }
 
-  size_t bufferSize = drag_data->GetFileContents(NULL);
+  size_t bufferSize = drag_data->GetFileContents(nullptr);
   if (bufferSize) {
     CefRefPtr<BytesWriteHandler> handler = new BytesWriteHandler(bufferSize);
     CefRefPtr<CefStreamWriter> writer =
@@ -612,7 +612,7 @@ HRESULT DataObjectWin::GetData(FORMATETC* pFormatEtc, STGMEDIUM* pMedium) {
 }
 
 HGLOBAL DataObjectWin::DupGlobalMem(HGLOBAL hMem) {
-  DWORD len = GlobalSize(hMem);
+  auto len = GlobalSize(hMem);
   PVOID source = GlobalLock(hMem);
   PVOID dest = GlobalAlloc(GMEM_FIXED, len);
 

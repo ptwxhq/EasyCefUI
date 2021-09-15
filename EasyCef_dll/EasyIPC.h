@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <functional>
 #include <unordered_map>
@@ -6,7 +6,7 @@
 
 extern const char* IpcBrowserServerKeyName /*= "browser_server"*/;
 
-//ÓÃÓÚ¼òµ¥´¦ÀíÍ¬²½ÄÚÈİ
+//ç”¨äºç®€å•å¤„ç†åŒæ­¥å†…å®¹
 
 
 class EasyIPCBase
@@ -24,18 +24,18 @@ public:
 
 	virtual bool Init();
 
-	//×èÈû
+	//é˜»å¡
 	virtual void Run();
 
 	virtual bool Stop();
 
-	//Ê¹ÓÃÕâ¸öÔò²»ÄÜ×Ô¼ºinit
+	//ä½¿ç”¨è¿™ä¸ªåˆ™ä¸èƒ½è‡ªå·±init
 	virtual void ThdRun();
 
 	static LRESULT CALLBACK WORKPROC(HWND, UINT msg, WPARAM wp, LPARAM lp);
 
 	static const std::string GetShareMemName(IPCHandle hFrom, IPCHandle hTo);
-	static const std::string GetShareMemName(IPCHandle hFrom, IPCHandle hTo, ULONG id);
+	static const std::string GetShareMemName(IPCHandle hFrom, IPCHandle hTo, size_t id);
 
 	virtual bool SendData(IPCHandle handle, const std::string& send, std::string& ret);
 

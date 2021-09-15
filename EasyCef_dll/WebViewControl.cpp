@@ -3,7 +3,9 @@
 #include "EasyIPC.h"
 #include "include/cef_request_context_handler.h"
 #include "EasyClientHandler.h"
+#include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
+
 
 bool WebViewControl::SetBrowser(CefRefPtr<CefBrowser> browser)
 {
@@ -137,7 +139,7 @@ bool WebViewControl::InitBrowser(wvhandle hWebview, HWND hParent, const RECT& rc
     if (Sync && !CefCurrentlyOn(TID_UI))
     {
         // Execute on the UI thread.
-        bool bPostSucc = CefPostTask(TID_UI, base::Bind(&WebViewControl::InitBrowserImpl, this, pParams));
+        bool bPostSucc = CefPostTask(TID_UI, CEF_FUNC_BIND(&WebViewControl::InitBrowserImpl, this, pParams));
 
         if(bPostSucc)
             pParams->signal.get_future().wait();
@@ -301,7 +303,7 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
             //如果要用自己创建窗口再附着上去的方式也得要求在主UI线程调用，那干脆直接使用同步方式创建Browser好了，省事
             m_browser = CefBrowserHost::CreateBrowserSync(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
 
-            pParams->bRet = m_browser;
+            pParams->bRet = !!m_browser;
 
             pParams->signal.set_value();
         }
@@ -526,7 +528,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 
         GetWindowPtr()->SetBrowser(m_browser);
 
-        pParams->bRet = m_browser;
+        pParams->bRet = !!m_browser;
 
         pParams->signal.set_value();
     }

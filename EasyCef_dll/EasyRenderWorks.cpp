@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "EasyRenderWorks.h"
 #include "Export.h"
+#include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 
 #include <format>
@@ -225,7 +226,7 @@ void EasyRenderWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bo
 	{
 	//	LOG(INFO) << GetCurrentProcessId() << "] EasyRenderWorks::UIWork  needpost " << pData->Name;
 		// Execute on the UI thread.
-		bool bPostSucc = CefPostTask(TID_RENDERER, base::Bind(&EasyRenderWorks::UIWorks::DoWork, m_UIWorkInstance, pData));
+		bool bPostSucc = CefPostTask(TID_RENDERER, CEF_FUNC_BIND(&EasyRenderWorks::UIWorks::DoWork, m_UIWorkInstance, pData));
 
 		if (!bPostSucc)
 		{

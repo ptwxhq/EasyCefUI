@@ -1,10 +1,10 @@
-#pragma once
+ï»¿#pragma once
 
 #include <list>
 #include <unordered_set>
 #include "WebViewControl.h"
 
-//Ö÷½ø³Ì
+//ä¸»è¿›ç¨‹
 
 
 class EasyClientHandler :
@@ -101,13 +101,13 @@ public:
 
 
     //////////////////////////////////////////////
-        //CefRenderHandler Õâ±ßÖ÷ÒªÌá¹©¸øÍ¸Ã÷UI£¬ÆäËûÇé¿ö²»Ê¹ÓÃ
+        //CefRenderHandler è¿™è¾¹ä¸»è¦æä¾›ç»™é€æ˜UIï¼Œå…¶ä»–æƒ…å†µä¸ä½¿ç”¨
     CefRefPtr<CefRenderHandler> GetRenderHandler() override;
 
     //////////////////////////////////////////
 
 
-    //ÓÒ¼ü²Ëµ¥
+    //å³é”®èœå•
     CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override { return this; }
 
     void OnBeforeContextMenu(CefRefPtr<CefBrowser> browser,
@@ -157,7 +157,7 @@ public:
 
 
     /////////////////
-    //±êÌâÍÏ¶¯
+    //æ ‡é¢˜æ‹–åŠ¨
 
     CefRefPtr<CefDragHandler> GetDragHandler() override { return this; }
 
@@ -189,7 +189,7 @@ protected:
     bool m_bIsUIControl = false;
     bool m_bIsUITransparent = false;
 
-    //¹²ÓÃhandlerµÄÊıÁ¿
+    //å…±ç”¨handlerçš„æ•°é‡
     int m_BrowserCount = 0;
 
     CefRefPtr<CefBrowser> m_browser;
@@ -203,7 +203,7 @@ protected:
 
     static inline std::unordered_set<std::wstring> s_listAllowUnsecure;
 
-    //Cefclient ×Ô¼ºµÄ
+    //Cefclient è‡ªå·±çš„
     bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
         CefRefPtr<CefFrame> frame,
         CefProcessId source_process,

@@ -56,7 +56,7 @@ struct DectetFrameID
 {
 	unsigned int browserID_;
 	std::string frameID_;
-	unsigned int dectID_;
+	size_t dectID_;
 	int64 identifier_;
 	int lastHttpCode_;
 };
@@ -80,7 +80,7 @@ public:
 	}
 	virtual ~DectetFrameLoad() {}
 
-	bool Add(unsigned int browser, const std::string& frame, unsigned int id, int64 identifier) {
+	bool Add(unsigned int browser, const std::string& frame, size_t id, int64 identifier) {
 		bool ret = false;
 		if (hit(browser, frame, id, 200) == false) {
 			DectetFrameID dectItem;
@@ -95,7 +95,7 @@ public:
 		return ret;
 	}
 
-	bool Remove(unsigned int browser, const std::string& frame, unsigned int id) {
+	bool Remove(unsigned int browser, const std::string& frame, size_t id) {
 		bool ret = false;
 		std::list<DectetFrameID>::iterator it = m_dectList.begin();
 		for (; it != m_dectList.end(); ++it) {
@@ -108,7 +108,7 @@ public:
 		return ret;
 	}
 
-	bool hit(unsigned int browser, const std::string& frame, unsigned int id, int httpCode) {
+	bool hit(unsigned int browser, const std::string& frame, size_t id, int httpCode) {
 		bool ret = false;
 		std::list<DectetFrameID>::iterator it = m_dectList.begin();
 		for (; it != m_dectList.end(); ++it)

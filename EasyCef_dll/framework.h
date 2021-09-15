@@ -13,6 +13,13 @@
 #include <atlwin.h>
 
 #include "include/cef_version.h"
+
+#if CEF_VERSION_MAJOR == 94
+#pragma message("!! you may need set _HAS_DEPRECATED_RESULT_OF and _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING !!")
+#endif
+
+
+
 #include "include/cef_base.h"
 #include "include/cef_app.h"
 #include "include/cef_browser.h"
@@ -28,8 +35,8 @@
 
 typedef unsigned long wvhandle;
 
-#if CEF_VERSION_MAJOR != 87 &&  CEF_VERSION_MAJOR != 90
-#pragma message("!!!!WARNNING:This project is base tested on Cef 87 and 90, maybe fail to build on other versions.!!!!")
+#if CEF_VERSION_MAJOR != 87 && CEF_VERSION_MAJOR != 90 && CEF_VERSION_MAJOR != 94
+#pragma message("!!!!WARNNING:This project is base tested on Cef ver 87/90/94, maybe fail to build on other versions.!!!!")
 #endif
 
 #ifdef _DEBUG
@@ -38,4 +45,10 @@ typedef unsigned long wvhandle;
 #else
 #define ASSERT(x)
 #define VERIFY(x) x
+#endif
+
+#if CEF_VERSION_MAJOR > 92
+#define CEF_FUNC_BIND base::BindOnce
+#else
+#define CEF_FUNC_BIND base::Bind
 #endif

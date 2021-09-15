@@ -11,12 +11,26 @@
 #include "../EasyCef_dll/Export.h"
 
 //本进程需要sysver.manifest
+#ifdef _WIN64
+
+#ifdef _DEBUG
+#pragma comment(lib, "x64/Debug/easycef_d.lib")
+#else
+#pragma comment(lib, "x64/Release/easycef.lib")
+#endif // DEBUG
+
+#else
 
 #ifdef _DEBUG
 #pragma comment(lib, "Debug/easycef_d.lib")
 #else
 #pragma comment(lib, "Release/easycef.lib")
 #endif // DEBUG
+
+#endif // _WIN64
+
+
+
 #include "ApiFilter.h"
 
 

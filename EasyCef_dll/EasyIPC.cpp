@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "EasyIPC.h"
 #include <thread>
 #include <random>
@@ -36,7 +36,7 @@ public:
 			}
 		}
 
-		//ÓÉÓÚoffsetĞèÒª1024±¶Êı£¬·ÏÆú
+		//ç”±äºoffsetéœ€è¦1024å€æ•°ï¼ŒåºŸå¼ƒ
 		void* MapSize(CEasyFileMap* h, int rw, size_t mapsize) {
 			m_pFileMapView = MapViewOfFile(h->m_hFileMap, rw, 0, 0, mapsize);
 			//if (!m_pFileMapView)
@@ -66,7 +66,7 @@ public:
 		}
 	}
 	
-	//size = 0 ±íÊ¾´ò¿ª
+	//size = 0 è¡¨ç¤ºæ‰“å¼€
 	bool Init(DWORD size, LPCSTR name , int rw)
 	{
 		if (!m_hFileMap)
@@ -175,7 +175,7 @@ void EasyIPCBase::ThdRun()
 		SendMessage(m_hAsServerHandle, WM_CLOSE, 0, 0);
 	}
 
-	//ĞèÒªÏÈ±£Ö¤initÍê³É
+	//éœ€è¦å…ˆä¿è¯initå®Œæˆ
 	std::promise<void> initflag;
 	std::thread ([this, &initflag]()
 		{
@@ -327,7 +327,7 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 				}
 				else if (dwWait == WAIT_OBJECT_0 + 1)
 				{
-					//Ö´ĞĞ·¢¹ıÀ´µÄÍ¬²½ÈÎÎñ
+					//æ‰§è¡Œå‘è¿‡æ¥çš„åŒæ­¥ä»»åŠ¡
 					if (m_OnceBlockingWorkCall)
 					{
 						m_OnceBlockingWorkCall();
@@ -379,12 +379,12 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 
 const std::string EasyIPCBase::GetShareMemName(IPCHandle hFrom, IPCHandle hTo)
 {
-	return std::format("_EasyIPC_v1_{:X}_{:X}", (unsigned)hFrom, (unsigned)hTo);
+	return std::format("_EasyIPC_v1_{:X}_{:X}", (size_t)hFrom, (size_t)hTo);
 }
 
-const std::string EasyIPCBase::GetShareMemName(IPCHandle hFrom, IPCHandle hTo, ULONG id)
+const std::string EasyIPCBase::GetShareMemName(IPCHandle hFrom, IPCHandle hTo, size_t id)
 {
-	return std::format("_EasyIPC_v1_{:X}_{:X}_{:X}", (unsigned)hFrom, (unsigned)hTo, id);
+	return std::format("_EasyIPC_v1_{:X}_{:X}_{:X}", (size_t)hFrom, (size_t)hTo, id);
 }
 
 LRESULT EasyIPCBase::WORKPROC(HWND h, UINT msg, WPARAM wp, LPARAM lp)

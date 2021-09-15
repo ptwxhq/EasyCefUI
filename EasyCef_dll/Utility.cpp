@@ -429,7 +429,7 @@ CefRefPtr<CefV8Value> CefValueToCefV8Value(CefRefPtr<CefValue> value)
     case VTYPE_DICTIONARY:
         {
             //std::cout << "Type: VTYPE_DICTIONARY" << std::endl;
-            result = CefV8Value::CreateObject(NULL, NULL);
+            result = CefV8Value::CreateObject(nullptr, nullptr);
             CefRefPtr<CefDictionaryValue> dict = value->GetDictionary();
             CefDictionaryValue::KeyList keys;
             dict->GetKeys(keys);

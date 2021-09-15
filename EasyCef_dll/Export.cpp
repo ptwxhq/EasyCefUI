@@ -12,7 +12,19 @@
 
 
 #if defined(CEF_USE_SANDBOX)
+#include "include/cef_sandbox_win.h"
 CefScopedSandboxInfo g_scoped_sandbox;
+
+#pragma comment(lib, "cef_sandbox.lib")
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "Version.lib")
+#pragma comment(lib, "Dbghelp.lib")
+#pragma comment(lib, "Winmm.lib")
+#pragma comment(lib, "Powrprof.lib")
+#pragma comment(lib, "Setupapi.lib")
+#pragma comment(lib, "Propsys.lib")
+#pragma comment(lib, "delayimp.lib")
+
 #endif
 
 void GetLocalPaths();

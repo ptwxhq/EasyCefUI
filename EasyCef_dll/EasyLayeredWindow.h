@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "EasyUIWindow.h"
 #include "cefclient/osr_dragdrop_events.h"
@@ -47,7 +47,7 @@ public:
 
     void SetDirtyRect(const RECT* rc) {
         if (rc) {
-            //½øĞĞµş¼Ó
+            //è¿›è¡Œå åŠ 
             if (m_dirty.left < 0 || rc->left < m_dirty.left)
             {
                 m_dirty.left = rc->left;
@@ -166,7 +166,7 @@ public:
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
         MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 
-        //CEF windowless´°¿ÚÖĞ»¹ÊÇÓĞĞ©bug£¬±ÈÈç¿ò¼ÜÒ³ÀïÃæbaiduËÑË÷¿òÎŞ·¨ÊäÈë
+        //CEF windowlessçª—å£ä¸­è¿˜æ˜¯æœ‰äº›bugï¼Œæ¯”å¦‚æ¡†æ¶é¡µé‡Œé¢baiduæœç´¢æ¡†æ— æ³•è¾“å…¥
         MESSAGE_HANDLER(WM_IME_SETCONTEXT, OnIMESetContext)
         MESSAGE_HANDLER(WM_IME_STARTCOMPOSITION, OnIMEStartComposition)
         MESSAGE_HANDLER(WM_IME_COMPOSITION, OnIMEComposition)
@@ -214,7 +214,7 @@ public:
         current_drag_op_ = operation;
     }
 
-    //ÁÙÊ±
+    //ä¸´æ—¶
 
 
     int view_width_ = 0;
@@ -258,7 +258,7 @@ private:
     HWND m_hToolTip = nullptr;
 
     // Class that encapsulates IMM32 APIs and controls IMEs attached to a window.
-    scoped_ptr<client::OsrImeHandlerWin> ime_handler_;
+    std::shared_ptr<client::OsrImeHandlerWin> ime_handler_;
 
     CComPtr<client::DropTargetWin> drop_target_;
     CefRenderHandler::DragOperation current_drag_op_ = DRAG_OPERATION_NONE;

@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include "extlib/pack.h"
+#include <algorithm>
 #pragma comment(lib, "packlib.lib")
 
 using namespace std;

@@ -1,0 +1,1 @@
+git update-index --assume-unchanged EasyCef_dll/cef.props
