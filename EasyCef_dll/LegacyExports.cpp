@@ -174,9 +174,13 @@ namespace wrapQweb {
 				};
 
 				strParam = trim(strParam);
+
+				auto JsonParm = CefValue::Create();
+				JsonParm->SetString(strParam);
+				strParam = CefWriteJSON(JsonParm, JSON_WRITER_DEFAULT);
 			}
 
-			auto fmt = std::format("window.invokeMethod('{}', '{}', '{}', {})", utf8_module, utf8_method, strParam, bNoticeJSTrans2JSON);
+			auto fmt = std::format("window.invokeMethod('{}', '{}', {}, {})", utf8_module, utf8_method, strParam, bNoticeJSTrans2JSON);
 
 			frame->ExecuteJavaScript(fmt, "", 0);
 

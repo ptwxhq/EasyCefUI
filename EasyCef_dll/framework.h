@@ -15,7 +15,9 @@
 #include "include/cef_version.h"
 
 #if CEF_VERSION_MAJOR == 94
-#pragma message("!! you may need set _HAS_DEPRECATED_RESULT_OF and _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING !!")
+#ifndef _HAS_DEPRECATED_RESULT_OF
+#pragma message("!! you may need define _HAS_DEPRECATED_RESULT_OF and _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING !!")
+#endif
 #endif
 
 
@@ -40,8 +42,14 @@ typedef unsigned long wvhandle;
 #endif
 
 #ifdef _DEBUG
+#ifndef _WIN64
 #define ASSERT(x) {if(!(x)) _asm{int 0x03}}while(0)
-#define VERIFY(x) {if(!(x)) _asm{int 0x03}}while(0)
+#define VERIFY(x) ASSERT(x)
+#else
+#define ASSERT(x) assert(x)
+#define VERIFY(x) ASSERT(x)
+#endif
+
 #else
 #define ASSERT(x)
 #define VERIFY(x) x

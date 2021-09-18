@@ -38,7 +38,7 @@ bool IsSelectionAttribute(char attribute) {
 void GetCompositionSelectionRange(HIMC imc,
                                   int* target_start,
                                   int* target_end) {
-  int attribute_size = ::ImmGetCompositionString(imc, GCS_COMPATTR, NULL, 0);
+  int attribute_size = ::ImmGetCompositionString(imc, GCS_COMPATTR, nullptr, 0);
   if (attribute_size > 0) {
     int start = 0;
     int end = 0;
@@ -67,7 +67,7 @@ void GetCompositionUnderlines(
     int target_start,
     int target_end,
     std::vector<CefCompositionUnderline>& underlines) {
-  int clause_size = ::ImmGetCompositionString(imc, GCS_COMPCLAUSE, NULL, 0);
+  int clause_size = ::ImmGetCompositionString(imc, GCS_COMPCLAUSE, nullptr, 0);
   int clause_length = clause_size / sizeof(uint32);
   if (clause_length) {
     std::vector<uint32> clause_data(clause_length);
@@ -135,7 +135,7 @@ void OsrImeHandlerWin::CreateImeWindow() {
   if (PRIMARYLANGID(input_language_id_) == LANG_CHINESE ||
       PRIMARYLANGID(input_language_id_) == LANG_JAPANESE) {
     if (!system_caret_) {
-      if (::CreateCaret(hwnd_, NULL, 1, 1))
+      if (::CreateCaret(hwnd_, nullptr, 1, 1))
         system_caret_ = true;
     }
   }
@@ -266,7 +266,7 @@ void OsrImeHandlerWin::GetCompositionInfo(
   if (!(lparam & CS_NOMOVECARET) && (lparam & GCS_CURSORPOS)) {
     // IMM32 does not support non-zero-width selection in a composition. So
     // always use the caret position as selection range.
-    int cursor = ::ImmGetCompositionString(imc, GCS_CURSORPOS, NULL, 0);
+    int cursor = ::ImmGetCompositionString(imc, GCS_CURSORPOS, nullptr, 0);
     composition_start = cursor;
   } else {
     composition_start = 0;
@@ -308,7 +308,7 @@ bool OsrImeHandlerWin::GetString(HIMC imc,
                                  CefString& result) {
   if (!(lparam & type))
     return false;
-  LONG string_size = ::ImmGetCompositionString(imc, type, NULL, 0);
+  LONG string_size = ::ImmGetCompositionString(imc, type, nullptr, 0);
   if (string_size <= 0)
     return false;
 
@@ -358,7 +358,7 @@ bool OsrImeHandlerWin::GetComposition(
 
 void OsrImeHandlerWin::DisableIME() {
   CleanupComposition();
-  ::ImmAssociateContextEx(hwnd_, NULL, 0);
+  ::ImmAssociateContextEx(hwnd_, nullptr, 0);
 }
 
 void OsrImeHandlerWin::CancelIME() {
@@ -374,7 +374,7 @@ void OsrImeHandlerWin::CancelIME() {
 
 void OsrImeHandlerWin::EnableIME() {
   // Load the default IME context.
-  ::ImmAssociateContextEx(hwnd_, NULL, IACE_DEFAULT);
+  ::ImmAssociateContextEx(hwnd_, nullptr, IACE_DEFAULT);
 }
 
 void OsrImeHandlerWin::UpdateCaretPosition(int index) {

@@ -173,7 +173,7 @@ void EasyUIWindowBase::OnFinalMessage(HWND h)
 
 UINT EasyUIWindowBase::Cls_OnNCHitTest(HWND hwnd, int x, int y)
 {
-	const auto hit = DefWindowProc(WM_NCHITTEST, 0, MAKELONG(x, y));
+	const int hit = DefWindowProc(WM_NCHITTEST, 0, MAKELONG(x, y)) & UINT32_MAX;
 	//bool bIsSize = false && (hit >= HTSIZEFIRST && hit <= HTSIZELAST);
 	if (hit == HTCLIENT)
 	{
