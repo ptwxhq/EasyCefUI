@@ -179,6 +179,10 @@ namespace wrapQweb {
 				JsonParm->SetString(strParam);
 				strParam = CefWriteJSON(JsonParm, JSON_WRITER_DEFAULT);
 			}
+			else
+			{
+				strParam = "''";
+			}
 
 			auto fmt = std::format("window.invokeMethod('{}', '{}', {}, {})", utf8_module, utf8_method, strParam, bNoticeJSTrans2JSON);
 

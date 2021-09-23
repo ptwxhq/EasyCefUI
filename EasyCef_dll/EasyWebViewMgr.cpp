@@ -235,5 +235,24 @@ void EasyWebViewMgr::AddDelayItem(CefRefPtr<WebViewControl> item)
 
 void EasyWebViewMgr::CleanDelayItem(HWND hWnd)
 {
-	m_DelayCleanList.erase(hWnd);
+	if (hWnd)
+	{
+		m_DelayCleanList.erase(hWnd);
+	}
+	else
+	{
+		auto it = m_DelayCleanList.begin();
+		while (it != m_DelayCleanList.end())
+		{
+			DestroyWindow(it->second->GetHWND());
+			it = m_DelayCleanList.begin();
+		}
+
+	}
+	
+}
+
+bool EasyWebViewMgr::HaveDelayItem()
+{
+	return !m_DelayCleanList.empty();
 }
