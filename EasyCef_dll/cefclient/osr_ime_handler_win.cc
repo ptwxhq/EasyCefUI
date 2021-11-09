@@ -1,4 +1,4 @@
-// Copyright 2016 The Chromium Embedded Framework Authors. Portions copyright
+ï»¿// Copyright 2016 The Chromium Embedded Framework Authors. Portions copyright
 // 2013 The Chromium Authors. All rights reserved. Use of this source code is
 // governed by a BSD-style license that can be found in the LICENSE file.
 
@@ -81,7 +81,7 @@ void GetCompositionUnderlines(
       underline.color = ColorUNDERLINE;
       underline.background_color = ColorBKCOLOR;
       underline.thick = 0;
-      underline.style = CEF_CUS_SOLID; //²¹³ä£¬·ÀÖ¹debugÒì³£
+      underline.style = CEF_CUS_SOLID; //è¡¥å……ï¼Œé˜²æ­¢debugå¼‚å¸¸
 
       // Use thick underline for the target clause.
       if (underline.range.from >= target_start &&

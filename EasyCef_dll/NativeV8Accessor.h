@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <unordered_map>
 
 
@@ -21,7 +21,7 @@ public:
         const CefRefPtr<CefV8Value> value,
         CefString& exception) override;
 
-    //½öĞèÒªÔÚui×¢²á
+    //ä»…éœ€è¦åœ¨uiæ³¨å†Œ
     void RegisterKeys(CefRefPtr<CefV8Value> obj);
 
     IMPLEMENT_REFCOUNTING(NativeV8Accessor);

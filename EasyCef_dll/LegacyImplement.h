@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 
 #if EASY_LEGACY_API_COMPATIBLE
 
-//ÕâÀïµÄ´úÂëÊÇÖ±½Ó´ÓÔ­ÓĞµÄÏîÄ¿ÖĞ¸´ÖÆ»òÕßÉÔÎ¢ĞŞ¸ÄµÄ£¬Èç¹ûÓĞÊ±¼äµÄ»°¾ÍÖØĞ´Ò»ÏÂ
+//è¿™é‡Œçš„ä»£ç æ˜¯ç›´æ¥ä»åŸæœ‰çš„é¡¹ç›®ä¸­å¤åˆ¶æˆ–è€…ç¨å¾®ä¿®æ”¹çš„ï¼Œå¦‚æœæœ‰æ—¶é—´çš„è¯å°±é‡å†™ä¸€ä¸‹
 
 
 #include "LegacyExports.h"
@@ -24,7 +24,7 @@ struct DocLoadComplate
 	}
 };
 
-//Ö¸Ê¾Ö÷¿ò¼Üdom¼ÓÔØÍê±Ï£¨½öÓÃÔÚui½çÃæ£©
+//æŒ‡ç¤ºä¸»æ¡†æ¶domåŠ è½½å®Œæ¯•ï¼ˆä»…ç”¨åœ¨uiç•Œé¢ï¼‰
 class DocComplate
 {
 public:
@@ -88,7 +88,7 @@ public:
 			dectItem.frameID_ = frame;
 			dectItem.dectID_ = id;
 			dectItem.identifier_ = identifier;
-			dectItem.lastHttpCode_ = 200; //Ä¬ÈÏÊÇ200,Èç¹ûÊÂ¼şÃ»ÓĞ±»´¥·¢,Ò³Ãæ¼ÓÔØÍ£Ö¹·¢200
+			dectItem.lastHttpCode_ = 200; //é»˜è®¤æ˜¯200,å¦‚æœäº‹ä»¶æ²¡æœ‰è¢«è§¦å‘,é¡µé¢åŠ è½½åœæ­¢å‘200
 			m_dectList.push_back(dectItem);
 			ret = true;
 		}

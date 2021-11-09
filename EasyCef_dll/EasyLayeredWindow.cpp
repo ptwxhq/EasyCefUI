@@ -474,8 +474,10 @@ LRESULT EasyLayeredWindow::OnMove(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle)
 
 LRESULT EasyLayeredWindow::OnFocus(UINT msg, WPARAM, LPARAM, BOOL&)
 {
+#if CEF_VERSION_MAJOR < 95
 	if (m_browser)
 		m_browser->GetHost()->SendFocusEvent(WM_SETFOCUS == msg);
+#endif
 	return 0;
 }
 

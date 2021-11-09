@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <unordered_map>
 #include <mutex>
@@ -33,7 +33,7 @@ public:
 	void RemoveWebViewByBrowserId(int id);
 
 
-	//Ö»ÓĞÇåÀíÊ±²ÅÄÜµ÷ÓÃ
+	//åªæœ‰æ¸…ç†æ—¶æ‰èƒ½è°ƒç”¨
 	void RemoveAllItems();
 	void AsyncSetIndexInfo(wvhandle handle, int index, HWND hWnd);
 
@@ -43,9 +43,9 @@ public:
 private:
 	wvhandle m_IdGen = 0;
 	WebViewList m_WebViewList;
-	WebViewIndex m_WebViewIndex;  //OnAfterCreatedÖĞÌí¼Ó£¬ÎªÁË¿ìËÙ²éÕÒ
+	WebViewIndex m_WebViewIndex;  //OnAfterCreatedä¸­æ·»åŠ ï¼Œä¸ºäº†å¿«é€ŸæŸ¥æ‰¾
 	WebViewHWNDIndex m_WebViewHWNDIndex;
-	DelayCleanList m_DelayCleanList;//´ıÇåÀíÄÚÈİ£¬½öÏŞUI
+	DelayCleanList m_DelayCleanList;//å¾…æ¸…ç†å†…å®¹ï¼Œä»…é™UI
 	std::mutex m_mutex;
 };
 

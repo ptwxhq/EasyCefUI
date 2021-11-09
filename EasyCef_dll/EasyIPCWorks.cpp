@@ -1,4 +1,4 @@
-#include "pch.h"
+ï»¿#include "pch.h"
 #include "EasyIPCWorks.h"
 
 bool EasyIPCWorks::DoSyncWork(const std::string name, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
@@ -36,15 +36,15 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 
 	
 	auto it = m_mapSyncFuncs.find(pData->Name);
-	//¿ÉÒÔ¿¼ÂÇ½øÒ»²½¹ýÂË
+	//å¯ä»¥è€ƒè™‘è¿›ä¸€æ­¥è¿‡æ»¤
 	bool bSync = it != m_mapSyncFuncs.end();
 	bool bNeedUI = false;
 	if (bSync)
 	{
 		if (IsBrowser())
 		{
-			//Ö»·Å¼¸¸ö±ØÐëµÃÍ¬²½µÄ¡£¿´ÁËÏÂmirageÀïÃæbrowserÖ»ÓÐinvokeMethodÓÐ±ØÒª
-			//Õâ¸öµÄÖ÷ÒªÔ­ÓÐÊÇÒòÎª´æÁ¿¾É´úÂë¿ÉÄÜ»áÔÚÄÚ²¿´´½¨´°¿ÚÖ®ÀàµÄ
+			//åªæ”¾å‡ ä¸ªå¿…é¡»å¾—åŒæ­¥çš„ã€‚çœ‹äº†ä¸‹mirageé‡Œé¢browseråªæœ‰invokeMethodæœ‰å¿…è¦
+			//è¿™ä¸ªçš„ä¸»è¦åŽŸæœ‰æ˜¯å› ä¸ºå­˜é‡æ—§ä»£ç å¯èƒ½ä¼šåœ¨å†…éƒ¨åˆ›å»ºçª—å£ä¹‹ç±»çš„
 			bNeedUI = pData->Name == "invokeMethod";
 		}
 		else

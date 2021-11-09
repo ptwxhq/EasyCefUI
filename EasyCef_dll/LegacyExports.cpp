@@ -89,11 +89,13 @@ namespace wrapQweb {
 
 	void SetFouceWebView(HWND hWnd, bool fouce)
 	{  
+#if CEF_VERSION_MAJOR < 95
 		auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
 		if (item && item->GetBrowser())
 		{
 			return item->GetBrowser()->GetHost()->SendFocusEvent(fouce);
 		}
+#endif
 	}
 
 	bool invokedJSMethod(HWND hwnd, const char* utf8_module, const char* utf8_method, const char* utf8_parm, JS_RETURN_WSTR *outstr, const char* utf8_frame_name, bool bNoticeJSTrans2JSON)

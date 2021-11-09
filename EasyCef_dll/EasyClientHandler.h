@@ -153,7 +153,12 @@ public:
         cef_errorcode_t cert_error,
         const CefString& request_url,
         CefRefPtr<CefSSLInfo> ssl_info,
-        CefRefPtr<CefRequestCallback> callback) override;
+#if CEF_VERSION_MAJOR > 95
+        CefRefPtr<CefCallback>
+#else
+        CefRefPtr<CefRequestCallback>
+#endif // CEF_VERSION_MAJOR > 95
+        callback) override;
 
 
     /////////////////

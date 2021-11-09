@@ -130,7 +130,13 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
             {
                 RECT rect = {};
                 GetClientRect(hAttchWnd, &rect);
-                windowInfo.SetAsChild(hAttchWnd, rect);
+                windowInfo.SetAsChild(hAttchWnd, 
+#if CEF_VERSION_MAJOR > 95
+                    CefRect({ rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top })
+#else
+                    rect
+#endif
+                );
 
                 //这边得使用相同的handler
                 auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(hAttchWnd, RECT(), target_url.ToWString().c_str(), this);
@@ -645,7 +651,13 @@ bool EasyClientHandler::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPt
     return false;
 }
 
-bool EasyClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser, cef_errorcode_t cert_error, const CefString& request_url, CefRefPtr<CefSSLInfo> ssl_info, CefRefPtr<CefRequestCallback> callback)
+bool EasyClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser, cef_errorcode_t cert_error, const CefString& request_url, CefRefPtr<CefSSLInfo> ssl_info, 
+#if CEF_VERSION_MAJOR > 95
+    CefRefPtr<CefCallback>
+#else
+    CefRefPtr<CefRequestCallback>
+#endif // CEF_VERSION_MAJOR > 95
+    callback)
 {
     bool bAllowUnsecure = false;
     auto domain = DomainPackInfo::GetFormatedDomain(request_url.ToWString().c_str());
@@ -656,7 +668,12 @@ bool EasyClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser, cef_er
 
     if (bAllowUnsecure)
     {
+#if CEF_VERSION_MAJOR > 95
+        callback->Continue();
+#else
         callback->Continue(true);
+#endif // CEF_VERSION_MAJOR > 95
+        
         return true;
     }
     else

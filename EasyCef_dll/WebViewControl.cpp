@@ -235,17 +235,28 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
             rcChild = pParams->rc;
         }
 
-        window_info.SetAsChild(pParams->hParent, rcChild);
+        window_info.SetAsChild(pParams->hParent,
+#if CEF_VERSION_MAJOR > 95
+            CefRect(rcChild.left, rcChild.top, rcChild.right - rcChild.left, rcChild.bottom - rcChild.top)
+#else
+            rcChild
+#endif
+            );
 
     }
     else
     {
         //是否要做支持？旧接口根据句柄来查找的，这样会有问题
         window_info.SetAsPopup(nullptr, "EasyCef");
+
+#if CEF_VERSION_MAJOR > 95
+        window_info.bounds = { pParams->rc.left, pParams->rc.top, pParams->rc.right - pParams->rc.left, pParams->rc.bottom - pParams->rc.top };
+#else
         window_info.x = pParams->rc.left;
         window_info.y = pParams->rc.top;
         window_info.width = pParams->rc.right - pParams->rc.left;
         window_info.height = pParams->rc.bottom - pParams->rc.top;
+#endif
         window_info.style = WS_POPUP | WS_VISIBLE;
     }
 
@@ -392,7 +403,9 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 
     browser_settings.javascript_close_windows = STATE_ENABLED;
     browser_settings.plugins = STATE_ENABLED;
+#if CEF_VERSION_MAJOR < 95
     browser_settings.universal_access_from_file_urls = STATE_ENABLED;
+#endif
 
 
     if (pParams->cookie.length())
@@ -516,7 +529,12 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
     }
     else
     {
-        RECT rcCef = { 0, 0, pParams->rc.right - pParams->rc.left, pParams->rc.bottom - pParams->rc.top };
+#if CEF_VERSION_MAJOR > 95
+        CefRect
+#else
+        RECT
+#endif
+         rcCef = { 0, 0, pParams->rc.right - pParams->rc.left, pParams->rc.bottom - pParams->rc.top };
         window_info.SetAsChild(*pWindow, rcCef);
     }
 
