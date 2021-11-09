@@ -60,7 +60,7 @@ void GetStorageForBytes(STGMEDIUM* storage, const void* data, size_t bytes) {
 
   storage->hGlobal = handle;
   storage->tymed = TYMED_HGLOBAL;
-  storage->pUnkForRelease = NULL;
+  storage->pUnkForRelease = nullptr;
 }
 
 template <typename T>
@@ -84,7 +84,7 @@ void GetStorageForFileDescriptor(STGMEDIUM* storage,
 
   storage->tymed = TYMED_HGLOBAL;
   storage->hGlobal = hdata;
-  storage->pUnkForRelease = NULL;
+  storage->pUnkForRelease = nullptr;
 }
 
 // Helper method for converting from text/html to MS CF_HTML.
@@ -557,7 +557,7 @@ HRESULT DataObjectWin::QueryGetData(FORMATETC* pFormatEtc) {
 
 HRESULT DataObjectWin::GetCanonicalFormatEtc(FORMATETC* pFormatEct,
                                              FORMATETC* pFormatEtcOut) {
-  pFormatEtcOut->ptd = NULL;
+  pFormatEtcOut->ptd = nullptr;
   return E_NOTIMPL;
 }
 

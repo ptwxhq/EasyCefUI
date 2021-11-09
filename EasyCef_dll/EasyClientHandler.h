@@ -195,7 +195,7 @@ protected:
     bool m_bIsUITransparent = false;
 
     //共用handler的数量
-    int m_BrowserCount = 0;
+    //int m_BrowserCount = 0;
 
     CefRefPtr<CefBrowser> m_browser;
 

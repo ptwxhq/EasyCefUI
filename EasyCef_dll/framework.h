@@ -42,8 +42,14 @@ typedef unsigned long wvhandle;
 #endif
 
 #ifdef _DEBUG
+#ifndef _WIN64
 #define ASSERT(x) {if(!(x)) _asm{int 0x03}}while(0)
-#define VERIFY(x) {if(!(x)) _asm{int 0x03}}while(0)
+#define VERIFY(x) ASSERT(x)
+#else
+#define ASSERT(x) assert(x)
+#define VERIFY(x) ASSERT(x)
+#endif
+
 #else
 #define ASSERT(x)
 #define VERIFY(x) x

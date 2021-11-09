@@ -5,18 +5,17 @@
 
 class WebViewControl;
 
-typedef std::unordered_map<wvhandle, CefRefPtr<WebViewControl>> WebViewList;
-typedef std::unordered_map<int, wvhandle> WebViewIndex;
-typedef std::unordered_map<HWND, wvhandle> WebViewHWNDIndex;
-
-typedef std::unordered_map<HWND, CefRefPtr<WebViewControl>> DelayCleanList;
-
 class EasyWebViewMgr
 {
 	DISALLOW_COPY_AND_ASSIGN(EasyWebViewMgr);
 	EasyWebViewMgr() = default;
 
 	wvhandle GetNewHandleId();
+
+	using WebViewList = std::unordered_map<wvhandle, CefRefPtr<WebViewControl>>;
+	using WebViewIndex = std::unordered_map<int, wvhandle>;
+	using WebViewHWNDIndex = std::unordered_map<HWND, wvhandle>;
+	using DelayCleanList = std::unordered_map<HWND, CefRefPtr<WebViewControl>>;
 
 public:
 
@@ -39,6 +38,7 @@ public:
 
 	void AddDelayItem(CefRefPtr<WebViewControl> item);
 	void CleanDelayItem(HWND hWnd);
+	bool HaveDelayItem();
 
 private:
 	wvhandle m_IdGen = 0;

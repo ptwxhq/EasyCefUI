@@ -148,7 +148,6 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
     
             }
 
-            //?
             if (!bCancel && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitOpenNewUrl)
             {
                 auto request_context = browser->GetHost()->GetRequestContext();
@@ -185,7 +184,9 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
     CEF_REQUIRE_UI_THREAD();
 
-    ++m_BrowserCount;
+   // ++m_BrowserCount;
+
+  //  LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnAfterCreated:(" << browser->GetIdentifier() << ")  " << m_BrowserCount;
 
     wvhandle handler = m_hManualCreateHandle;
 
@@ -243,9 +244,9 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
     CEF_REQUIRE_UI_THREAD();
 
-    //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnBeforeClose:(" << browser << ")  ";
+    LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnBeforeClose:(" << browser->GetIdentifier() << ")  ";
 
-    --m_BrowserCount;
+   // --m_BrowserCount;
 
     bool bIsPop = browser->IsPopup();
 
@@ -275,7 +276,7 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
         }
     }
 
-    if (m_BrowserCount < 1)
+    //if (m_BrowserCount < 1)
     {
         EasyIPCServer::GetInstance().RemoveClient(browser->GetIdentifier());
 
@@ -301,8 +302,16 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
         //CefQuitMessageLoop();
         if (g_BrowserGlobalVar.funcCloseCallback)
         {
+            if (EasyWebViewMgr::GetInstance().HaveDelayItem())
+            {
+                EasyWebViewMgr::GetInstance().CleanDelayItem(nullptr);
+            }
+
             static_cast<EASYCEF::CloseHandler>(g_BrowserGlobalVar.funcCloseCallback)();
         }
+        
+
+
     }
     
 }
@@ -326,15 +335,14 @@ void EasyClientHandler::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr
 
 void EasyClientHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title)
 {
+    HWND hWnd = nullptr;
     if (m_bIsUIControl)
     {
         auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
         if (!item)
             return;
 
-        HWND hWnd = item->GetHWND();
-
-        SetWindowTextW(hWnd, title.c_str());
+        hWnd = item->GetHWND();
     }
     else
     {
@@ -342,7 +350,16 @@ void EasyClientHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefSt
         {
             WebkitEcho::getFunMap()->webkitChangeTitle(browser->GetIdentifier(), title.ToWString().c_str());
         }
+        else
+        {
+            //让未使用自定义弹出页面的弹窗可以显示标题
+            if (browser->IsPopup())
+                hWnd = browser->GetHost()->GetWindowHandle();
+        }
     }
+
+    if (hWnd)
+        SetWindowTextW(hWnd, title.c_str());
 }
 
 void EasyClientHandler::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls)
