@@ -172,7 +172,7 @@ void EasyIPCBase::ThdRun()
 
 	if (IsWindow(m_hAsServerHandle))
 	{
-		SendMessage(m_hAsServerHandle, WM_CLOSE, 0, 0);
+		PostMessage(m_hAsServerHandle, WM_QUIT, 0, 0);
 	}
 
 	//需要先保证init完成
@@ -190,19 +190,19 @@ void EasyIPCBase::ThdRun()
 
 bool EasyIPCBase::Stop()
 {
-	if (m_bIsRunning)
-	{
-		SendMessage(m_hAsServerHandle, WM_CLOSE, 0, 0);
-		//SendMessage(m_hAsServerHandle, WM_QUIT, 0, 0);
-		m_bIsRunning = false;
-		return true;
-	}
-
 	if (m_hMainBlockingWorkNotify)
 	{
 		CloseHandle(m_hMainBlockingWorkNotify);
 		m_hMainBlockingWorkNotify = nullptr;
 	}
+
+	if (m_bIsRunning)
+	{
+		PostMessage(m_hAsServerHandle, WM_QUIT, 0, 0);
+		m_bIsRunning = false;
+		return true;
+	}
+
 
 	return false;
 }
@@ -416,10 +416,10 @@ LRESULT EasyIPCBase::WORKPROC(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 
 					CEasyFileMap shm_obj;
 
-					if(!shm_obj.Init
+					if (!shm_obj.Init
 					(0                    //only open
 						, strContName.c_str()              //name
-						, FILE_MAP_READ|FILE_MAP_WRITE
+						, FILE_MAP_READ | FILE_MAP_WRITE
 					))throw "file map err";
 
 					{
@@ -463,7 +463,7 @@ LRESULT EasyIPCBase::WORKPROC(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 				CloseHandle(hEvent);
 
 				//LOG(INFO) << GetCurrentProcessId() << "] thread work end" << br;
- 				
+
 				}
 			).detach();
 

@@ -179,7 +179,7 @@ namespace wrapQweb {
 	//软件同步通信方法(模块，方法 ，参数，返回值， 框架名，前端使用的参数bNoticeJSTrans2JSON）
 	//不需要返回值时自动转异步
 		EASYCEF_EXP_API bool invokedJSMethod(HWND, const char* utf8_module, const char* utf8_method,
-			const char* utf8_parm, /*CStringW**/WCHAR** outstr,
+			const char* utf8_parm, /*CStringW**/JS_RETURN_WSTR* outstr,
 			const char* utf8_frame_name = 0, bool bNoticeJSTrans2JSON = true);
 
 	//软件异步通信方法(模块，方法 ，参数，返回值， 框架名，前端使用的参数bNoticeJSTrans2JSON）
