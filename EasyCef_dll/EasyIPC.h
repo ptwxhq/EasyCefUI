@@ -72,11 +72,16 @@ protected:
 	OnceBlockingWorkCall m_OnceBlockingWorkCall = nullptr;
 
 	HANDLE m_hMainBlockingWorkNotify = nullptr;
+	HANDLE m_hForceStopWorkNotify = nullptr;
 
 	std::atomic_ulong m_SendRound;
 
 	//to handle, flag
 	std::unordered_map<IPCHandle, std::unique_ptr<std::promise<void>>> m_MsgShareMemQueue;
+
+	std::condition_variable m_listDataUpdate;
+	std::mutex m_MutWorkthd;
+	std::list<std::shared_ptr<std::string>> m_listStrContName;
 	
 private:
 	DWORD m_dwMainThreadId = 0;

@@ -673,9 +673,11 @@ void EasyBrowserWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, b
 				SetEvent(hWait);
 				});
 
-			ipcserver.TriggerBlockingWorkEvent();
+			if (ipcserver.TriggerBlockingWorkEvent())
+			{
+				WaitForSingleObject(hWait, 15000);
+			}
 
-			WaitForSingleObject(hWait, 15000);
 			CloseHandle(hWait);
 
 			//LOG(INFO) << GetCurrentProcessId() << "] EasyIPCServer specia end:(" << pData->ReturnVal;

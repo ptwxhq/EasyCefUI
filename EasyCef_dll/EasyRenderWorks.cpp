@@ -209,9 +209,11 @@ void EasyRenderWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bo
 				SetEvent(hWait);
 				});
 
-			ipcclient.TriggerBlockingWorkEvent();
-
-			WaitForSingleObject(hWait, 15000);
+			if (ipcclient.TriggerBlockingWorkEvent())
+			{
+				WaitForSingleObject(hWait, 15000);
+			}
+			
 			CloseHandle(hWait);
 
 			//LOG(INFO) << GetCurrentProcessId() << "] EasyIPCClient specia end:(" << pData->ReturnVal;

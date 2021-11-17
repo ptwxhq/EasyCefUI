@@ -147,6 +147,7 @@ bool EasyIPCBase::Init()
 	}
 
 	m_hMainBlockingWorkNotify = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+	m_hForceStopWorkNotify = CreateEventW(nullptr, FALSE, FALSE, nullptr);
 
 	WCHAR strClassName[] = L"__EasyIpcMsgClass_v1_";
 
@@ -190,8 +191,18 @@ void EasyIPCBase::ThdRun()
 
 bool EasyIPCBase::Stop()
 {
+	bool bRes = false;
+
+	if (m_hForceStopWorkNotify)
+	{
+		SetEvent(m_hForceStopWorkNotify);
+		CloseHandle(m_hForceStopWorkNotify);
+		m_hForceStopWorkNotify = nullptr;
+	}
+
 	if (m_hMainBlockingWorkNotify)
 	{
+		TriggerBlockingWorkEvent();
 		CloseHandle(m_hMainBlockingWorkNotify);
 		m_hMainBlockingWorkNotify = nullptr;
 	}
@@ -200,11 +211,16 @@ bool EasyIPCBase::Stop()
 	{
 		PostMessage(m_hAsServerHandle, WM_QUIT, 0, 0);
 		m_bIsRunning = false;
-		return true;
+
+		m_listDataUpdate.notify_all();
+
+		std::lock_guard<std::mutex> lock(m_MutWorkthd);
+
+		bRes = true;
 	}
 
 
-	return false;
+	return bRes;
 }
 
 
@@ -217,6 +233,110 @@ void EasyIPCBase::Run()
 	m_bIsRunning = true;
 
 	SetUserDataPtr(m_hAsServerHandle, this);
+
+	std::vector<std::thread> vecEasyThreadPool;
+	const int nEasyThreadPoolCount = 5;
+	for (int i = 0; i < nEasyThreadPoolCount; i++)
+
+		vecEasyThreadPool.push_back(std::thread([this]() {
+
+		while (m_bIsRunning)
+		{
+			std::shared_ptr<std::string> pOnceWork = nullptr;
+
+			{
+				std::unique_lock<std::mutex> lock(m_MutWorkthd);
+
+				while (m_listStrContName.empty() && m_bIsRunning)
+				{
+					m_listDataUpdate.wait(lock);
+				}
+
+				if (!m_bIsRunning)
+				{
+					break;
+				}
+
+				pOnceWork = m_listStrContName.front();
+				m_listStrContName.pop_front();
+
+				if (!pOnceWork)
+				{
+					continue;
+				}
+			}			
+
+			std::string strContName = *pOnceWork;
+			{
+				auto hEvent = OpenEventA(EVENT_MODIFY_STATE, FALSE, strContName.c_str());
+
+				if (!hEvent)
+				{
+					continue;
+				}
+
+				try
+				{
+					if (!m_workCall)
+						throw "No work callback";
+
+					size_t srcLen = 0;
+					std::string strIn;
+
+					CEasyFileMap shm_obj;
+
+					if (!shm_obj.Init
+					(0                    //only open
+						, strContName.c_str()              //name
+						, FILE_MAP_READ | FILE_MAP_WRITE
+					))throw "file map err";
+
+					{
+						CEasyFileMap::MAP region(shm_obj, FILE_MAP_READ, sizeof(int) + sizeof(size_t));
+						memcpy(&srcLen, region + sizeof(int), sizeof(size_t));
+					}
+
+					if (srcLen > 0)
+					{
+						CEasyFileMap::MAP region(shm_obj, FILE_MAP_READ, sizeof(int) + sizeof(size_t) + srcLen);
+						strIn.assign(region + sizeof(int) + sizeof(size_t), srcLen);
+					}
+
+					std::string strOut;
+					m_workCall(strIn, strOut);
+
+					if (strOut.length() > g_IpcMaxMemorySize - 8)
+					{
+						LOG(INFO) << GetCurrentProcessId() << "] IPC return too large:(" << strOut.length() << ") max:[" << g_IpcMaxMemorySize;
+
+						throw "return length too large";
+					}
+
+					const auto outLen = strOut.length();
+					CEasyFileMap::MAP region(shm_obj, FILE_MAP_READ | FILE_MAP_WRITE, outLen + sizeof(size_t) + sizeof(int));
+					memset(region, -1, sizeof(int));
+					memcpy(region + sizeof(int), &outLen, sizeof(size_t));
+					memcpy(region + sizeof(int) + sizeof(size_t), strOut.c_str(), outLen);
+
+				}
+				catch (const std::exception& e)
+				{
+					LOG(WARNING) << GetCurrentProcessId() << "] Err:" << e.what();
+				}
+				catch (...)
+				{
+					LOG(WARNING) << GetCurrentProcessId() << "] Err else";
+				}
+
+				BOOL br = SetEvent(hEvent);
+				CloseHandle(hEvent);
+			}
+			//LOG(INFO) << GetCurrentProcessId() << "] thread work end" << br;
+
+		}
+
+			}));
+
 
 	MSG msg;
 	BOOL bRet;
@@ -232,9 +352,18 @@ void EasyIPCBase::Run()
 	}
 
 	//LOG(INFO) << GetCurrentProcessId() << "] EasyIPCBase end";
-
-	m_hAsServerHandle = nullptr;
+	m_listStrContName.clear();
 	m_bIsRunning = false;
+	m_hAsServerHandle = nullptr;
+
+	m_listDataUpdate.notify_all();
+
+	for (int i = 0; i < nEasyThreadPoolCount; i++)
+	{
+		vecEasyThreadPool[i].join();
+	}
+
+
 }
 
 bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::string& ret)
@@ -284,13 +413,13 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 		const int sendOK = SendMessage(handle, UM_IPC_SEND_WORK_INFO, nNowR, (LPARAM)m_hAsServerHandle);
 		if (sendOK == 1)
 		{
-			DWORD dwWaitCount = 1;
-			HANDLE hEvents[2] = { hEvent };
+			DWORD dwWaitCount = 2;
+			HANDLE hEvents[3] = { hEvent, m_hForceStopWorkNotify };
 			if (bIsMainThread)
 			{
 				assert(m_hMainBlockingWorkNotify);
-				hEvents[1] = m_hMainBlockingWorkNotify;
-				dwWaitCount = 2;
+				hEvents[2] = m_hMainBlockingWorkNotify;
+				dwWaitCount = 3;
 			}
 
 			do
@@ -325,7 +454,7 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 
 					break;
 				}
-				else if (dwWait == WAIT_OBJECT_0 + 1)
+				else if (dwWait == WAIT_OBJECT_0 + 2)
 				{
 					//执行发过来的同步任务
 					if (m_OnceBlockingWorkCall)
@@ -335,14 +464,25 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 						m_OnceBlockingWorkCall = nullptr;
 					}
 				}
+				else if (dwWait == WAIT_OBJECT_0 + 1)
+				{
+					//强制结束
+					LOG(WARNING) << GetCurrentProcessId() << "] force end:";
+					break;
+				}
 				else if (dwWait == WAIT_FAILED)
 				{
 					LOG(WARNING) << GetCurrentProcessId() << "] Failed:" << GetLastError();
 					break;
 				}
-				else
+				else if (dwWait == WAIT_TIMEOUT)
 				{
 					LOG(WARNING) << GetCurrentProcessId() << "] Timeout:" << dwWait;
+					break;
+				}
+				else
+				{
+					LOG(WARNING) << GetCurrentProcessId() << "] OTHERR:" << dwWait;
 					break;
 				}
 			} while (true);
@@ -397,75 +537,13 @@ LRESULT EasyIPCBase::WORKPROC(HWND h, UINT msg, WPARAM wp, LPARAM lp)
 
 			IPCHandle hSrcHandle = (IPCHandle)lp;
 
-			auto strContName = GetShareMemName(hSrcHandle, pThis->m_hAsServerHandle, wp);
+			{
+				std::lock_guard<std::mutex> lock(pThis->m_MutWorkthd);
 
-			std::thread([pThis, strContName]() {
+				pThis->m_listStrContName.push_back(std::make_shared<std::string>(GetShareMemName(hSrcHandle, pThis->m_hAsServerHandle, wp)));
+			}
 
-				auto hEvent = OpenEventA(EVENT_MODIFY_STATE, FALSE, strContName.c_str());
-
-				if (!hEvent)
-					return;
-
-				try
-				{
-					if (!pThis->m_workCall)
-						throw "No work callback";
-
-					size_t srcLen = 0;
-					std::string strIn;
-
-					CEasyFileMap shm_obj;
-
-					if (!shm_obj.Init
-					(0                    //only open
-						, strContName.c_str()              //name
-						, FILE_MAP_READ | FILE_MAP_WRITE
-					))throw "file map err";
-
-					{
-						CEasyFileMap::MAP region(shm_obj, FILE_MAP_READ, sizeof(int) + sizeof(size_t));
-						memcpy(&srcLen, region + sizeof(int), sizeof(size_t));
-					}
-
-					if (srcLen > 0)
-					{
-						CEasyFileMap::MAP region(shm_obj, FILE_MAP_READ, sizeof(int) + sizeof(size_t) + srcLen);
-						strIn.assign(region + sizeof(int) + sizeof(size_t), srcLen);
-					}
-
-					std::string strOut;
-					pThis->m_workCall(strIn, strOut);
-
-					if (strOut.length() > g_IpcMaxMemorySize - 8)
-					{
-						LOG(INFO) << GetCurrentProcessId() << "] IPC return too large:(" << strOut.length() << ") max:[" << g_IpcMaxMemorySize;
-
-						throw "return length too large";
-					}
-
-					const auto outLen = strOut.length();
-					CEasyFileMap::MAP region(shm_obj, FILE_MAP_READ | FILE_MAP_WRITE, outLen + sizeof(size_t) + sizeof(int));
-					memset(region, -1, sizeof(int));
-					memcpy(region + sizeof(int), &outLen, sizeof(size_t));
-					memcpy(region + sizeof(int) + sizeof(size_t), strOut.c_str(), outLen);
-
-				}
-				catch (const std::exception& e)
-				{
-					LOG(WARNING) << GetCurrentProcessId() << "] Err:" << e.what();
-				}
-				catch (...)
-				{
-					LOG(WARNING) << GetCurrentProcessId() << "] Err else";
-				}
-
-				BOOL br = SetEvent(hEvent);
-				CloseHandle(hEvent);
-
-				//LOG(INFO) << GetCurrentProcessId() << "] thread work end" << br;
-
-				}
-			).detach();
+			pThis->m_listDataUpdate.notify_one();
 
 			return 1;
 		}
