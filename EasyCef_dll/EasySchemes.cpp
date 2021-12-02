@@ -75,6 +75,15 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 
 	DomainPackInfo::Uri url_parts(request->GetURL());
 
+#ifdef _DEBUG
+
+	if (url_parts.Path_.empty())
+	{
+		url_parts.Path_ = L" ";
+	}
+
+#endif
+
 	const std::wstring strDecodedPath = CefURIDecode(url_parts.Path_, false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
 
 

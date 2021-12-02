@@ -302,10 +302,11 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
         //CefQuitMessageLoop();
         if (g_BrowserGlobalVar.funcCloseCallback)
         {
-            if (EasyWebViewMgr::GetInstance().HaveDelayItem())
-            {
-                EasyWebViewMgr::GetInstance().CleanDelayItem(nullptr);
-            }
+            //win7下有点问题，先屏蔽掉
+            //if (EasyWebViewMgr::GetInstance().HaveDelayItem())
+            //{
+            //    EasyWebViewMgr::GetInstance().CleanDelayItem(nullptr);
+            //}
 
             static_cast<EASYCEF::CloseHandler>(g_BrowserGlobalVar.funcCloseCallback)();
         }

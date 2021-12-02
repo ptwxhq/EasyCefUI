@@ -241,12 +241,12 @@ void EasyWebViewMgr::CleanDelayItem(HWND hWnd)
 	}
 	else
 	{
-		auto it = m_DelayCleanList.begin();
-		while (it != m_DelayCleanList.end())
-		{
-			DestroyWindow(it->second->GetHWND());
-			it = m_DelayCleanList.begin();
-		}
+		//auto it = m_DelayCleanList.begin();
+		//while (it != m_DelayCleanList.end())
+		//{
+		//	DestroyWindow(it->second->GetHWND());
+		//	it = m_DelayCleanList.begin();
+		//}
 
 	}
 	
