@@ -13,8 +13,15 @@ class EasyWebViewMgr
 	wvhandle GetNewHandleId();
 
 	using WebViewList = std::unordered_map<wvhandle, CefRefPtr<WebViewControl>>;
-	using WebViewIndex = std::unordered_map<int, wvhandle>;
-	using WebViewHWNDIndex = std::unordered_map<HWND, wvhandle>;
+
+	struct WVINDEX
+	{
+		int id;
+		HWND hwnd;
+	};
+
+	using WebViewIndex = std::unordered_map<wvhandle, WVINDEX>;
+
 	using DelayCleanList = std::unordered_map<HWND, CefRefPtr<WebViewControl>>;
 
 public:
@@ -44,7 +51,7 @@ private:
 	wvhandle m_IdGen = 0;
 	WebViewList m_WebViewList;
 	WebViewIndex m_WebViewIndex;  //OnAfterCreated中添加，为了快速查找
-	WebViewHWNDIndex m_WebViewHWNDIndex;
+
 	DelayCleanList m_DelayCleanList;//待清理内容，仅限UI
 	std::mutex m_mutex;
 };

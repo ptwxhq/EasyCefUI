@@ -25,18 +25,22 @@ EasyWebViewMgr& EasyWebViewMgr::GetInstance()
 
 CefRefPtr<WebViewControl> EasyWebViewMgr::GetItemByHwnd(HWND hWnd)
 {
-	auto it = m_WebViewHWNDIndex.find(hWnd);
-	if (it != m_WebViewHWNDIndex.end())
+	
+	for (auto it = m_WebViewIndex.begin(); it != m_WebViewIndex.end(); ++it)
 	{
-		auto it2 = m_WebViewList.find(it->second);
+		if (it->second.hwnd == hWnd)
+		{
+			auto it2 = m_WebViewList.find(it->first);
 
-		if (it2 != m_WebViewList.end())
-		{
-			return it2->second;
-		}
-		else
-		{
-			m_WebViewHWNDIndex.erase(it);
+			if (it2 != m_WebViewList.end())
+			{
+				return it2->second;
+			}
+			else
+			{
+				m_WebViewIndex.erase(it);
+			}
+			break;
 		}
 	}
 
@@ -44,7 +48,7 @@ CefRefPtr<WebViewControl> EasyWebViewMgr::GetItemByHwnd(HWND hWnd)
 	{
 		if (itAgain.second->GetHWND() == hWnd)
 		{
-			m_WebViewHWNDIndex.insert(std::make_pair(hWnd, itAgain.first));
+			m_WebViewIndex.insert(std::make_pair(itAgain.second->GetItemHandle(), WVINDEX{ itAgain.second->GetBrowserId(), hWnd }));
 			return itAgain.second;
 		}
 	}
@@ -54,18 +58,21 @@ CefRefPtr<WebViewControl> EasyWebViewMgr::GetItemByHwnd(HWND hWnd)
 
 CefRefPtr<WebViewControl> EasyWebViewMgr::GetItemBrowserById(int id)
 {
-	auto it = m_WebViewIndex.find(id);
-	if (it != m_WebViewIndex.end())
+	for (auto it = m_WebViewIndex.begin(); it != m_WebViewIndex.end(); ++it)
 	{
-		auto it2 = m_WebViewList.find(it->second);
+		if (it->second.id == id)
+		{
+			auto it2 = m_WebViewList.find(it->first);
 
-		if (it2 != m_WebViewList.end())
-		{
-			return it2->second;
-		}
-		else
-		{
-			m_WebViewIndex.erase(it);
+			if (it2 != m_WebViewList.end())
+			{
+				return it2->second;
+			}
+			else
+			{
+				m_WebViewIndex.erase(it);
+			}
+			break;
 		}
 	}
 
@@ -73,7 +80,7 @@ CefRefPtr<WebViewControl> EasyWebViewMgr::GetItemBrowserById(int id)
 	{
 		if (itAgain.second->GetBrowserId() == id)
 		{
-			m_WebViewIndex.insert(std::make_pair(id, itAgain.first));
+			m_WebViewIndex.insert(std::make_pair(itAgain.second->GetItemHandle(), WVINDEX{ id, itAgain.second->GetHWND() }));
 			return itAgain.second;
 		}
 	}
@@ -174,9 +181,7 @@ void EasyWebViewMgr::RemoveWebView(wvhandle id)
 	
 	m_mutex.lock();
 
-	m_WebViewIndex.erase(it->second->GetBrowserId());
-
-	m_WebViewHWNDIndex.erase(it->second->GetHWND());
+	m_WebViewIndex.erase(id);
 
 	m_WebViewList.erase(it);
 
@@ -189,11 +194,7 @@ void EasyWebViewMgr::RemoveWebViewByBrowserId(int id)
 	auto item = GetItemBrowserById(id);
 	if (item)
 	{
-		m_mutex.lock();
-		m_WebViewHWNDIndex.erase(item->GetHWND());
-		m_WebViewIndex.erase(id);
-		m_WebViewList.erase(item->GetItemHandle());
-		m_mutex.unlock();
+		RemoveWebView(item->GetItemHandle());
 	}
 }
 
@@ -216,12 +217,11 @@ void EasyWebViewMgr::RemoveAllItems()
 
 void EasyWebViewMgr::AsyncSetIndexInfo(wvhandle handle, int index, HWND hWnd)
 {
-	auto it = m_WebViewList.find(handle);
+	const auto& it = m_WebViewList.find(handle);
 
 	if (it != m_WebViewList.end())
 	{
-		m_WebViewIndex[index] = handle;
-		m_WebViewHWNDIndex[hWnd] = handle;
+		m_WebViewIndex[handle] = WVINDEX{ index, hWnd };
 	}
 }
 

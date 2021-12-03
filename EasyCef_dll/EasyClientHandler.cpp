@@ -270,9 +270,12 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
             if (IsWindow(m_webuicontrol->GetHWND()))
             {
                 EasyWebViewMgr::GetInstance().AddDelayItem(m_webuicontrol);
+
+                //部分情况下窗口先被销毁了，下面就不能设null，否则内部无法获取到RenderHandler导致崩溃
+                m_webuicontrol = nullptr;
             }
 
-            m_webuicontrol = nullptr;
+          
         }
     }
 

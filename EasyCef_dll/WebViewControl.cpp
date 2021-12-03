@@ -295,7 +295,7 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
         }
 
         CefRefPtr<EasyClientHandler> clientHandler = new EasyClientHandler;
-        m_clientHandler = clientHandler;
+        //m_clientHandler = clientHandler;
 
         clientHandler->SetManualHandle(m_itemHandle);
 
@@ -312,7 +312,7 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
         if (pParams->bSyncCreate)
         {
             //如果要用自己创建窗口再附着上去的方式也得要求在主UI线程调用，那干脆直接使用同步方式创建Browser好了，省事
-            m_browser = CefBrowserHost::CreateBrowserSync(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
+            m_browser = CefBrowserHost::CreateBrowserSync(window_info, clientHandler, pParams->url, browser_settings, extra_info, request_context);
 
             pParams->bRet = !!m_browser;
 
@@ -320,7 +320,7 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
         }
         else
         {
-            pParams->bRet = CefBrowserHost::CreateBrowser(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
+            pParams->bRet = CefBrowserHost::CreateBrowser(window_info, clientHandler, pParams->url, browser_settings, extra_info, request_context);
         }
     }
 
@@ -424,7 +424,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 
     ASSERT(CefCurrentlyOn(TID_UI));
     CefRefPtr<EasyClientHandler> clientHandler = new EasyClientHandler;
-    m_clientHandler = clientHandler;
+    //m_clientHandler = clientHandler;
 
     clientHandler->SetManualHandle(m_itemHandle);
 
@@ -542,7 +542,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
     if (pParams->bSyncCreate)
     {
         //如果要用自己创建窗口再附着上去的方式也得要求在主UI线程调用，那干脆直接使用同步方式创建Browser好了，省事
-        m_browser = CefBrowserHost::CreateBrowserSync(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
+        m_browser = CefBrowserHost::CreateBrowserSync(window_info, clientHandler, pParams->url, browser_settings, extra_info, request_context);
 
         GetWindowPtr()->SetBrowser(m_browser);
 
@@ -552,7 +552,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
     }
     else
     {
-        pParams->bRet = CefBrowserHost::CreateBrowser(window_info, m_clientHandler, pParams->url, browser_settings, extra_info, request_context);
+        pParams->bRet = CefBrowserHost::CreateBrowser(window_info, clientHandler, pParams->url, browser_settings, extra_info, request_context);
     }
 
     if (IsTransparentUI())

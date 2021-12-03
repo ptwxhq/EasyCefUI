@@ -73,7 +73,7 @@ protected:
 	CefRefPtr<CefBrowser> m_browser;
 
 	//实际是EasyClientHandler
-	CefRefPtr<CefClient> m_clientHandler;
+	//CefRefPtr<CefClient> m_clientHandler;
 };
 
 
