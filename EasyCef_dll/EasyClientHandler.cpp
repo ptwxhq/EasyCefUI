@@ -274,8 +274,6 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
                 //部分情况下窗口先被销毁了，下面就不能设null，否则内部无法获取到RenderHandler导致崩溃
                 m_webuicontrol = nullptr;
             }
-
-          
         }
     }
 
@@ -294,6 +292,8 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 
      //CefBrowser
     if (!EasyIPCServer::GetInstance().GetClientsCount()) {
+
+        m_webuicontrol = nullptr;
 
         //保存下cookies
         auto request_context = CefRequestContext::GetGlobalContext();
