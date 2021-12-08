@@ -143,6 +143,28 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>git version
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+for /f "tokens=1,2,3 delims=- " %%a in ('git log -1 --format^=%%ci') do (
+set gityear=%%a
+set gitmonth=%%b
+set gitday=%%c
+)
+for /f " delims=" %%t in ('git rev-list HEAD --count') do set gitv=%%t
+echo #define GIT_VER_NUM %gitv% &gt; version_git.h
+echo #define GIT_VER_YEAR %gityear% &gt;&gt; version_git.h
+echo #define GIT_VER_MONTH %gitmonth% &gt;&gt; version_git.h
+echo #define GIT_VER_DAY  %gitday% &gt;&gt; version_git.h
+set /a monthandday=%gitmonth%*100+%gitday%
+echo #define GIT_VER_MONANDDAY  %monthandday% &gt;&gt; version_git.h</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -210,7 +232,9 @@
     <ClInclude Include="NativeV8Accessor.h" />
     <ClInclude Include="NativeV8Handler.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Utility.h" />
+    <ClInclude Include="version.h" />
     <ClInclude Include="WebViewControl.h" />
   </ItemGroup>
   <ItemGroup>
@@ -248,6 +272,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="EasyCef_dll.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

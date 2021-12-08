@@ -2,6 +2,7 @@
 // Microsoft Visual C++ 生成的包含文件。
 // 供 EasyRender.rc 使用
 //
+#define VS_VERSION_INFO                 1
 #define IDC_MYICON                      2
 #define IDR_MAINFRAME                   128
 #define IDC_STATIC                      -1
