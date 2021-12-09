@@ -21,9 +21,10 @@ void EasyCefAppBrowser::OnContextInitialized()
 	EasyIPCServer::GetInstance().SetMainThread(GetCurrentThreadId());
 	EasyIPCServer::GetInstance().SetWorkCall(std::bind(&EasyBrowserWorks::CommWork, &EasyBrowserWorks::GetInstance(), std::placeholders::_1, std::placeholders::_2));
 
-	//黑暗模式
-	SetAllowDarkMode();
 
+	//黑暗模式
+	auto nDarkMode = GetPrivateProfileIntW(L"Settings", L"DarkMode", 1, g_BrowserGlobalVar.BrowserSettingsPath.c_str());
+	SetAllowDarkMode(nDarkMode);
 }
 
 void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line)
@@ -63,6 +64,11 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 	command_line->AppendSwitch("disable-web-security");
 	command_line->AppendSwitch("disable-site-isolation-trials");
 
+
+
+	auto bUseGpu = GetPrivateProfileIntW(L"Settings", L"GPU", 1, g_BrowserGlobalVar.BrowserSettingsPath.c_str());
+	if (bUseGpu == 0)
+		command_line->AppendSwitch("disable-gpu");
 
 }
 

@@ -538,9 +538,26 @@ void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context)
 #endif
 }
 
-void SetAllowDarkMode()
+void SetAllowDarkMode(int nValue)
 {
-    const auto DarkModeForApp = [] (bool bNewVer)
+    if (nValue <= 0 || nValue >= 3)
+        return;
+
+    enum PreferredAppMode
+    {
+        Default,
+        AllowDark,
+        ForceDark,
+        ForceLight,
+        Max
+    } eMode = Default;
+
+    if (nValue == 1)
+        eMode = AllowDark;
+    else if (nValue == 2)
+        eMode = ForceDark;
+
+    const auto DarkModeForApp = [] (bool bNewVer, PreferredAppMode eMode)
     {
         HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
 
@@ -551,18 +568,11 @@ void SetAllowDarkMode()
             if (bNewVer)
             {
                 // 1903 18362
-                enum PreferredAppMode
-                {
-                    Default,
-                    AllowDark,
-                    ForceDark,
-                    ForceLight,
-                    Max
-                };
+
                 using fnSetPreferredAppMode = PreferredAppMode(WINAPI*)(PreferredAppMode appMode); // ordinal 135, in 1903
                 auto _SetPreferredAppMode = reinterpret_cast<fnSetPreferredAppMode>(ord135);
                 if (_SetPreferredAppMode)
-                    _SetPreferredAppMode(AllowDark);
+                    _SetPreferredAppMode(eMode);
             }
             else
             {
@@ -588,11 +598,11 @@ void SetAllowDarkMode()
         {
             if (build >= 18362)
             {
-                DarkModeForApp(true);
+                DarkModeForApp(true, eMode);
             }
             else if (build >= 17763)
             {
-                DarkModeForApp(false);
+                DarkModeForApp(false, eMode);
             }
         }
     }

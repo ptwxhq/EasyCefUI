@@ -153,9 +153,9 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd
 for /f "tokens=1,2,3 delims=- " %%a in ('git log -1 --format^=%%ci') do (
-set gityear=%%a
-set gitmonth=%%b
-set gitday=%%c
+for /f "tokens=* delims=0" %%a in ("%%a") do set gityear=%%a
+for /f "tokens=* delims=0" %%b in ("%%b") do set gitmonth=%%b
+for /f "tokens=* delims=0" %%c in ("%%c") do set gitday=%%c
 )
 for /f " delims=" %%t in ('git rev-list HEAD --count') do set gitv=%%t
 echo #define GIT_VER_NUM %gitv% &gt; version_git.h

@@ -61,7 +61,7 @@ CefString CefV8ValueToString(CefRefPtr<CefV8Value> value);
 
 void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context);
 
-void SetAllowDarkMode();
+void SetAllowDarkMode(int nValue);
 
 namespace webinfo {
 

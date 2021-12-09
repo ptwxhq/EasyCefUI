@@ -48,7 +48,7 @@ CefMouseEvent ToMouseEvent(POINTL p, DWORD key_state, HWND hWnd) {
   ScreenToClient(hWnd, &screen_point);
   ev.x = screen_point.x;
   ev.y = screen_point.y;
-  ev.modifiers = ::GetCefMouseModifiers(key_state);
+  ev.modifiers = GetCefMouseModifiers(key_state);
   return ev;
 }
 
@@ -200,7 +200,7 @@ void CFHtmlToHtml(const std::string& cf_html,
   size_t frag_start = std::string::npos;
   size_t frag_end = std::string::npos;
 
-  CFHtmlExtractMetadata(cf_html, base_url, NULL, &frag_start, &frag_end);
+  CFHtmlExtractMetadata(cf_html, base_url, nullptr, &frag_start, &frag_end);
 
   if (html && frag_start != std::string::npos &&
       frag_end != std::string::npos) {
@@ -219,7 +219,7 @@ bool DragDataToDataObject(CefRefPtr<CefDragData> drag_data,
   const int kMaxDataObjects = 10;
   FORMATETC fmtetcs[kMaxDataObjects];
   STGMEDIUM stgmeds[kMaxDataObjects];
-  FORMATETC fmtetc = {0, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
+  FORMATETC fmtetc = {0, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL};
   int curr_index = 0;
   CefString text = drag_data->GetFragmentText();
   if (!text.empty()) {

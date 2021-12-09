@@ -17,9 +17,11 @@
 #pragma comment(lib, "Imm32.lib")
 
 
-#define ColorUNDERLINE 0xFF000000  // Black SkColor value for underline,
+#define ColorUNDERLINE \
+  0xFF000000  // Black SkColor value for underline,
                                    // same as Blink.
-#define ColorBKCOLOR 0x00000000    // White SkColor value for background,
+#define ColorBKCOLOR \
+  0x00000000  // White SkColor value for background,
                                    // same as Blink.
 
 namespace client {
