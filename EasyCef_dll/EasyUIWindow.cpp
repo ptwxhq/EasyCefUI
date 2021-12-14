@@ -282,6 +282,19 @@ BOOL EasyUIWindowBase::ProcessWindowMessage(HWND hWnd, UINT uMsg, WPARAM wParam,
 		}*/
 
 		return TRUE;
+	case WM_ENTERMENULOOP:
+		if (!wParam) {
+			// Entering the menu loop for the application menu.
+			CefSetOSModalLoop(true);
+		}
+		break;
+
+	case WM_EXITMENULOOP:
+		if (!wParam) {
+			// Exiting the menu loop for the application menu.
+			CefSetOSModalLoop(false);
+		}
+		break;
 	default:
 		return FALSE;
 	}

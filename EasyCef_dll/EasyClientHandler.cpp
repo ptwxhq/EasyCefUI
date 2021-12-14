@@ -244,22 +244,18 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
     CEF_REQUIRE_UI_THREAD();
 
-    LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnBeforeClose:(" << browser->GetIdentifier() << ")  ";
-
-   // --m_BrowserCount;
+    LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnBeforeClose:(" << browser->GetIdentifier() << ") begin ";
 
     bool bIsPop = browser->IsPopup();
 
+    if (m_browser && m_browser->IsSame(browser))
+    {
+        //防止关闭时仍然有引用导致无法检查异常
+        m_browser = nullptr;
+    }
+
     if (bIsPop)
     {
-        //// Remove from the list of existing browsers.
-        //BrowserList::iterator bit = m_popbrowsers.begin();
-        //for (; bit != m_popbrowsers.end(); ++bit) {
-        //    if ((*bit)->IsSame(browser)) {
-        //        m_popbrowsers.erase(bit);
-        //        break;
-        //    }
-        //}
     }
     else
     {
@@ -270,10 +266,9 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
             if (IsWindow(m_webuicontrol->GetHWND()))
             {
                 EasyWebViewMgr::GetInstance().AddDelayItem(m_webuicontrol);
-
-                //部分情况下窗口先被销毁了，下面就不能设null，否则内部无法获取到RenderHandler导致崩溃
-                m_webuicontrol = nullptr;
             }
+
+            m_webuicontrol = nullptr;
         }
     }
 
@@ -284,16 +279,8 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
         EasyWebViewMgr::GetInstance().RemoveWebViewByBrowserId(browser->GetIdentifier());
     }
 
-    if (m_browser && m_browser->IsSame(browser))
-    {
-        //防止关闭时仍然有引用导致无法检查异常
-        m_browser = nullptr;
-    }
-
      //CefBrowser
     if (!EasyIPCServer::GetInstance().GetClientsCount()) {
-
-        m_webuicontrol = nullptr;
 
         //保存下cookies
         auto request_context = CefRequestContext::GetGlobalContext();
@@ -486,7 +473,10 @@ CefRefPtr<CefRenderHandler> EasyClientHandler::GetRenderHandler()
 {
     if (m_bIsUIControl && m_bIsUITransparent)
     {
-        return dynamic_cast<WebViewTransparentUIControl*>(m_webuicontrol.get());
+        if (m_browser)
+            return dynamic_cast<WebViewTransparentUIControl*>(m_webuicontrol.get());
+        else
+            return this; //光标在输入框时关闭窗口在OnBeforeClose处理后仍然需要保证CefRenderHandler存在，否则CefRenderWidgetHostViewOSR::OnUpdateTextInputStateCalled会崩溃
     }
 
     return nullptr;

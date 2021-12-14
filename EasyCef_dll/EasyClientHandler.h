@@ -15,7 +15,8 @@ class EasyClientHandler :
     public CefContextMenuHandler,
     public CefRequestHandler,
     public CefDragHandler,
-    public CefDownloadHandler
+    public CefDownloadHandler,
+    public CefRenderHandler
 {
 public:
 
@@ -103,6 +104,16 @@ public:
     //////////////////////////////////////////////
         //CefRenderHandler 这边主要提供给透明UI，其他情况不使用
     CefRefPtr<CefRenderHandler> GetRenderHandler() override;
+
+    void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) override {};
+    void OnPaint(CefRefPtr<CefBrowser> browser,
+        PaintElementType type,
+        const RectList& dirtyRects,
+        const void* buffer,
+        int width,
+        int height) override {};
+
+
 
     //////////////////////////////////////////
 
