@@ -145,7 +145,7 @@ public:
         MESSAGE_HANDLER(WM_MOUSELEAVE, OnMouseEvent)
         MESSAGE_HANDLER(WM_MOUSEWHEEL, OnMouseEvent)
 
-        MESSAGE_HANDLER(WM_SHOWWINDOW, OnShowWindow)
+        MESSAGE_HANDLER(WM_WINDOWPOSCHANGED, OnWindowPosChanged)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
         MESSAGE_HANDLER(WM_MOVING, OnMove)
         MESSAGE_HANDLER(WM_MOVE, OnMove)
@@ -175,7 +175,7 @@ public:
     END_MSG_MAP()
 
     LRESULT OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&);
-    LRESULT OnShowWindow(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle);
+    LRESULT OnWindowPosChanged(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle);
     LRESULT OnSize(UINT msg, WPARAM wp,LPARAM lp, BOOL &handle);
     LRESULT OnMove(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle);
 

@@ -48,10 +48,6 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 		command_line->AppendSwitchWithValue("js-flags", "--expose-gc");
 	}
 
-	//if (g_BrowserGlobalVar.Debug)
-	{
-		command_line->AppendSwitch("disable-web-security");
-	}
 
 //	command_line->AppendSwitch("disable-web-security");
 //	command_line->AppendSwitch("disable-site-isolation-trials");

@@ -409,11 +409,21 @@ LRESULT EasyLayeredWindow::OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
 	return 0;
 }
 
-LRESULT EasyLayeredWindow::OnShowWindow(UINT, WPARAM wp, LPARAM lp, BOOL& h)
+LRESULT EasyLayeredWindow::OnWindowPosChanged(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 {
-	if (m_browser)
-		m_browser->GetHost()->WasHidden(!wp);
 	h = FALSE;
+	auto pWndPos = (LPWINDOWPOS)lp;
+	if (pWndPos)
+	{
+		bool bShow = pWndPos->flags & SWP_SHOWWINDOW;
+		if (bShow || (pWndPos->flags & SWP_HIDEWINDOW))
+		{
+			if (m_browser)
+				m_browser->GetHost()->WasHidden(!bShow);
+		}
+	}
+
+
 	return 0;
 }
 
