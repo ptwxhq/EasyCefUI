@@ -249,7 +249,25 @@ void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
             return myArray.constructor.toString().indexOf("Array") > -1;
         }
 
+        var eleList = new Array();
+
+        function getNeedEleInfo() {
+            eleList.splice(0, eleList.length);
+            for (let index = 0; index < edges.length; ++index) {
+                let eles = document.body.querySelectorAll("div." + edges[index].cls);
+                for (let i = 0; i < eles.length; ++i) {
+                    let ele = eles[i];
+                    let attr = ele.getAttribute("data-nc");
+                    if (attr == edges[index].nc) {
+                        eleList.push(ele);
+                        resizeObserver.observe(ele);
+                    }
+                }
+            }
+        }
+
         function updateNcEleRects(myArray) {
+            getNeedEleInfo();
             var notify_nc_alledge = new Object();
             myArray.forEach(ele => {
                 let attr = ele.getAttribute("data-nc");
@@ -265,9 +283,6 @@ void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
             return notify_nc_alledge;
         }
 
-        var tmp_nc_alledge = new Object();
-        var eleList = new Array();
-
         var timeoutID;
 
         const resizeObserver = new ResizeObserver(entries => {
@@ -275,18 +290,7 @@ void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
             timeoutID = window.setTimeout(updateNcEleRects, 200, eleList);
         });
 
-
-        for (let index = 0; index < edges.length; ++index) {
-            let eles = document.body.querySelectorAll("div." + edges[index].cls);
-            for (let i = 0; i < eles.length; ++i) {
-                let ele = eles[i];
-                let attr = ele.getAttribute("data-nc");
-                if (attr == edges[index].nc) {
-                    eleList.push(ele);
-                    resizeObserver.observe(ele);
-                }
-            }
-        }
+        getNeedEleInfo();
     }()
 ))";
 

@@ -4,6 +4,7 @@
 
 #include "extlib/pack.h"
 #include <algorithm>
+//#include <format>
 #pragma comment(lib, "packlib.lib")
 
 using namespace std;
@@ -124,6 +125,18 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 					break;
 				}
 
+
+				//过滤?和#
+				WCHAR aNoPathChar[] = { '?', '#' };
+				for (size_t i = 0; i < sizeof(aNoPathChar); i++)
+				{
+					auto cCheck = strPathInZip.find(aNoPathChar[i]);
+					if (cCheck != std::string::npos)
+					{
+						strPathInZip = strPathInZip.substr(0, cCheck);
+					}
+				}
+			
 				//首页未定义的情况，自动标记为index.html
 				if (strPathInZip == L"/")
 				{
@@ -276,6 +289,12 @@ void EasyResourceHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, in
 
 	response->SetMimeType(mime_type_);
 	response->SetStatus(statuscode_);
+	
+
+	//std::hash<std::string> eTag;
+	//auto hashRes = eTag(data_);
+
+	//response->SetHeaderByName("Etag", std::format("{:x}", hashRes), true);
 
 	// Set the resulting response length
 	response_length = data_.length();
