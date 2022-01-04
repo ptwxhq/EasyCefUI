@@ -54,12 +54,15 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 
 	//下面的安全设置将来的版本中可能会被去掉
 
-	//iframe跨域cookie
-	command_line->AppendSwitchWithValue("disable-features", "SameSiteByDefaultCookies,OutOfBlinkCors");
+	auto nSecurity = GetPrivateProfileIntW(L"Settings", L"Security", 1, g_BrowserGlobalVar.BrowserSettingsPath.c_str());
 
-	command_line->AppendSwitch("disable-web-security");
-	command_line->AppendSwitch("disable-site-isolation-trials");
-
+	if (nSecurity == 0)
+	{
+		//iframe跨域cookie
+		command_line->AppendSwitchWithValue("disable-features", "SameSiteByDefaultCookies,OutOfBlinkCors");
+		command_line->AppendSwitch("disable-web-security");
+		command_line->AppendSwitch("disable-site-isolation-trials");
+	}
 
 
 	auto bUseGpu = GetPrivateProfileIntW(L"Settings", L"GPU", 1, g_BrowserGlobalVar.BrowserSettingsPath.c_str());
