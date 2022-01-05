@@ -12,14 +12,10 @@ using namespace std;
 
 void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
-	registrar->AddCustomScheme("xpack", CEF_SCHEME_OPTION_LOCAL | CEF_SCHEME_OPTION_CORS_ENABLED /*| CEF_SCHEME_OPTION_CSP_BYPASSING*/);
+	//xpack改为CEF_SCHEME_OPTION_STANDARD之后没有禁用安全设置的话不允许直接读取file协议
+	registrar->AddCustomScheme("xpack", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_CORS_ENABLED | CEF_SCHEME_OPTION_CSP_BYPASSING);
 
 	registrar->AddCustomScheme(EASYCEFSCHEMES, CEF_SCHEME_OPTION_DISPLAY_ISOLATED);
-
-//	registrar->AddCustomScheme("file", CEF_SCHEME_OPTION_LOCAL);
-
-	//其他值： CEF_SCHEME_OPTION_CSP_BYPASSING	 CEF_SCHEME_OPTION_FETCH_ENABLED
-	//registrar->AddCustomScheme("xpack", CEF_SCHEME_OPTION_LOCAL| CEF_SCHEME_OPTION_SECURE| CEF_SCHEME_OPTION_CORS_ENABLED);
 }
 
 void RegEasyCefSchemes()
@@ -92,7 +88,8 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 		E_UNSET,
 		E400 = 400,
 		E403 = 403,
-		E404 = 404
+		E404 = 404,
+		E500 = 500
 	};
 
 	STATUSCODE sCurrent = STATUSCODE::E_UNSET;
@@ -128,7 +125,7 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 
 				//过滤?和#
 				WCHAR aNoPathChar[] = { '?', '#' };
-				for (size_t i = 0; i < sizeof(aNoPathChar); i++)
+				for (size_t i = 0; i < _countof(aNoPathChar); i++)
 				{
 					auto cCheck = strPathInZip.find(aNoPathChar[i]);
 					if (cCheck != std::string::npos)
@@ -206,11 +203,19 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 				//这边懒得处理文件过大的情况了，直接读取
 
 				const auto size = fs.tellg();
-				fs.seekg(std::ios::beg);
-				data_.resize(size);
-				fs.read(data_.data(), size);
+				if (size < 1024 * 1024 * 1024)
+				{
+					fs.seekg(std::ios::beg);
+					data_.resize((size_t)size);
+					fs.read(data_.data(), size);
 
-				bHaveFile = true;
+					bHaveFile = true;
+				}
+				else
+				{
+					sCurrent = STATUSCODE::E500;
+					data_ = "file is too large";
+				}
 			}
 			break;
 		case EasyResourceHandler::RESTYPE::INTERNALUI:

@@ -29,6 +29,13 @@ void EasyCefAppBrowser::OnContextInitialized()
 
 void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line)
 {
+	std::vector<std::string> vecDisableFeatures;
+
+	if (!g_BrowserGlobalVar.Debug)
+	{
+		command_line->Reset();
+	}
+
 #if CEF_VERSION_MAJOR <= 87
 	if (process_type.empty())
 	{
@@ -49,25 +56,41 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 	}
 
 
-//	command_line->AppendSwitch("disable-web-security");
-//	command_line->AppendSwitch("disable-site-isolation-trials");
+	auto bUseGpu = GetPrivateProfileIntW(L"Settings", L"GPU", 1, g_BrowserGlobalVar.BrowserSettingsPath.c_str());
+	if (bUseGpu == 0)
+		command_line->AppendSwitch("disable-gpu");
 
-	//下面的安全设置将来的版本中可能会被去掉
-
-	auto nSecurity = GetPrivateProfileIntW(L"Settings", L"Security", 1, g_BrowserGlobalVar.BrowserSettingsPath.c_str());
+	auto nSecurity = GetPrivateProfileIntW(L"Settings", L"Security", 0, g_BrowserGlobalVar.BrowserSettingsPath.c_str());
 
 	if (nSecurity == 0)
 	{
+		//下面的安全设置将来的版本中可能会被去掉
 		//iframe跨域cookie
-		command_line->AppendSwitchWithValue("disable-features", "SameSiteByDefaultCookies,OutOfBlinkCors");
+		vecDisableFeatures.push_back("SameSiteByDefaultCookies");
+		vecDisableFeatures.push_back("OutOfBlinkCors");
 		command_line->AppendSwitch("disable-web-security");
 		command_line->AppendSwitch("disable-site-isolation-trials");
 	}
 
 
-	auto bUseGpu = GetPrivateProfileIntW(L"Settings", L"GPU", 1, g_BrowserGlobalVar.BrowserSettingsPath.c_str());
-	if (bUseGpu == 0)
-		command_line->AppendSwitch("disable-gpu");
+	std::string strDisableFeatures;
+
+	for (auto it : vecDisableFeatures)
+	{
+		strDisableFeatures += it;
+		strDisableFeatures += ",";
+	}
+
+	if (!strDisableFeatures.empty())
+	{
+		if (*strDisableFeatures.rbegin() == ',')
+		{
+			strDisableFeatures.erase(strDisableFeatures.size()-1);
+		}
+
+		command_line->AppendSwitchWithValue("disable-features", strDisableFeatures);
+	}
+
 
 }
 
