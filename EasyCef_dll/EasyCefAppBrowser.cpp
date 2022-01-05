@@ -31,11 +31,6 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 {
 	std::vector<std::string> vecDisableFeatures;
 
-	if (!g_BrowserGlobalVar.Debug)
-	{
-		command_line->Reset();
-	}
-
 #if CEF_VERSION_MAJOR <= 87
 	if (process_type.empty())
 	{
