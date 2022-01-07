@@ -541,21 +541,14 @@ void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context)
 void SetAllowDarkMode(int nValue)
 {
     if (nValue <= 0 || nValue >= 3)
-        return;
-
-    enum PreferredAppMode
-    {
-        Default,
-        AllowDark,
-        ForceDark,
-        ForceLight,
-        Max
-    } eMode = Default;
+        nValue = 0;
 
     if (nValue == 1)
-        eMode = AllowDark;
+        g_BrowserGlobalVar.DarkModeType = PreferredAppMode::AllowDark;
     else if (nValue == 2)
-        eMode = ForceDark;
+        g_BrowserGlobalVar.DarkModeType = PreferredAppMode::ForceDark;
+    else if (nValue == 3)
+        g_BrowserGlobalVar.DarkModeType = PreferredAppMode::ForceLight;
 
     const auto DarkModeForApp = [] (bool bNewVer, PreferredAppMode eMode)
     {
@@ -598,12 +591,20 @@ void SetAllowDarkMode(int nValue)
         {
             if (build >= 18362)
             {
-                DarkModeForApp(true, eMode);
+                DarkModeForApp(true, g_BrowserGlobalVar.DarkModeType);
             }
             else if (build >= 17763)
             {
-                DarkModeForApp(false, eMode);
+                DarkModeForApp(false, g_BrowserGlobalVar.DarkModeType);
             }
+            else
+            {
+                g_BrowserGlobalVar.DarkModeType = PreferredAppMode::ForceLight;
+            }
+        }
+        else
+        {
+            g_BrowserGlobalVar.DarkModeType = PreferredAppMode::ForceLight;
         }
     }
 }

@@ -172,6 +172,8 @@ public:
         MESSAGE_HANDLER(WM_IME_COMPOSITION, OnIMEComposition)
         MESSAGE_HANDLER(WM_IME_ENDCOMPOSITION, OnIMECancelCompositionEvent)
 
+        MESSAGE_HANDLER(WM_WININICHANGE, OnWinIniChange)
+
     END_MSG_MAP()
 
     LRESULT OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&);
@@ -189,6 +191,8 @@ public:
     LRESULT OnIMEStartComposition(UINT, WPARAM, LPARAM, BOOL&);
     LRESULT OnIMEComposition(UINT, WPARAM, LPARAM lp, BOOL&);
     LRESULT OnIMECancelCompositionEvent(UINT, WPARAM, LPARAM, BOOL&);
+
+    LRESULT OnWinIniChange(UINT, WPARAM, LPARAM, BOOL& handle);
 
     LRESULT OnPaint(UINT, WPARAM, LPARAM, BOOL& handle);
 
@@ -256,6 +260,8 @@ private:
     bool last_mouse_down_on_view_ = {};
 
     HWND m_hToolTip = nullptr;
+    size_t m_sCurrentToolTipTextHash = 0;
+    std::unique_ptr<TOOLINFOW> m_pToolInfo;
 
     // Class that encapsulates IMM32 APIs and controls IMEs attached to a window.
     std::shared_ptr<client::OsrImeHandlerWin> ime_handler_;

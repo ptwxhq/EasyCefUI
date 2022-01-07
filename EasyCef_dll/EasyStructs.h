@@ -8,6 +8,15 @@ struct EasyCefFunctionFlag
 
 };
 
+enum class PreferredAppMode
+{
+	Default,
+	AllowDark,
+	ForceDark,
+	ForceLight,
+	Max
+};
+
 
 //全局变量
 struct BrowserGlobalVar
@@ -30,6 +39,8 @@ struct BrowserGlobalVar
 	void* funcCloseCallback = nullptr;
 
 	void* funcSpeedupCallback = nullptr;
+
+	PreferredAppMode DarkModeType = PreferredAppMode::Default;
 
 	//仅限UI窗口时使用
 	std::wstring WebViewClassName = L"EasyCefUIClass";

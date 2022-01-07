@@ -464,8 +464,6 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 		view_height_old_ = view_height_;
 	}
 
-	//UpdateHittestAera();
-
 	return 0;
 }
 
@@ -533,7 +531,7 @@ LRESULT EasyLayeredWindow::OnKeyEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
 		// which can be a combination of the following flag bits.
 		// 2 Either CTRL key is pressed.
 		// 4 Either ALT key is pressed.
-		SHORT scan_res = ::VkKeyScanExW(wp, current_layout);
+		SHORT scan_res = ::VkKeyScanExW((WCHAR)wp, current_layout);
 		if (((scan_res >> 8) & 0xFF) == (2 | 4)) {  // ctrl-alt pressed
 			event.modifiers &= ~(EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN);
 			event.modifiers |= EVENTFLAG_ALTGR_DOWN;
@@ -590,6 +588,8 @@ LRESULT EasyLayeredWindow::OnCreate(UINT, WPARAM, LPARAM lp, BOOL& handle)
 LRESULT EasyLayeredWindow::OnDestroy(UINT, WPARAM, LPARAM, BOOL& handle)
 {
 	handle = FALSE;
+
+	::SendMessage(m_hToolTip, WM_CLOSE, 0, 0);
 
 	RevokeDragDrop(m_hWnd);
 	drop_target_ = nullptr;
@@ -693,6 +693,23 @@ LRESULT EasyLayeredWindow::OnIMECancelCompositionEvent(UINT, WPARAM, LPARAM, BOO
 	return 0;
 }
 
+LRESULT EasyLayeredWindow::OnWinIniChange(UINT, WPARAM wp, LPARAM lp, BOOL& handle)
+{
+	handle = FALSE;
+	auto str = (LPCWSTR)lp;
+	if (!wcscmp(str, L"ImmersiveColorSet"))
+	{
+		if (::IsWindow(m_hToolTip))
+		{
+			::PostMessage(m_hToolTip, WM_CLOSE, 0, 0);
+			m_hToolTip = nullptr;
+		}
+
+	}
+
+	return 0;
+}
+
 LRESULT EasyLayeredWindow::OnPaint(UINT, WPARAM, LPARAM, BOOL& handle)
 {
 	Render();
@@ -759,25 +776,77 @@ void EasyLayeredWindow::SetAlpha(BYTE alpha, bool bRepaint)
 
 void EasyLayeredWindow::SetToolTip(const CefString& str)
 {
-	if (!m_hToolTip)
+	std::hash<std::wstring> hash;
+
+	if (!::IsWindow(m_hToolTip))
 	{
 		m_hToolTip = CreateWindowExW(WS_EX_TRANSPARENT, TOOLTIPS_CLASS, nullptr,
 			WS_POPUP | TTS_NOPREFIX | TTS_ALWAYSTIP | TTS_NOFADE,
 			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 			m_hWnd, nullptr, g_BrowserGlobalVar.hInstance, nullptr);
+
+		bool bUseDark = false;
+		if (g_BrowserGlobalVar.DarkModeType == PreferredAppMode::AllowDark)
+		{
+			DWORD dwData = 1;
+			CRegKey reg;
+			try
+			{
+				if (reg.Open(HKEY_CURRENT_USER, LR"(Software\Microsoft\Windows\CurrentVersion\Themes\Personalize)", KEY_QUERY_VALUE) == ERROR_SUCCESS)
+				{
+					reg.QueryDWORDValue(L"AppsUseLightTheme", dwData);
+				}
+			}
+			catch (...)
+			{
+
+			}
+
+			if (dwData == 0)
+			{
+				bUseDark = true;
+			}
+
+		}
+		else if (g_BrowserGlobalVar.DarkModeType == PreferredAppMode::ForceDark)
+		{
+			bUseDark = true;
+		}
+
+		if (bUseDark)
+		{
+			SetWindowTheme(m_hToolTip, L"DarkMode_Explorer", nullptr);
+		}
+
+		m_pToolInfo = std::make_unique<TOOLINFOW>();
+		memset(m_pToolInfo.get(), 0, sizeof(TOOLINFOW));
+		m_pToolInfo->cbSize = sizeof(TOOLINFOW);
+		m_pToolInfo->uFlags = TTF_SUBCLASS | TTF_IDISHWND;
+		m_pToolInfo->hwnd = m_hWnd;
+		m_pToolInfo->hinst = g_BrowserGlobalVar.hInstance;
+		m_pToolInfo->uId = (UINT_PTR)m_hWnd;
+
+		m_sCurrentToolTipTextHash = hash(L"");
+		::SendMessage(m_hToolTip, TTM_ADDTOOLW, 0, (LPARAM)m_pToolInfo.get());
+		::SendMessage(m_hToolTip, TTM_SETMAXTIPWIDTH, 0, 800);
 	}
 
-	TOOLINFOW ti = { sizeof(TOOLINFOW) };
-	ti.uFlags = TTF_SUBCLASS;
-	ti.hwnd = m_hWnd;
-	ti.hinst = g_BrowserGlobalVar.hInstance;
+
 	std::wstring strtmp = str.ToWString();
-	ti.lpszText = (LPWSTR)strtmp.c_str();
-
-	GetClientRect(&ti.rect);
 
 
-	// Associate the tooltip with the "tool" window.
-	::SendMessage(m_hToolTip, TTM_ADDTOOLW, 0, (LPARAM)(LPTOOLINFO)&ti);
-	//::SendMessage(m_hToolTip, TTM_SETMAXTIPWIDTH, 0, -1);
+	auto sNewToolTipTextHash = hash(strtmp);
+	if (m_sCurrentToolTipTextHash != sNewToolTipTextHash)
+	{
+		m_sCurrentToolTipTextHash = sNewToolTipTextHash;
+		m_pToolInfo->lpszText = (LPWSTR)strtmp.c_str();
+
+		POINT pt;
+		GetCursorPos(&pt);
+		ScreenToClient(&pt);
+
+		m_pToolInfo->rect = { pt.x - 10, pt.y - 10, pt.x + 10, pt.y + 10 };
+
+		::SendMessage(m_hToolTip, TTM_SETTOOLINFOW, 0, (LPARAM)m_pToolInfo.get());
+	}
 }

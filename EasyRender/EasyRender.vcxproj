@@ -137,6 +137,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)</AdditionalLibraryDirectories>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>sysver.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -154,6 +157,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)</AdditionalLibraryDirectories>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>sysver.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="ApiFilter.h" />

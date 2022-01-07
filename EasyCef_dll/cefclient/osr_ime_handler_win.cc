@@ -9,10 +9,6 @@
 
 #include "include/base/cef_build.h"
 #include "osr_ime_handler_win.h"
-//#include "tests/cefclient/browser/resource.h"
-//#include "tests/shared/browser/geometry_util.h"
-//#include "tests/shared/browser/main_message_loop.h"
-//#include "tests/shared/browser/util_win.h"
 
 #pragma comment(lib, "Imm32.lib")
 
@@ -314,7 +310,7 @@ bool OsrImeHandlerWin::GetString(HIMC imc,
   if (string_size <= 0)
     return false;
 
-  // For trailing NULL - ImmGetCompositionString excludes that.
+  // For trailing nullptr - ImmGetCompositionString excludes that.
   string_size += sizeof(WCHAR);
 
   std::vector<wchar_t> buffer(string_size);

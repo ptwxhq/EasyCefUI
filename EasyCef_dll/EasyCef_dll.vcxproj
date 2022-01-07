@@ -163,14 +163,15 @@ echo #define GIT_VER_YEAR %gityear% &gt;&gt; version_git.h
 echo #define GIT_VER_MONTH %gitmonth% &gt;&gt; version_git.h
 echo #define GIT_VER_DAY  %gitday% &gt;&gt; version_git.h
 set /a monthandday=%gitmonth%*100+%gitday%
-echo #define GIT_VER_MONANDDAY  %monthandday% &gt;&gt; version_git.h</Command>
+echo #define GIT_VER_MONANDDAY  %monthandday% &gt;&gt; version_git.h
+</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;EASYCEFDLL_EXPORTS;_WINDOWS;_USRDLL;_HAS_DEPRECATED_RESULT_OF;_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING;CEF_USE_SANDBOX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;EASYCEFDLL_EXPORTS;_WINDOWS;_USRDLL;_HAS_DEPRECATED_RESULT_OF;_SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -182,6 +183,7 @@ echo #define GIT_VER_MONANDDAY  %monthandday% &gt;&gt; version_git.h</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ImportLibrary>$(OutDir)$(TargetName)_d.lib</ImportLibrary>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -205,6 +207,29 @@ echo #define GIT_VER_MONANDDAY  %monthandday% &gt;&gt; version_git.h</Command>
       <EnableUAC>false</EnableUAC>
       <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>git version
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+for /f "tokens=1,2,3 delims=- " %%a in ('git log -1 --format^=%%ci') do (
+for /f "tokens=* delims=0" %%a in ("%%a") do set gityear=%%a
+for /f "tokens=* delims=0" %%b in ("%%b") do set gitmonth=%%b
+for /f "tokens=* delims=0" %%c in ("%%c") do set gitday=%%c
+)
+for /f " delims=" %%t in ('git rev-list HEAD --count') do set gitv=%%t
+echo #define GIT_VER_NUM %gitv% &gt; version_git.h
+echo #define GIT_VER_YEAR %gityear% &gt;&gt; version_git.h
+echo #define GIT_VER_MONTH %gitmonth% &gt;&gt; version_git.h
+echo #define GIT_VER_DAY  %gitday% &gt;&gt; version_git.h
+set /a monthandday=%gitmonth%*100+%gitday%
+echo #define GIT_VER_MONANDDAY  %monthandday% &gt;&gt; version_git.h
+</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="cefclient\bytes_write_handler.h" />
