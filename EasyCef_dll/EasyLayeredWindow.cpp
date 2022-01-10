@@ -728,8 +728,7 @@ void EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 
 	memcpy(m_bitmap->GetBits(), pData, width * height * 4);
 
-	RECT rc = { 0, 0, width, height };
-	m_info.SetDirtyRect(&rc);
+	m_info.SetDirtyRect(nullptr);
 }
 
 void EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize)
@@ -744,6 +743,8 @@ void EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width
 			int iPos = ((y + iLine) * m_bitmap->GetWidth() + x) * 4;
 			memcpy(m_bitmap->GetBits() + iPos, pData + iPos, width * 4);
 		}
+
+		m_info.SetDirtyRect(nullptr);
 	}
 	else
 	{
@@ -751,10 +752,11 @@ void EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width
 		{
 			memcpy(m_bitmap->GetBits() + ((y + iLine) * m_bitmap->GetWidth() + x) * 4, pData + iLine * width * 4, width * 4);
 		}
-	}
 
-	RECT rc = { x,y, x + width,y + height };
-	m_info.SetDirtyRect(&rc);
+
+		RECT rc = { x,y, x + width,y + height };
+		m_info.SetDirtyRect(&rc);
+	}
 }
 
 void EasyLayeredWindow::Render()
