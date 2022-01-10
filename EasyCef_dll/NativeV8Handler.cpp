@@ -106,132 +106,9 @@ static void FowardRender2Browser(bool bSync, const CefString& name, const CefV8V
 		retval = CefV8Value::CreateInt(1);
 	}
 }
-//
-//class TestDOMVisitor : public CefDOMVisitor
-//{
-//public:
-//	explicit TestDOMVisitor(CefRefPtr<CefBrowser> browser)
-//		: browser_(browser) {}
-//
-//	IMPLEMENT_REFCOUNTING(TestDOMVisitor);
-//
-//	CefRefPtr<CefBrowser> browser_;
-//
-//
-//	void TestBodyNodeStructure(CefRefPtr<CefDOMNode> bodyNode) {
-//
-//		do
-//		{
-//			if (!bodyNode)break;
-//			if (!bodyNode->IsElement())break;
-//			if (!bodyNode->HasChildren())break;
-//
-//			CefRefPtr<CefDOMNode> curNode = bodyNode->GetFirstChild();
-//			while (curNode)
-//			{
-//				 if(curNode->Ha)
-//			}
-//
-//
-//		} while (false);
-//
-//		CefRefPtr<CefDOMNode> h1Node = bodyNode->GetFirstChild();
-//		EXPECT_TRUE(h1Node.get());
-//		EXPECT_TRUE(h1Node->IsElement());
-//		EXPECT_FALSE(h1Node->IsText());
-//		EXPECT_EQ(h1Node->GetName(), "H1");
-//		EXPECT_EQ(h1Node->GetElementTagName(), "H1");
-//
-//		EXPECT_TRUE(h1Node->GetNextSibling().get());
-//		EXPECT_FALSE(h1Node->GetPreviousSibling().get());
-//		EXPECT_TRUE(h1Node->HasChildren());
-//		EXPECT_FALSE(h1Node->HasElementAttributes());
-//
-//		CefRefPtr<CefDOMNode> textNode = h1Node->GetFirstChild();
-//		EXPECT_TRUE(textNode.get());
-//		EXPECT_FALSE(textNode->IsElement());
-//		EXPECT_TRUE(textNode->IsText());
-//		EXPECT_EQ(textNode->GetValue(), "Hello From");
-//
-//		EXPECT_FALSE(textNode->GetPreviousSibling().get());
-//		EXPECT_FALSE(textNode->HasChildren());
-//
-//		CefRefPtr<CefDOMNode> brNode = textNode->GetNextSibling();
-//		EXPECT_TRUE(brNode.get());
-//		EXPECT_TRUE(brNode->IsElement());
-//		EXPECT_FALSE(brNode->IsText());
-//		EXPECT_EQ(brNode->GetName(), "BR");
-//		EXPECT_EQ(brNode->GetElementTagName(), "BR");
-//
-//		EXPECT_FALSE(brNode->HasChildren());
-//
-//		EXPECT_TRUE(brNode->HasElementAttributes());
-//		EXPECT_TRUE(brNode->HasElementAttribute("class"));
-//		EXPECT_EQ(brNode->GetElementAttribute("class"), "some_class");
-//		EXPECT_TRUE(brNode->HasElementAttribute("id"));
-//		EXPECT_EQ(brNode->GetElementAttribute("id"), "some_id");
-//		EXPECT_FALSE(brNode->HasElementAttribute("no_existing"));
-//
-//		CefDOMNode::AttributeMap map;
-//		brNode->GetElementAttributes(map);
-//		ASSERT_EQ(map.size(), (size_t)2);
-//		EXPECT_EQ(map["class"], "some_class");
-//		EXPECT_EQ(map["id"], "some_id");
-//
-//		// Can also retrieve by ID.
-//		brNode = bodyNode->GetDocument()->GetElementById("some_id");
-//		EXPECT_TRUE(brNode.get());
-//		EXPECT_TRUE(brNode->IsElement());
-//		EXPECT_FALSE(brNode->IsText());
-//		EXPECT_EQ(brNode->GetName(), "BR");
-//		EXPECT_EQ(brNode->GetElementTagName(), "BR");
-//
-//		textNode = brNode->GetNextSibling();
-//		EXPECT_TRUE(textNode.get());
-//		EXPECT_FALSE(textNode->IsElement());
-//		EXPECT_TRUE(textNode->IsText());
-//		EXPECT_EQ(textNode->GetValue(), "Main Frame");
-//
-//		EXPECT_FALSE(textNode->GetNextSibling().get());
-//		EXPECT_FALSE(textNode->HasChildren());
-//
-//		CefRefPtr<CefDOMNode> divNode = h1Node->GetNextSibling();
-//		EXPECT_TRUE(divNode.get());
-//		EXPECT_TRUE(divNode->IsElement());
-//		EXPECT_FALSE(divNode->IsText());
-//		CefRect divRect = divNode->GetElementBounds();
-//		EXPECT_EQ(divRect.width, 50);
-//		EXPECT_EQ(divRect.height, 25);
-//		EXPECT_EQ(divRect.x, 150);
-//		EXPECT_EQ(divRect.y, 100);
-//		EXPECT_FALSE(divNode->GetNextSibling().get());
-//	}
-//
-//	// Test document structure by iterating through the DOM tree.
-//	void TestStructure(CefRefPtr<CefDOMDocument> document) {
-//		
-//
-//		CefRefPtr<CefDOMNode> bodyNode = document->GetBody();
-//		TestBodyNodeStructure(bodyNode);
-//	}
-//
-//
-//
-//	void Visit(CefRefPtr<CefDOMDocument> document) override {
-//		
-//		TestStructure(document);
-//
-//		CefRefPtr<CefProcessMessage> return_msg =
-//			CefProcessMessage::Create("get_result!!");
-//		//EXPECT_TRUE(return_msg->GetArgumentList()->SetBool(0, result));
-//		browser_->GetMainFrame()->SendProcessMessage(PID_BROWSER, return_msg);
-//	}
-//};
 
 void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
 {
-
-	//frame->VisitDOM(new TestDOMVisitor(frame->GetBrowser()));
    auto testJs = R"((
     function () {
         const edges = [
@@ -295,10 +172,6 @@ void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
 ))";
 
    frame->ExecuteJavaScript(testJs, "", 0);
-
-
-   //同时还要监视变化
-
 }
 
 

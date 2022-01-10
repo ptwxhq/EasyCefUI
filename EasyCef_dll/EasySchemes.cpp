@@ -7,9 +7,6 @@
 //#include <format>
 #pragma comment(lib, "packlib.lib")
 
-using namespace std;
-
-
 void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
 	//xpack改为CEF_SCHEME_OPTION_STANDARD之后没有禁用安全设置的话不允许直接读取file协议

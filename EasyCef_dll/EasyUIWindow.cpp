@@ -100,6 +100,8 @@ void EasyUIWindowBase::SetDraggableRegion(const std::vector<CefDraggableRegion>&
 {
 	::SetRectRgn(m_EdgeRegions[E_CAPTION], 0, 0, 0, 0);
 
+	m_bEdgeRegionExist[E_CAPTION] = !regions.empty();
+
 	// Determine new draggable region.
 	std::vector<CefDraggableRegion>::const_iterator it = regions.begin();
 	for (; it != regions.end(); ++it) {
@@ -118,12 +120,25 @@ void EasyUIWindowBase::SetEdgeNcAera(HT_INFO ht, const std::vector<RECT>& vecRc)
 {
 	::SetRectRgn(m_EdgeRegions[ht], 0, 0, 0, 0);
 
+	m_bEdgeRegionExist[ht] = !vecRc.empty();
+
 	for (auto& it : vecRc)
 	{
 		HRGN region = ::CreateRectRgn(it.left, it.top, it.right, it.bottom);
 		::CombineRgn(m_EdgeRegions[ht], m_EdgeRegions[ht], region, true ? RGN_OR : RGN_DIFF);
 		::DeleteObject(region);
 	}
+}
+
+bool EasyUIWindowBase::IsNcAeraExist()
+{
+	for (int i = E_CAPTION; i > -1; i--)
+	{
+		if (m_bEdgeRegionExist[i])
+			return true;
+	}
+	
+	return false;
 }
 
 void EasyUIWindowBase::SubclassChildHitTest(bool bSet)

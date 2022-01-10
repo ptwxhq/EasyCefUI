@@ -31,6 +31,8 @@ public:
 
     void SetEdgeNcAera(HT_INFO ht, const std::vector<RECT>& vecRc);
 
+    bool IsNcAeraExist();
+
     void SubclassChildHitTest(bool bSet);
 
     virtual void SetAlpha(BYTE alpha, bool bRepaint) = 0;
@@ -64,6 +66,7 @@ protected:
 
 
 private:
+    bool m_bEdgeRegionExist[HT_INFO::E_END] = {};
     HRGN m_EdgeRegions[HT_INFO::E_END] = {};
 
 };

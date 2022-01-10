@@ -347,10 +347,7 @@ void WebViewUIControl::SetDraggableRegion(const std::vector<CefDraggableRegion>&
 {
     GetWindowPtr()->SetDraggableRegion(regions);
 
-    if (!IsTransparentUI())
-    {
-        GetWindowPtr()->SubclassChildHitTest(true);
-    }
+    GetWindowPtr()->SubclassChildHitTest(GetWindowPtr()->IsNcAeraExist());
 }
 
 bool WebViewUIControl::SetBrowser(CefRefPtr<CefBrowser> browser)
@@ -378,10 +375,7 @@ void WebViewUIControl::SetEdgeNcAera(EasyUIWindowBase::HT_INFO ht, const std::ve
 {
     GetWindowPtr()->SetEdgeNcAera(ht, vecRc);
 
-    if (!IsTransparentUI())
-    {
-        GetWindowPtr()->SubclassChildHitTest(true);
-    }
+    GetWindowPtr()->SubclassChildHitTest(GetWindowPtr()->IsNcAeraExist());
 
 }
 
@@ -613,15 +607,14 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
         const int old_width = m_pWindow->view_width_;
         const int old_height = m_pWindow->view_height_;
 
-        bool bSizeChanged = old_width != width || old_height != height;
-
-        if (bSizeChanged || (dirtyRects.size() == 1 && dirtyRects[0] == CefRect(0, 0, width, height)))
+        if (old_width != width || old_height != height)
         {
-            if (bSizeChanged)
-            {
-                //由于画面已经开始发生改变，此时的画面大小是旧的，画面无效，为了减少闪烁，这边丢弃画面等待更新
-                return;
-            }
+            //由于画面已经开始发生改变，此时的画面大小是旧的，画面无效，为了减少闪烁，这边丢弃画面等待更新
+            return;
+        }
+        else if (dirtyRects.size() == 1 && dirtyRects[0] == CefRect(0, 0, width, height))
+        {
+           
             m_pWindow->SetBitmapData(buffer, width, height);
         }
         else

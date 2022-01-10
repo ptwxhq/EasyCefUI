@@ -216,6 +216,7 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 		}
 	}
 
+#if !defined(CEF_USE_SANDBOX)
 	//其余情况将使用自身同名进程
 	if (lpRender && wcslen(lpRender))
 	{
@@ -236,6 +237,7 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 			CefString(&settings.browser_subprocess_path).FromWString(strRenderPath);
 		}
 	}
+#endif
 
 	//缓存路径
 	if (g_BrowserGlobalVar.CachePath.empty())

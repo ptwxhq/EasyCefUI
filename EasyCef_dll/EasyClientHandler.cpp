@@ -32,7 +32,7 @@ bool QueryNodeAttrib(CefRefPtr<WebViewControl> item, int x, int y, std::string n
 
         auto send = QuickMakeIpcParms(item->GetBrowser()->GetIdentifier(), frame->GetIdentifier(), "queryElementAttrib", valueList);
         std::string ret;
-        ipcSvr./*Legacy*/SendData(hipcli, send, ret);
+        ipcSvr.SendData(hipcli, send, ret);
 
         if (ret.size() > 0)
         {
