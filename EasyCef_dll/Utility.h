@@ -63,6 +63,9 @@ void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context);
 
 void SetAllowDarkMode(int nValue);
 
+bool IsSystemWindows7OrOlder();
+bool IsSystemWindows11OrGreater();
+
 namespace webinfo {
 
 	std::string GetCertificateInformation(const std::string& url, CefRefPtr<CefX509Certificate> cert, cef_cert_status_t certstatus);

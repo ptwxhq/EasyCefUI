@@ -522,6 +522,8 @@ namespace BrowserAsyncWorkJSKeys {
 			mapInfo.insert(std::make_pair("topright", EasyUIWindowBase::E_HTTOPRIGHT));
 			mapInfo.insert(std::make_pair("bottomleft", EasyUIWindowBase::E_HTBOTTOMLEFT));
 			mapInfo.insert(std::make_pair("bottomright", EasyUIWindowBase::E_HTBOTTOMRIGHT));
+
+			mapInfo.insert(std::make_pair("maxbutton", EasyUIWindowBase::E_HTMAXBUTTON));
 		}
 
 		CefRefPtr<WebViewUIControl> item = dynamic_cast<WebViewUIControl*>(EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier()).get());

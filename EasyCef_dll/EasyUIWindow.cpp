@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "EasyUIWindow.h"
 #include "EasyWebViewMgr.h"
 #include <Windowsx.h>
@@ -28,11 +28,11 @@ LRESULT CALLBACK SubclassedWindowProc(HWND hWnd,
 			POINT point = { points.x, points.y };
 			::ScreenToClient(hWnd, &point);
 
-			//˳���ȴӱ߽ǿ�ʼ
+			//顺序先从边角开始
 			static int nRound[] = {
 				EasyUIWindowBase::E_HTTOPLEFT,EasyUIWindowBase::E_HTTOPRIGHT,EasyUIWindowBase::E_HTBOTTOMLEFT,EasyUIWindowBase::E_HTBOTTOMRIGHT,
 				EasyUIWindowBase::E_HTTOP,EasyUIWindowBase::E_HTLEFT,EasyUIWindowBase::E_HTRIGHT,EasyUIWindowBase::E_HTBOTTOM,
-
+				 EasyUIWindowBase::E_HTMAXBUTTON,
 				EasyUIWindowBase::E_CAPTION
 			};
 
@@ -195,9 +195,9 @@ UINT EasyUIWindowBase::Cls_OnNCHitTest(HWND hwnd, int x, int y)
 		POINT point = { x, y };
 		ScreenToClient(&point);
 
-		//˳���ȴӱ߽ǿ�ʼ
+		//顺序先从边角开始
 		static int nRound[] = {
-			E_HTTOPLEFT,E_HTTOPRIGHT,E_HTBOTTOMLEFT,E_HTBOTTOMRIGHT,
+			E_HTMAXBUTTON,E_HTTOPLEFT,E_HTTOPRIGHT,E_HTBOTTOMLEFT,E_HTBOTTOMRIGHT,
 			E_HTTOP,E_HTLEFT,E_HTRIGHT,E_HTBOTTOM
 		};
 
@@ -326,6 +326,32 @@ LRESULT EasyOpaqueWindow::OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& h
 	if (m_browser && width && height)
 	{
 		::SetWindowPos(m_browser->GetHost()->GetWindowHandle(), nullptr, 0, 0, width, height, SWP_NOZORDER | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
+	}
+
+	handle = FALSE;
+
+	return 0;
+}
+
+LRESULT EasyOpaqueWindow::OnNcActivate(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle)
+{
+	if (IsSystemWindows7OrOlder())
+	{
+		handle = TRUE;
+		return 0;
+	}
+
+	handle = FALSE;
+
+	return 0;
+}
+
+LRESULT EasyOpaqueWindow::OnNcPaint(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle)
+{
+	if (IsSystemWindows7OrOlder())
+	{
+		handle = TRUE;
+		return 0;
 	}
 
 	handle = FALSE;

@@ -10,7 +10,6 @@
 #include "extlib/pack.h"
 
 
-
 #if defined(CEF_USE_SANDBOX)
 #include "include/cef_sandbox_win.h"
 CefScopedSandboxInfo g_scoped_sandbox;
@@ -97,6 +96,16 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 
 	DWORD dwParentPid = 0;
 	GetParentProcessInfo(&dwParentPid, nullptr);
+
+	{
+		using fnRtlGetNtVersionNumbers = void (WINAPI*)(LPDWORD major, LPDWORD minor, LPDWORD build);
+		auto RtlGetNtVersionNumbers = reinterpret_cast<fnRtlGetNtVersionNumbers>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetNtVersionNumbers"));
+		if (RtlGetNtVersionNumbers)
+		{
+			RtlGetNtVersionNumbers(&g_BrowserGlobalVar.WindowsVerMajor, &g_BrowserGlobalVar.WindowsVerMinor, &g_BrowserGlobalVar.WindowsVerBuild);
+			g_BrowserGlobalVar.WindowsVerBuild &= ~0xF0000000;
+		}
+	}
 
 	GetLocalPaths();
 

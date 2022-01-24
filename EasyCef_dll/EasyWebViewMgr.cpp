@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "EasyWebViewMgr.h"
 #include "WebViewControl.h"
 
@@ -200,17 +200,24 @@ void EasyWebViewMgr::RemoveWebViewByBrowserId(int id)
 
 void EasyWebViewMgr::RemoveAllItems()
 {
-	////�����ֱ���������ᵼ�º�������������һ�������ٳ����⣿
+	////这样粗暴清理好像会导致后续调用流程中一个个销毁出问题？
 	//m_mutex.lock();
 	//m_WebViewList.clear();
 	//m_WebViewIndex.clear();
 	//m_WebViewHWNDIndex.clear();
 	//m_mutex.unlock();
 
-	auto listCopy = m_WebViewList;
+
+	//按新开的窗口先关闭处理
+	std::list<CefRefPtr<WebViewControl>> listCopy;
+	for (const auto it : m_WebViewList)
+	{
+		listCopy.push_front(it.second);
+	}
+
 	for (auto it = listCopy.begin(); it != listCopy.end(); )
 	{
-		it->second->CloseBrowser();
+		(*it)->CloseBrowser();
 		listCopy.erase(it++);
 	}
 }
@@ -242,10 +249,29 @@ void EasyWebViewMgr::CleanDelayItem(HWND hWnd)
 	else
 	{
 		auto it = m_DelayCleanList.begin();
+		auto nLastCount = m_DelayCleanList.size();
 		while (it != m_DelayCleanList.end())
 		{
+			//win7下非透明窗口销毁beforeclose时不会进入正常销毁流程？目前看可以在beforeclose结束之后正常退出且不会出现有引用的问题
+			if (IsSystemWindows7OrOlder() && it->second->IsUIControl() && !it->second->IsTransparentUI())
+			{
+				++it;
+				continue;
+			}
+
 			DestroyWindow(it->second->GetHWND());
 			it = m_DelayCleanList.begin();
+
+			auto nNowCount = m_DelayCleanList.size();
+			if (nNowCount == nLastCount)
+			{
+				//如果不崩的情况下防止死循环...
+				ASSERT(0 && "Not intend...Crash...");
+				m_DelayCleanList.erase(it);
+				it = m_DelayCleanList.begin();
+			}
+
+			nLastCount = nNowCount;
 		}
 
 	}

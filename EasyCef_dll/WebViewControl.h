@@ -61,6 +61,9 @@ public:
 
 	virtual bool IsUIControl() = 0;
 
+	//这里透明指的是使用cef windowless的窗口
+	virtual bool IsTransparentUI() = 0;
+
 	virtual void CloseBrowser();
 
 protected:
@@ -88,6 +91,10 @@ public:
 		return false;
 	}
 
+	bool IsTransparentUI() final {
+		return false;
+	}
+
 	bool CreatePopup(wvhandle hWebview, HWND hParent, const RECT& rc, const CefString& url, CefRefPtr<CefClient> clientHandler);
 
 };
@@ -100,9 +107,6 @@ public:
 	bool IsUIControl() final {
 		return true;
 	}
-
-	//这里透明指的是使用cef windowless的窗口
-	virtual bool IsTransparentUI() = 0;
 
 	HWND GetHWND() override;
 

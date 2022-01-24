@@ -7,6 +7,7 @@ public:
 
     enum HT_INFO
     {
+        E_HTMAXBUTTON,  //9
         E_HTLEFT,        //10
         E_HTRIGHT,
         E_HTTOP,
@@ -17,7 +18,7 @@ public:
         E_HTBOTTOMRIGHT, //17
         E_CAPTION,
         E_END,
-        E_HTBASE = HTLEFT
+        E_HTBASE = HTMAXBUTTON
     };
 
     DECLARE_WND_CLASS_EX(g_BrowserGlobalVar.WebViewClassName.c_str(), 0, COLOR_WINDOW)
@@ -80,9 +81,14 @@ public:
     BEGIN_MSG_MAP(0)
         CHAIN_MSG_MAP(EasyUIWindowBase)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
+        MESSAGE_HANDLER(WM_NCACTIVATE, OnNcActivate)
+        MESSAGE_HANDLER(WM_NCPAINT, OnNcPaint)
+
     END_MSG_MAP()
 
     LRESULT OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
+    LRESULT OnNcActivate(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
+    LRESULT OnNcPaint(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
 
 
     void SetAlpha(BYTE alpha, bool) override;

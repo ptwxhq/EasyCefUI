@@ -578,35 +578,46 @@ void SetAllowDarkMode(int nValue)
             }
         }
     };
+    
 
-    using fnRtlGetNtVersionNumbers = void (WINAPI*)(LPDWORD major, LPDWORD minor, LPDWORD build);
-    auto RtlGetNtVersionNumbers = reinterpret_cast<fnRtlGetNtVersionNumbers>(GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetNtVersionNumbers"));
-    if (RtlGetNtVersionNumbers)
+    if (g_BrowserGlobalVar.WindowsVerMajor == 10 && g_BrowserGlobalVar.WindowsVerMinor == 0)
     {
-        DWORD major, minor, build;
-        RtlGetNtVersionNumbers(&major, &minor, &build);
-        build &= ~0xF0000000;
-
-        if (major == 10 && minor == 0)
+        if (g_BrowserGlobalVar.WindowsVerBuild >= 18362)
         {
-            if (build >= 18362)
-            {
-                DarkModeForApp(true, g_BrowserGlobalVar.DarkModeType);
-            }
-            else if (build >= 17763)
-            {
-                DarkModeForApp(false, g_BrowserGlobalVar.DarkModeType);
-            }
-            else
-            {
-                g_BrowserGlobalVar.DarkModeType = PreferredAppMode::ForceLight;
-            }
+            DarkModeForApp(true, g_BrowserGlobalVar.DarkModeType);
+        }
+        else if (g_BrowserGlobalVar.WindowsVerBuild >= 17763)
+        {
+            DarkModeForApp(false, g_BrowserGlobalVar.DarkModeType);
         }
         else
         {
             g_BrowserGlobalVar.DarkModeType = PreferredAppMode::ForceLight;
         }
     }
+    else
+    {
+        g_BrowserGlobalVar.DarkModeType = PreferredAppMode::ForceLight;
+    }
+    
+}
+
+bool IsSystemWindows7OrOlder()
+{
+    if (g_BrowserGlobalVar.WindowsVerMajor < 6 || (g_BrowserGlobalVar.WindowsVerMajor == 6 && g_BrowserGlobalVar.WindowsVerMinor < 2))
+    {
+        return true;
+    }
+    return false;
+}
+
+bool IsSystemWindows11OrGreater()
+{
+    if (g_BrowserGlobalVar.WindowsVerMajor == 10 && g_BrowserGlobalVar.WindowsVerMinor == 0 && g_BrowserGlobalVar.WindowsVerBuild >= 22000)
+    {
+        return true;
+    }
+    return false;
 }
 
 

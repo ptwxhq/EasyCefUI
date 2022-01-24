@@ -28,6 +28,10 @@ struct BrowserGlobalVar
 	bool SupportLayerWindow = false;
 	bool IsBrowserProcess = false;
 
+	DWORD WindowsVerMajor = 0;
+	DWORD WindowsVerMinor = 0;
+	DWORD WindowsVerBuild = 0;
+
 
 	HINSTANCE hInstance = nullptr;
 	HINSTANCE hDllInstance = nullptr;

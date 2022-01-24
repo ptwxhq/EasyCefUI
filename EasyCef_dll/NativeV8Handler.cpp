@@ -109,9 +109,21 @@ static void FowardRender2Browser(bool bSync, const CefString& name, const CefV8V
 
 void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
 {
-   auto testJs = R"((
+
+	static std::string strParseDomJS;
+	if (strParseDomJS.empty())
+	{
+		strParseDomJS = R"((
     function () {
         const edges = [
+)";
+
+		if (IsSystemWindows11OrGreater())
+		{
+			strParseDomJS += R"(   { cls: "captionMaxButton", nc: "maxbutton" },)";
+		}
+
+		strParseDomJS += R"(
             { cls: "borderTop", nc: "top" },
             { cls: "borderTopLeft", nc: "topleft" },
             { cls: "borderTopRight", nc: "topright" },
@@ -169,9 +181,12 @@ void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
 
         getNeedEleInfo();
     }()
-))";
+)
+)";
 
-   frame->ExecuteJavaScript(testJs, "", 0);
+	}
+
+   frame->ExecuteJavaScript(strParseDomJS, "", 0);
 }
 
 
