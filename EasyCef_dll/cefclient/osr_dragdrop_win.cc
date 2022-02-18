@@ -391,10 +391,51 @@ CefBrowserHost::DragOperationsMask DropTargetWin::StartDragging(
     DWORD effect = DragOperationToDropEffect(allowed_ops);
     current_drag_data_ = drag_data->Clone();
     current_drag_data_->ResetFileContents();
+
+
+    if (current_drag_data_->HasImage())
+    {
+        auto img = current_drag_data_->GetImage();
+        if (!img->IsEmpty())
+        {
+            int pixel_width, pixel_height;
+            auto bin = img->GetAsBitmap(1, CEF_COLOR_TYPE_BGRA_8888, CEF_ALPHA_TYPE_OPAQUE, pixel_width, pixel_height);
+            if (bin)
+            {
+                if (!m_pMiniWnd)
+                {
+                    m_pMiniWnd = std::make_unique<EasyMiniLayeredWindow>();
+                }
+
+                if (!IsWindow(*m_pMiniWnd))
+                {
+                    m_pMiniWnd->Create(nullptr);
+                }
+
+                auto pData = std::make_unique<char[]>(bin->GetSize());
+
+                bin->GetData(pData.get(), bin->GetSize(), 0);
+
+                ASSERT(bin->GetSize() == pixel_width * pixel_height * 4);
+
+                m_pMiniWnd->m_info.SetWindowSize({ pixel_width, pixel_height });
+                m_pMiniWnd->m_info.SetAlpha(255 * 0.75);
+                m_pMiniWnd->SetBitmapData(pData.get(), pixel_width, pixel_height);
+                m_pMiniWnd->Render();
+
+            }
+
+        }
+    }
+
     HRESULT res = DoDragDrop(dataObject, dropSource, effect, &resEffect);
     if (res != DRAGDROP_S_DROP)
       resEffect = DROPEFFECT_NONE;
     current_drag_data_ = nullptr;
+    if (m_pMiniWnd)
+    {
+        m_pMiniWnd->SendMessage(WM_CLOSE);
+    }
   }
   return DropEffectToDragOperation(resEffect);
 }
@@ -402,12 +443,27 @@ CefBrowserHost::DragOperationsMask DropTargetWin::StartDragging(
 HRESULT DropTargetWin::DragOver(DWORD key_state,
                                 POINTL cursor_position,
                                 DWORD* effect) {
+
   if (!callback_)
     return E_UNEXPECTED;
   CefMouseEvent ev = ToMouseEvent(cursor_position, key_state, hWnd_);
   CefBrowserHost::DragOperationsMask mask = DropEffectToDragOperation(*effect);
   mask = callback_->OnDragOver(ev, mask);
   *effect = DragOperationToDropEffect(mask);
+
+  if (current_drag_data_ && current_drag_data_->HasImage())
+  {
+      auto img = current_drag_data_->GetImage();
+      if (!img->IsEmpty())
+      {
+          auto pt = current_drag_data_->GetImageHotspot();
+          const int x = cursor_position.x - pt.x;
+          const int y = cursor_position.y - pt.y;
+          m_pMiniWnd->SetWindowPos(HWND_TOP, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+      }
+  }
+
+
   return S_OK;
 }
 
@@ -415,6 +471,12 @@ HRESULT DropTargetWin::DragLeave() {
   if (!callback_)
     return E_UNEXPECTED;
   callback_->OnDragLeave();
+
+  if (m_pMiniWnd && m_pMiniWnd->IsWindowVisible())
+  {
+      m_pMiniWnd->ShowWindow(SW_HIDE);
+  }
+
   return S_OK;
 }
 

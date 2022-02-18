@@ -19,6 +19,8 @@
 
 #include "osr_dragdrop_events.h"
 
+#include "../EasyLayeredWindow.h"
+
 namespace client {
 
 #define DEFAULT_QUERY_INTERFACE(__Class)                            \
@@ -88,6 +90,8 @@ class DropTargetWin : public IDropTarget {
  private:
   OsrDragEvents* callback_;
   HWND hWnd_;
+
+  std::unique_ptr<EasyMiniLayeredWindow> m_pMiniWnd;
 
   CefRefPtr<CefDragData> current_drag_data_;
 };

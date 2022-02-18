@@ -270,3 +270,24 @@ private:
     CefRenderHandler::DragOperation current_drag_op_ = DRAG_OPERATION_NONE;
 
 };
+
+class EasyMiniLayeredWindow : public CWindowImpl<EasyMiniLayeredWindow, CWindow, CWinTraits <WS_OVERLAPPED, WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW>>
+{
+public:
+    LayeredWindowInfo m_info;
+
+
+    void SetBitmapData(const void* pData, int width, int height);
+
+    void Render();
+
+    EasyMiniLayeredWindow();
+
+    BEGIN_MSG_MAP(EasyMiniLayeredWindow)
+    END_MSG_MAP()
+
+private:
+
+
+    std::unique_ptr<GdiBitmap> m_bitmap;
+};

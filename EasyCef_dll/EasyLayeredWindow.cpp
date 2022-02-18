@@ -852,3 +852,27 @@ void EasyLayeredWindow::SetToolTip(const CefString& str)
 		::SendMessage(m_hToolTip, TTM_SETTOOLINFOW, 0, (LPARAM)m_pToolInfo.get());
 	}
 }
+
+
+
+void EasyMiniLayeredWindow::SetBitmapData(const void* pData, int width, int height)
+{
+	if (!m_bitmap || m_bitmap->GetWidth() != width || m_bitmap->GetHeight() != height)
+	{
+		m_bitmap = std::make_unique<GdiBitmap>(width, height);
+	}
+
+	memcpy(m_bitmap->GetBits(), pData, width * height * 4);
+
+	m_info.SetDirtyRect(nullptr);
+}
+
+void EasyMiniLayeredWindow::Render()
+{
+	if (m_hWnd)
+		m_info.Update(m_hWnd, m_bitmap->GetDC());
+}
+
+EasyMiniLayeredWindow::EasyMiniLayeredWindow() : m_info(1, 1)
+{
+}
