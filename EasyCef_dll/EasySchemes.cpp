@@ -10,23 +10,32 @@
 void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
 	//xpack改为CEF_SCHEME_OPTION_STANDARD之后没有禁用安全设置的话不允许直接读取file协议
-	registrar->AddCustomScheme("xpack", CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_CORS_ENABLED | CEF_SCHEME_OPTION_CSP_BYPASSING);
+	registrar->AddCustomScheme(PACKSCHEME, CEF_SCHEME_OPTION_STANDARD | CEF_SCHEME_OPTION_CORS_ENABLED | CEF_SCHEME_OPTION_CSP_BYPASSING | CEF_SCHEME_OPTION_FETCH_ENABLED);
 
-	registrar->AddCustomScheme(EASYCEFSCHEMES, CEF_SCHEME_OPTION_DISPLAY_ISOLATED);
+	registrar->AddCustomScheme(EASYCEFSCHEME, CEF_SCHEME_OPTION_DISPLAY_ISOLATED);
 }
 
 void RegEasyCefSchemes()
 {
 	CefRefPtr<EasySchemesHandlerFactory> factory = new EasySchemesHandlerFactory;
-	CefRegisterSchemeHandlerFactory("xpack", "", factory);
+	CefRegisterSchemeHandlerFactory(PACKSCHEME, "", factory);
 	CefRegisterSchemeHandlerFactory("http", "ui.pack", factory);
 
 	//为了让xpack可以读取file协议，只能自己重写实现读取并注册了
 	CefRegisterSchemeHandlerFactory("file", "", factory);
 	CefRegisterSchemeHandlerFactory("disk", "", factory);
 
-	CefRegisterSchemeHandlerFactory(EASYCEFSCHEMES, "", factory);
+	CefRegisterSchemeHandlerFactory(EASYCEFSCHEME, "", factory);
 
+}
+
+EasySchemesHandlerFactory::EasySchemesHandlerFactory()
+{
+	mapSchemes.insert(std::make_pair(PACKSCHEME, EasyResourceHandler::RESTYPE::XPACK));
+	mapSchemes.insert(std::make_pair("http", EasyResourceHandler::RESTYPE::FAKEHTTP));
+	mapSchemes.insert(std::make_pair("file", EasyResourceHandler::RESTYPE::FILE));
+	mapSchemes.insert(std::make_pair("disk", EasyResourceHandler::RESTYPE::FILE));
+	mapSchemes.insert(std::make_pair(EASYCEFSCHEME, EasyResourceHandler::RESTYPE::INTERNALUI));
 }
 
 CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& scheme_name, CefRefPtr<CefRequest> request)
@@ -35,19 +44,20 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 
 	auto type = EasyResourceHandler::RESTYPE::UNKNOWN;
 
-	if (scheme_name.compare("xpack") == 0 || scheme_name.compare("http") == 0)
+	auto it = mapSchemes.find(scheme_name.ToString());
+	if (it != mapSchemes.end())
 	{
-		type = EasyResourceHandler::RESTYPE::XPACK;
+		type = it->second;
 	}
-	else if (scheme_name.compare("file") == 0 || scheme_name.compare("disk") == 0)
+
+	if (type == EasyResourceHandler::RESTYPE::XPACK)
 	{
-		type = EasyResourceHandler::RESTYPE::FILE;
+		if (request->GetURL().ToString().find(PROXY_MARK_PATH) != std::string::npos)
+		{
+			//type = EasyResourceHandler::RESTYPE::PROXY;
+			return nullptr;
+		}
 	}
-	else if (scheme_name.compare(EASYCEFSCHEMES) == 0)
-	{
-		type = EasyResourceHandler::RESTYPE::INTERNALUI;
-	}
-	
 
 	return new EasyResourceHandler(type);
 }
@@ -57,8 +67,6 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 	DCHECK(!CefCurrentlyOn(TID_UI) && !CefCurrentlyOn(TID_IO));
 
 	handle_request = true;
-
-	bool handled = false;
 
 	//如果没有被注册为正常域名则以下将无法解析，故不能使用下面的，得自己解析
 	//CefURLParts url_parts;
@@ -93,8 +101,6 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 
 	do 
 	{
-		handled = true;
-
 		bool bHaveFile = false;
 
 		switch (m_type)
@@ -102,6 +108,7 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 		case EasyResourceHandler::RESTYPE::UNKNOWN:
 			break;
 		case EasyResourceHandler::RESTYPE::XPACK:
+		case EasyResourceHandler::RESTYPE::FAKEHTTP:
 			{
 				//检查域名是否已注册，无效返回400
 				auto strPackFilePath = DomainPackInfo::GetInstance().GetDomainPath(url_parts.Host_.c_str());
@@ -237,6 +244,17 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 				}
 			}
 			break;
+		//case EasyResourceHandler::RESTYPE::PROXY:
+		//	{
+		//		auto nPos = strDecodedPath.find(WIDE_STR(PROXY_MARK_PATH));
+		//		if (nPos != std::string::npos)
+		//		{
+		//			auto strRealUrl = strDecodedPath.substr(nPos + (sizeof(PROXY_MARK_PATH) - 1));
+		//			data_ = CefString(strRealUrl);
+		//			bHaveFile = true;
+		//		}
+		//	}
+		//	break;
 		default:
 			break;
 		}
@@ -252,7 +270,7 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 			data_ = "cannot open file";
 			break;
 		case STATUSCODE::E404:
-			data_ = "404 file not exist";
+			data_ = "404 file " + CefString(url_parts.Path_).ToString() + " not exist";
 
 			break;
 		default:
@@ -280,12 +298,18 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 		break;
 	}while (false);
 
-	return handled;
+	return true;
 }
 
 void EasyResourceHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)
 {
 	CEF_REQUIRE_IO_THREAD();
+
+	//if (m_type == RESTYPE::PROXY)
+	//{
+	//	redirectUrl = data_;
+	//}
+
 
 	DCHECK(!data_.empty());
 

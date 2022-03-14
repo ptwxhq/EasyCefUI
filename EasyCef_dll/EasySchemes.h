@@ -13,7 +13,9 @@ public:
 		UNKNOWN,
 		XPACK,
 		FILE,
-		INTERNALUI
+		INTERNALUI,
+//		PROXY,
+		FAKEHTTP,//XPACK
 	};
 
 
@@ -55,6 +57,7 @@ private:
 class EasySchemesHandlerFactory : public CefSchemeHandlerFactory
 {
 public:
+	EasySchemesHandlerFactory();
 	CefRefPtr<CefResourceHandler> Create(
 		CefRefPtr<CefBrowser> browser,
 		CefRefPtr<CefFrame> frame,
@@ -62,6 +65,8 @@ public:
 		CefRefPtr<CefRequest> request) override;
 
 	IMPLEMENT_REFCOUNTING(EasySchemesHandlerFactory);
+private:
+	std::unordered_map<std::string, EasyResourceHandler::RESTYPE> mapSchemes;
 };
 
 

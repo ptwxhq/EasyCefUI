@@ -96,8 +96,14 @@ extern const char* ExtraKeyNameUIWndHwnd;
 
 #define WIDE_STR(x) WIDE_STR2(x)
 #define WIDE_STR2(x) L##x
-#define EASYCEFSCHEMES "easycef"
-#define EASYCEFPROTOCOL EASYCEFSCHEMES##"://"
+#define EASYCEFSCHEME "easycef"
+#define EASYCEFPROTOCOL EASYCEFSCHEME##"://"
 
-#define EASYCEFSCHEMESW WIDE_STR(EASYCEFSCHEMES)
+#define EASYCEFSCHEMEW WIDE_STR(EASYCEFSCHEME)
 #define EASYCEFPROTOCOLW WIDE_STR(EASYCEFPROTOCOL)
+
+#define PROXY_MARK_PATH "/::/"
+
+#define PACKSCHEME "xpack"
+#define PACKPROTOCOL "xpack"##"://"
+

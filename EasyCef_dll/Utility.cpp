@@ -524,7 +524,7 @@ void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context)
 
 #if CEF_VERSION_MAJOR <= 87
 
-    //非sandbox的cef在首次加载flash的时候会闪个cmd...后面看看要怎么处理比较好或者不处理
+
     auto val1 = CefValue::Create();
     val1->SetInt(1);
     auto valtrue = CefValue::Create();

@@ -16,7 +16,8 @@ class EasyClientHandler :
     public CefRequestHandler,
     public CefDragHandler,
     public CefDownloadHandler,
-    public CefRenderHandler
+    public CefRenderHandler,
+    public CefResourceRequestHandler
 {
 public:
 
@@ -200,6 +201,28 @@ public:
     }
 
     void SetUIWindowInfo(CefRefPtr<WebViewUIControl> webui, bool bTransparent);
+
+
+    CefRefPtr<CefResourceRequestHandler> GetResourceRequestHandler(
+        CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        CefRefPtr<CefRequest> request,
+        bool is_navigation,
+        bool is_download,
+        const CefString& request_initiator,
+        bool& disable_default_handling) override;
+
+    CefRefPtr<CefResponseFilter> GetResourceResponseFilter(
+        CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        CefRefPtr<CefRequest> request,
+        CefRefPtr<CefResponse> response) override;
+
+    ReturnValue OnBeforeResourceLoad(
+        CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        CefRefPtr<CefRequest> request,
+        CefRefPtr<CefRequestCallback> callback) override;
 
 protected:
     bool m_bIsUIControl = false;

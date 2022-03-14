@@ -4,7 +4,7 @@
 #include <include\cef_parser.h>
 #include <include\cef_app.h>
 #include <ShlObj.h>
-
+#include <regex>
 #include "EasyIPC.h"
 #include "LegacyImplement.h"
 #include "EasyLayeredWindow.h"
@@ -14,6 +14,7 @@
 #include "include/cef_resource_bundle.h"
 #include "include/cef_pack_strings.h"
 #include "EasySchemes.h"
+
 
 bool QueryNodeAttrib(CefRefPtr<WebViewControl> item, int x, int y, std::string name, std::wstring& outVal)
 {
@@ -780,5 +781,140 @@ void EasyClientHandler::SetUIWindowInfo(CefRefPtr<WebViewUIControl> webui, bool 
     m_bIsUIControl = true;
     m_webuicontrol = webui;
     m_bIsUITransparent = bTransparent;
+}
+
+CefRefPtr<CefResourceRequestHandler> EasyClientHandler::GetResourceRequestHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool is_navigation, bool is_download, const CefString& request_initiator, bool& disable_default_handling)
+{
+    if (m_bIsUIControl)
+    {
+        return this;
+    }
+    return nullptr;
+}
+
+CefRefPtr<CefResponseFilter> EasyClientHandler::GetResourceResponseFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response)
+{
+#if CEF_VERSION_MAJOR <= 87
+
+    static bool bRead = false;
+    static bool bReplace = false;
+    if (!bRead)
+    {
+        bRead = true;
+        bReplace = (1 == GetPrivateProfileIntW(L"Settings", L"FlashHostReplace", 0, g_BrowserGlobalVar.BrowserSettingsPath.c_str()));
+    }
+
+    if (!bReplace)
+        return nullptr;
+
+    //由于chromium的安全限制，跨域flash显示大小在400x300或者以下时url需要进行一些替换伪装以便能直接播放
+    //目前还找不到直接在自定义协议上自动播放flash的方法，使用xpack需要使用http://ui.pack替代
+
+
+    auto strRequestUrl = request->GetURL().ToString();
+    if (strRequestUrl.substr(0, sizeof(PACKPROTOCOL) - 1) == PACKPROTOCOL)
+    {
+        //减少误伤
+        return nullptr;
+    }
+
+    if (browser->GetMainFrame()->GetURL().empty())
+        return nullptr;
+
+    auto strMIME = response->GetMimeType().ToString();
+    if (strMIME.find("text/html") == std::string::npos && strMIME.find("/javascript") == std::string::npos)
+    {
+        return nullptr;
+    }
+
+
+    class ReplaceFlashUrlResponseFilter : public CefResponseFilter {
+    public:
+        ReplaceFlashUrlResponseFilter(const CefString& url)
+            : m_out_written(0), m_worked(false), m_str_main_url(url) {}
+
+        bool InitFilter() override {
+            return true;
+        }
+
+        FilterStatus Filter(void* data_in,
+            size_t data_in_size,
+            size_t& data_in_read,
+            void* data_out,
+            size_t data_out_size,
+            size_t& data_out_written) override {
+            DCHECK((data_in_size == 0U && !data_in) || (data_in_size > 0U && data_in));
+            DCHECK_EQ(data_in_read, 0U);
+            DCHECK(data_out);
+            DCHECK_GT(data_out_size, 0U);
+            DCHECK_EQ(data_out_written, 0U);
+
+            // All data will be read.
+            data_in_read = data_in_size;
+  
+            m_str_data.append((const char*)data_in, data_in_size);
+
+            if (data_in_size != 0)
+                return RESPONSE_FILTER_NEED_MORE_DATA;
+
+            //完整文件都读取好了再处理写入
+            if (!m_worked)
+            {
+                m_worked = true;
+
+
+                CefURLParts url_parts;
+                if (CefParseURL(m_str_main_url, url_parts))
+                {
+                    std::string replace_str;
+                    replace_str = CefString(&url_parts.scheme).ToString() + "://" + CefString(&url_parts.host).ToString();
+
+                    std::regex word_regex(R"reg((?:http|https)://[^:<>"']*\.swf)reg", std::regex_constants::icase);
+
+                    replace_str += PROXY_MARK_PATH;
+                    replace_str += "$&";
+
+                    m_str_data = std::regex_replace(m_str_data, word_regex, replace_str);
+                }
+            }
+
+
+            data_out_written = std::min(m_str_data.size() - m_out_written, data_out_size);
+
+            memcpy(data_out, m_str_data.data() + m_out_written, data_out_written);
+            m_out_written += data_out_written;
+            if (m_out_written < m_str_data.size())
+                return  RESPONSE_FILTER_NEED_MORE_DATA;
+
+            return RESPONSE_FILTER_DONE;
+        }
+
+    private:
+        IMPLEMENT_REFCOUNTING(ReplaceFlashUrlResponseFilter);
+        bool m_worked;
+        size_t m_out_written;
+        std::string m_str_data;
+        CefString m_str_main_url;
+    };
+
+
+    return new ReplaceFlashUrlResponseFilter(browser->GetMainFrame()->GetURL());
+#else
+    return nullptr;
+#endif
+}
+
+CefResourceRequestHandler::ReturnValue EasyClientHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
+{
+
+    auto strUrl = request->GetURL().ToString();
+    auto nPos = strUrl.find(PROXY_MARK_PATH);
+    if (nPos != std::string::npos)
+    {
+        strUrl = strUrl.substr(nPos + (sizeof(PROXY_MARK_PATH) - 1));
+        request->SetURL(strUrl);
+    }
+
+    return RV_CONTINUE;
 }
 

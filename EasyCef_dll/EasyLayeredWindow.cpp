@@ -542,7 +542,13 @@ LRESULT EasyLayeredWindow::OnKeyEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
 
 	if (msg == WM_KEYUP && g_BrowserGlobalVar.Debug)
 	{
-		if (wp == VK_F12)
+		if (wp ==
+#ifdef _DEBUG
+			VK_F9
+#else
+			VK_F12
+#endif // _DEBUG
+		)
 		{
 			constexpr int nTestValue = EVENTFLAG_SHIFT_DOWN | EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN;
 
