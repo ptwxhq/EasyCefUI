@@ -535,6 +535,25 @@ void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context)
     request_context->SetPreference("plugins.allow_outdated", valtrue, errstr);
     request_context->SetPreference("webkit.webprefs.plugins_enabled", valtrue, errstr);
 
+
+#ifndef _DEBUG
+
+    auto val = CefValue::Create();
+    auto inside = CefListValue::Create();
+    inside->SetString(0, "ui.pack");
+    val->SetList(inside);
+
+    /*
+    debug的libcef.dll由于有一个Check使得profile.managed_plugins_allowed_for_urls不可作为用于定义配置，release没问题
+    flash相关的不想再多花时间了，能实现就凑合就这样了
+    */
+    request_context->SetPreference("profile.managed_plugins_allowed_for_urls", val, errstr);
+
+
+#endif // !_DEBUG
+
+
+
 #endif
 }
 

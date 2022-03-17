@@ -92,7 +92,7 @@ namespace JSKeysGet
 	{
 		int val = 0;
 		HWND hWnd = GetWindowHwnd();
-		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
 		MONITORINFO MoInfo = { sizeof(MoInfo) };
 
@@ -113,7 +113,7 @@ namespace JSKeysGet
 	{
 		int val = 0;
 		HWND hWnd = GetWindowHwnd();
-		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
 		MONITORINFO MoInfo = { sizeof(MoInfo) };
 
@@ -135,7 +135,7 @@ namespace JSKeysGet
 		RECT rcScr;
 
 		HWND hWnd = GetWindowHwnd();
-		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
 		MONITORINFO MoInfo = { sizeof(MoInfo) };
 
@@ -157,7 +157,7 @@ namespace JSKeysGet
 		RECT rcScr;
 
 		HWND hWnd = GetWindowHwnd();
-		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTOPRIMARY);
+		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
 		MONITORINFO MoInfo = { sizeof(MoInfo) };
 
@@ -179,9 +179,14 @@ namespace JSKeysGet
 		HWND hWnd = GetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
+			auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+
+			MONITORINFO MoInfo = { sizeof(MoInfo) };
+			GetMonitorInfoW(hMoni, &MoInfo);
+
 			RECT rc = {};
 			GetWindowRect(hWnd, &rc);
-			retval = CefV8Value::CreateInt(rc.left);
+			retval = CefV8Value::CreateInt(rc.left - MoInfo.rcMonitor.left);
 			return true;
 		}
 
@@ -193,9 +198,14 @@ namespace JSKeysGet
 		HWND hWnd = GetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
+			auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+
+			MONITORINFO MoInfo = { sizeof(MoInfo) };
+			GetMonitorInfoW(hMoni, &MoInfo);
+
 			RECT rc = {};
 			GetWindowRect(hWnd, &rc);
-			retval = CefV8Value::CreateInt(rc.top);
+			retval = CefV8Value::CreateInt(rc.top - MoInfo.rcMonitor.top);
 			return true;
 		}
 

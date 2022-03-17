@@ -14,8 +14,8 @@ void EasyCefAppBrowser::OnContextInitialized()
 {
 	CEF_REQUIRE_UI_THREAD();
 
-	CefRefPtr<CefRequestContext> request_context = CefRequestContext::GetGlobalContext();
-	
+	auto request_context = CefRequestContext::GetGlobalContext();
+
 	SetRequestDefaultSettings(request_context);
 
 	EasyIPCServer::GetInstance().SetMainThread(GetCurrentThreadId());
@@ -65,6 +65,15 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 		vecDisableFeatures.push_back("OutOfBlinkCors");
 		command_line->AppendSwitch("disable-web-security");
 		command_line->AppendSwitch("disable-site-isolation-trials");
+	}
+
+	if (g_BrowserGlobalVar.DarkModeType == PreferredAppMode::ForceDark)
+	{
+		command_line->AppendSwitch("force-dark-mode");
+	}
+	else if (g_BrowserGlobalVar.DarkModeType == PreferredAppMode::ForceLight)
+	{
+		//目前看只有强制设置黑色的，接下来就是走系统页面自选，没有简单的非破坏处理方式，或许可以设置高对比度+hook api
 	}
 
 

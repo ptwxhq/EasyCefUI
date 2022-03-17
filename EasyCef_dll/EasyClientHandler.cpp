@@ -794,6 +794,9 @@ CefRefPtr<CefResourceRequestHandler> EasyClientHandler::GetResourceRequestHandle
 
 CefRefPtr<CefResponseFilter> EasyClientHandler::GetResourceResponseFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response)
 {
+
+    //设置profile.managed_plugins_allowed_for_urls之后下面也没必要了
+#if 0
 #if CEF_VERSION_MAJOR <= 87
 
     static bool bRead = false;
@@ -809,7 +812,6 @@ CefRefPtr<CefResponseFilter> EasyClientHandler::GetResourceResponseFilter(CefRef
 
     //由于chromium的安全限制，跨域flash显示大小在400x300或者以下时url需要进行一些替换伪装以便能直接播放
     //目前还找不到直接在自定义协议上自动播放flash的方法，使用xpack需要使用http://ui.pack替代
-
 
     auto strRequestUrl = request->GetURL().ToString();
     if (strRequestUrl.substr(0, sizeof(PACKPROTOCOL) - 1) == PACKPROTOCOL)
@@ -899,9 +901,10 @@ CefRefPtr<CefResponseFilter> EasyClientHandler::GetResourceResponseFilter(CefRef
 
 
     return new ReplaceFlashUrlResponseFilter(browser->GetMainFrame()->GetURL());
-#else
-    return nullptr;
 #endif
+#endif
+
+    return nullptr;
 }
 
 CefResourceRequestHandler::ReturnValue EasyClientHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
