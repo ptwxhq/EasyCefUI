@@ -94,7 +94,9 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
 {
     CEF_REQUIRE_UI_THREAD();
 
-    //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnBeforePopup:" << target_url;
+    //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnBeforePopup:"
+    //    << std::format(R"(target_disposition:{},user_gesture:{},menuBar:{},statusBar:{},toolBar:{},scrollbars:{})", (int)target_disposition, user_gesture, popupFeatures.menuBarVisible, popupFeatures.statusBarVisible, popupFeatures.toolBarVisible, popupFeatures.scrollbarsVisible) 
+    //    << "url:" << target_url;
 
     extra_info = CefDictionaryValue::Create();
 
@@ -164,7 +166,7 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
 
 
             //均未设置的情况下使用默认弹出的方式
-            auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(nullptr, {0,0,640,480}, target_url.ToWString().c_str(), this);
+            auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(nullptr, { windowInfo.x, windowInfo.y, windowInfo.width, windowInfo.height }, target_url.ToWString().c_str(), this);
             m_preCreatePopHandle.push_back(handle);
 
             return false;
@@ -174,7 +176,6 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
    
 
         return true;
-        //extra_info->SetBool(ExtraKeyNameIsUIBrowser, true);
     }
 
 

@@ -186,7 +186,7 @@ namespace wrapQweb {
 				strParam = "''";
 			}
 
-			auto fmt = std::format("window.invokeMethod('{}', '{}', {}, {})", utf8_module, utf8_method, strParam, bNoticeJSTrans2JSON);
+			auto fmt = std::format("window.invokeMethod('{}', '{}', {}, {})", utf8_module, utf8_method, strParam, bNoticeJSTrans2JSON ? "true" : "false");
 
 			frame->ExecuteJavaScript(fmt, "", 0);
 

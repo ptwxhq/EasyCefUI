@@ -101,7 +101,7 @@ public:
 
 	size_t GetClientsCount();
 
-	bool IsServer() override {
+	bool IsServer() final {
 		return true;
 	}
 
@@ -122,9 +122,11 @@ public:
 
 	bool SendDataToServer(const std::string& send, std::string &ret);
 
-	bool IsServer() override{
+	bool IsServer() final {
 		return false;
 	}
+
+	bool IsServerSet();
 
 protected:
 	EasyIPCClient() = default;

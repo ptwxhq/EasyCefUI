@@ -628,3 +628,8 @@ bool EasyIPCClient::SendDataToServer(const std::string& send, std::string& ret)
 		return SendData(m_hServerHandle, send, ret);
 	return false;
 }
+
+bool EasyIPCClient::IsServerSet()
+{
+	return !!m_hServerHandle;
+}
