@@ -396,10 +396,13 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
     CefRefPtr<CefRequestContext> request_context;
 
     browser_settings.javascript_close_windows = STATE_ENABLED;
+#if CEF_VERSION_MAJOR < 100
     browser_settings.plugins = STATE_ENABLED;
 #if CEF_VERSION_MAJOR < 95
     browser_settings.universal_access_from_file_urls = STATE_ENABLED;
 #endif
+#endif
+
 
 
     if (pParams->cookie.length())

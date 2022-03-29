@@ -140,9 +140,10 @@ public:
     // Return the handler for browser request events.
     CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
 
-
+#if CEF_VERSION_MAJOR < 100
     void OnPluginCrashed(CefRefPtr<CefBrowser> browser,
         const CefString& plugin_path) override;
+#endif
 
     void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
         TerminationStatus status) override;
@@ -222,7 +223,12 @@ public:
         CefRefPtr<CefBrowser> browser,
         CefRefPtr<CefFrame> frame,
         CefRefPtr<CefRequest> request,
-        CefRefPtr<CefRequestCallback> callback) override;
+#if CEF_VERSION_MAJOR > 95
+        CefRefPtr<CefCallback>
+#else
+        CefRefPtr<CefRequestCallback>
+#endif // CEF_VERSION_MAJOR > 95
+        callback) override;
 
 protected:
     bool m_bIsUIControl = false;

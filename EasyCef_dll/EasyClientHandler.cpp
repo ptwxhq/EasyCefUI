@@ -166,7 +166,13 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
 
 
             //均未设置的情况下使用默认弹出的方式
-            auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(nullptr, { windowInfo.x, windowInfo.y, windowInfo.width, windowInfo.height }, target_url.ToWString().c_str(), this);
+            auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(nullptr,
+#if CEF_VERSION_MAJOR > 95
+                { windowInfo.bounds.x, windowInfo.bounds.y, windowInfo.bounds.width, windowInfo.bounds.height }
+#else
+                { windowInfo.x, windowInfo.y, windowInfo.width, windowInfo.height }
+#endif
+            , target_url.ToWString().c_str(), this);
             m_preCreatePopHandle.push_back(handle);
 
             return false;
@@ -282,7 +288,15 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
     }
 
      //CefBrowser
-    if (!EasyIPCServer::GetInstance().GetClientsCount()) {
+    if (EasyIPCServer::GetInstance().GetClientsCount())
+    {
+        if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitBeforeClose)
+        {
+            WebkitEcho::getFunMap()->webkitBeforeClose(browser->GetIdentifier());
+        }
+    }
+    else
+    {
 
         //保存下cookies
         auto request_context = CefRequestContext::GetGlobalContext();
@@ -465,6 +479,29 @@ void EasyClientHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
     if (errorCode == ERR_ABORTED)
         return;
 
+    if (m_bIsUIControl)
+    {
+        if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->loadError)
+        {
+            auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+            if (item)
+            {
+                HWND hWnd = item->GetHWND();
+                WebkitEcho::getUIFunMap()->loadError(hWnd, errorCode, frame->GetName().ToWString().c_str(), failedUrl.ToWString().c_str());
+                return;
+            }
+        }
+    }
+    else
+    {
+        if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitLoadError)
+        {
+            WebkitEcho::getFunMap()->webkitLoadError(browser->GetIdentifier(), errorCode, frame->IsMain(),
+                frame->GetName().ToWString().c_str(), failedUrl.ToWString().c_str());
+            return;
+        }
+    }
+
     // Display a load error message using a data: URI.
 
     webinfo::LoadErrorPage(frame, failedUrl, errorCode, errorText);
@@ -609,9 +646,15 @@ bool EasyClientHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
     return false;
 }
 
+#if CEF_VERSION_MAJOR < 100
 void EasyClientHandler::OnPluginCrashed(CefRefPtr<CefBrowser> browser, const CefString& plugin_path)
 {
+    if (!m_bIsUIControl && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitPluginCrash)
+    {
+        WebkitEcho::getFunMap()->webkitPluginCrash(browser->GetIdentifier(), plugin_path.ToWString().c_str());
+    }
 }
+#endif
 
 void EasyClientHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
 {
@@ -635,15 +678,26 @@ void EasyClientHandler::OnDocumentAvailableInMainFrame(CefRefPtr<CefBrowser> bro
 bool EasyClientHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
 {
 
-    if (frame->IsMain() && (request->GetTransitionType() & TT_FORWARD_BACK_FLAG) == TT_FORWARD_BACK_FLAG)
+    if (frame->IsMain())
     {
-        auto new_url = request->GetURL().ToString();
+        auto new_url = request->GetURL().ToWString();
 
-        if (new_url.substr(0, _countof(EASYCEFPROTOCOL)).find(EASYCEFPROTOCOL) == 0)
+        if ((request->GetTransitionType() & TT_FORWARD_BACK_FLAG) == TT_FORWARD_BACK_FLAG)
         {
-            browser->GoBack();
-            return true;
+            if (new_url.substr(0, _countof(EASYCEFPROTOCOLW)).find(EASYCEFPROTOCOLW) == 0)
+            {
+                browser->GoBack();
+                return true;
+            }
         }
+
+        if (!m_bIsUIControl && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitBeginLoad)
+        {
+            bool cancel = false;
+            WebkitEcho::getFunMap()->webkitBeginLoad(browser->GetIdentifier(), new_url.c_str(), &cancel);
+            return cancel;
+        }
+
     }
 
     return false;
@@ -908,7 +962,13 @@ CefRefPtr<CefResponseFilter> EasyClientHandler::GetResourceResponseFilter(CefRef
     return nullptr;
 }
 
-CefResourceRequestHandler::ReturnValue EasyClientHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefRequestCallback> callback)
+CefResourceRequestHandler::ReturnValue EasyClientHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, 
+#if CEF_VERSION_MAJOR > 95
+    CefRefPtr<CefCallback>
+#else
+    CefRefPtr<CefRequestCallback>
+#endif // CEF_VERSION_MAJOR > 95
+    callback)
 {
 
     auto strUrl = request->GetURL().ToString();
