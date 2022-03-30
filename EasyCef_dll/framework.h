@@ -31,14 +31,8 @@
 typedef unsigned long wvhandle;
 
 #ifdef _DEBUG
-#ifndef _WIN64
-#define ASSERT(x) {if(!(x)) _asm{int 0x03}}while(0)
-#define VERIFY(x) ASSERT(x)
-#else
 #define ASSERT(x) assert(x)
-#define VERIFY(x) ASSERT(x)
-#endif
-
+#define VERIFY(x) assert(x)
 #else
 #define ASSERT(x)
 #define VERIFY(x) x
@@ -48,4 +42,12 @@ typedef unsigned long wvhandle;
 #define CEF_FUNC_BIND base::BindOnce
 #else
 #define CEF_FUNC_BIND base::Bind
+#endif
+
+#if !defined(__clang__) && _MSVC_LANG > 202002L
+#define HAVE_CPP_FORMAT	1
+#include <format>
+#else
+#include <sstream>
+#include <iomanip>
 #endif

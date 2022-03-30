@@ -53,12 +53,12 @@ void UnregisterPackDomain(LPCWSTR lpszDomain)
 
 void SetSpeedUpWork(SpeedUpWork func)
 {
-	g_BrowserGlobalVar.funcSpeedupCallback = func;
+	g_BrowserGlobalVar.funcSpeedupCallback = reinterpret_cast<void*>(func);
 }
 
 void SetCloseHandler(CloseHandler func)
 {
-	g_BrowserGlobalVar.funcCloseCallback = func;
+	g_BrowserGlobalVar.funcCloseCallback = reinterpret_cast<void*>(func);
 }
 
 void RunMsgLoop()
@@ -274,7 +274,7 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 void EasyCreateWebControl(HWND hParent, int x, int y, int width, int height, LPCWSTR url, LPCWSTR cookiepath, const WebViewExtraAttr* pExt)
 {
 	RECT rc = { x, y, x + width, y + height };
-	auto handle = EasyWebViewMgr::GetInstance().CreateWebViewControl(hParent, rc, url, cookiepath, pExt);
+	VERIFY(EasyWebViewMgr::GetInstance().CreateWebViewControl(hParent, rc, url, cookiepath, pExt));
 }
 HWND EasyCreateWebUI(HWND hParent, int x, int y, int width, int height, LPCWSTR url, const WebViewExtraAttr* pExt)
 {

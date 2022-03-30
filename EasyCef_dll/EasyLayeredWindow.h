@@ -2,11 +2,11 @@
 
 #include "EasyUIWindow.h"
 #include "cefclient/osr_dragdrop_events.h"
-
+#include "cefclient/osr_dragdrop_win.h"
 
 namespace client {
     class OsrImeHandlerWin;
-    class DropTargetWin;
+    //class DropTargetWin;
 }
 
 

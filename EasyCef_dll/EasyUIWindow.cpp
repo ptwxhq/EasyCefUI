@@ -257,7 +257,7 @@ LRESULT EasyUIWindowBase::Cls_OnDpiChanged(HWND hwnd, WPARAM wParam, LPARAM lPar
 }
 
 
-BOOL EasyUIWindowBase::ProcessWindowMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult)
+BOOL EasyUIWindowBase::ProcessWindowMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult, DWORD dwMsgMapID)
 {
 #define MYHANDLE_MSG(message, fn)    \
     case (message): lResult = HANDLE_##message((hWnd), (wParam), (lParam), (fn)); return TRUE

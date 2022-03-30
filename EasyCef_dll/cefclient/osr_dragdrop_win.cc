@@ -15,6 +15,8 @@
 #include "include/wrapper/cef_helpers.h"
 #include "bytes_write_handler.h"
 
+#include "../EasyLayeredWindow.h"
+
 
 namespace client {
 
@@ -392,7 +394,7 @@ CefBrowserHost::DragOperationsMask DropTargetWin::StartDragging(
     current_drag_data_ = drag_data->Clone();
     current_drag_data_->ResetFileContents();
 
-
+    std::unique_ptr<EasyMiniLayeredWindow> pPreviewWnd;
     if (current_drag_data_->HasImage())
     {
         auto img = current_drag_data_->GetImage();
@@ -402,15 +404,9 @@ CefBrowserHost::DragOperationsMask DropTargetWin::StartDragging(
             auto bin = img->GetAsBitmap(1, CEF_COLOR_TYPE_BGRA_8888, CEF_ALPHA_TYPE_OPAQUE, pixel_width, pixel_height);
             if (bin)
             {
-                if (!m_pMiniWnd)
-                {
-                    m_pMiniWnd = std::make_unique<EasyMiniLayeredWindow>();
-                }
+                pPreviewWnd = std::make_unique<EasyMiniLayeredWindow>();
 
-                if (!IsWindow(*m_pMiniWnd))
-                {
-                    m_pMiniWnd->Create(nullptr);
-                }
+                hWndPreview_ = pPreviewWnd->Create(nullptr);
 
                 auto pData = std::make_unique<char[]>(bin->GetSize());
 
@@ -418,10 +414,10 @@ CefBrowserHost::DragOperationsMask DropTargetWin::StartDragging(
 
                 ASSERT(bin->GetSize() == pixel_width * pixel_height * 4);
 
-                m_pMiniWnd->m_info.SetWindowSize({ pixel_width, pixel_height });
-                m_pMiniWnd->m_info.SetAlpha(255 * 0.75);
-                m_pMiniWnd->SetBitmapData(pData.get(), pixel_width, pixel_height);
-                m_pMiniWnd->Render();
+                pPreviewWnd->m_info.SetWindowSize({ pixel_width, pixel_height });
+                pPreviewWnd->m_info.SetAlpha(255 * 0.75);
+                pPreviewWnd->SetBitmapData(pData.get(), pixel_width, pixel_height);
+                pPreviewWnd->Render();
 
             }
 
@@ -432,9 +428,10 @@ CefBrowserHost::DragOperationsMask DropTargetWin::StartDragging(
     if (res != DRAGDROP_S_DROP)
       resEffect = DROPEFFECT_NONE;
     current_drag_data_ = nullptr;
-    if (m_pMiniWnd)
+    hWndPreview_ = nullptr;
+    if (pPreviewWnd)
     {
-        m_pMiniWnd->SendMessage(WM_CLOSE);
+        pPreviewWnd->SendMessage(WM_CLOSE);
     }
   }
   return DropEffectToDragOperation(resEffect);
@@ -451,16 +448,13 @@ HRESULT DropTargetWin::DragOver(DWORD key_state,
   mask = callback_->OnDragOver(ev, mask);
   *effect = DragOperationToDropEffect(mask);
 
-  if (current_drag_data_ && current_drag_data_->HasImage())
+  if (hWndPreview_)
   {
-      auto img = current_drag_data_->GetImage();
-      if (!img->IsEmpty())
-      {
-          auto pt = current_drag_data_->GetImageHotspot();
-          const int x = cursor_position.x - pt.x;
-          const int y = cursor_position.y - pt.y;
-          m_pMiniWnd->SetWindowPos(HWND_TOP, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
-      }
+      auto pt = current_drag_data_->GetImageHotspot();
+      const int x = cursor_position.x - pt.x;
+      const int y = cursor_position.y - pt.y;
+      SetWindowPos(hWndPreview_, HWND_TOP, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+
   }
 
 
@@ -472,9 +466,9 @@ HRESULT DropTargetWin::DragLeave() {
     return E_UNEXPECTED;
   callback_->OnDragLeave();
 
-  if (m_pMiniWnd && m_pMiniWnd->IsWindowVisible())
+  if (hWndPreview_)
   {
-      m_pMiniWnd->ShowWindow(SW_HIDE);
+      ShowWindow(hWndPreview_, SW_HIDE);
   }
 
   return S_OK;

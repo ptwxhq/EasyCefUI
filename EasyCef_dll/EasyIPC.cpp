@@ -2,7 +2,7 @@
 #include "EasyIPC.h"
 #include <thread>
 #include <random>
-#include <format>
+
 
 
 const char* IpcBrowserServerKeyName = "browser_server";
@@ -328,7 +328,7 @@ void EasyIPCBase::Run()
 					LOG(WARNING) << GetCurrentProcessId() << "] Err else";
 				}
 
-				BOOL br = SetEvent(hEvent);
+				SetEvent(hEvent);
 				CloseHandle(hEvent);
 			}
 			//LOG(INFO) << GetCurrentProcessId() << "] thread work end" << br;
@@ -519,12 +519,25 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 
 const std::string EasyIPCBase::GetShareMemName(IPCHandle hFrom, IPCHandle hTo)
 {
+	
+#if HAVE_CPP_FORMAT
 	return std::format("_EasyIPC_v1_{:X}_{:X}", (size_t)hFrom, (size_t)hTo);
+#else
+	std::ostringstream ss;
+	ss << "_EasyIPC_v1_" << std::hex << hFrom << "_" << hTo;
+	return ss.str();
+#endif
 }
 
 const std::string EasyIPCBase::GetShareMemName(IPCHandle hFrom, IPCHandle hTo, size_t id)
 {
+#if HAVE_CPP_FORMAT
 	return std::format("_EasyIPC_v1_{:X}_{:X}_{:X}", (size_t)hFrom, (size_t)hTo, id);
+#else
+	std::ostringstream ss;
+	ss << "_EasyIPC_v1_" << std::hex << hFrom << "_" << hTo << "_" << id;
+	return ss.str();
+#endif
 }
 
 LRESULT EasyIPCBase::WORKPROC(HWND h, UINT msg, WPARAM wp, LPARAM lp)

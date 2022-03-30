@@ -143,7 +143,6 @@ wvhandle EasyWebViewMgr::CreateWebViewUI(HWND hParent, const RECT& rc, LPCWSTR l
 	auto id = GetNewHandleId();
 	CefRefPtr<WebViewControl> pItem/* = nullptr*/;
 
-	bool bUseTransparent = false;
 	if (pExt && pExt->transparent && g_BrowserGlobalVar.SupportLayerWindow)
 	{
 		pItem = new WebViewTransparentUIControl;
@@ -159,13 +158,10 @@ wvhandle EasyWebViewMgr::CreateWebViewUI(HWND hParent, const RECT& rc, LPCWSTR l
 	{
 		m_mutex.lock();
 		m_WebViewList.insert(std::make_pair(id, pItem));
-	//	m_WebViewIndex.insert(std::make_pair(pItem->GetBrowserId(), id));
-	//	m_WebViewHWNDIndex.insert(std::make_pair(pItem->GetHWND(), id));
 		m_mutex.unlock();
 	}
 	else
 	{
-		//delete pItem;
 		id = 0;
 	}
 
@@ -210,7 +206,7 @@ void EasyWebViewMgr::RemoveAllItems()
 
 	//按新开的窗口先关闭处理
 	std::list<CefRefPtr<WebViewControl>> listCopy;
-	for (const auto it : m_WebViewList)
+	for (const auto& it : m_WebViewList)
 	{
 		listCopy.push_front(it.second);
 	}

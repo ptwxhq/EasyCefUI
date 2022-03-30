@@ -52,11 +52,12 @@ private:
 protected:
 
     BOOL ProcessWindowMessage(
-         HWND hWnd,
-         UINT uMsg,
-         WPARAM wParam,
-         LPARAM lParam,
-         LRESULT& lResult);
+        HWND hWnd,
+        UINT uMsg,
+        WPARAM wParam,
+        LPARAM lParam,
+        LRESULT& lResult,
+        DWORD dwMsgMapID = 0) override;
 
 
     float device_scale_factor_ = 1.f;
@@ -78,7 +79,7 @@ class EasyOpaqueWindow : public EasyUIWindowBase
 {
 public:
 
-    BEGIN_MSG_MAP(0)
+    BEGIN_MSG_MAP(EasyOpaqueWindow)
         CHAIN_MSG_MAP(EasyUIWindowBase)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
         MESSAGE_HANDLER(WM_NCACTIVATE, OnNcActivate)

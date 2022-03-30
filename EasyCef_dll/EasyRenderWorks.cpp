@@ -4,7 +4,6 @@
 #include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 
-#include <format>
 #include "EasyRenderBrowserInfo.h"
 #include "EasyIPC.h"
 
@@ -15,14 +14,9 @@ namespace RenderAsyncWorkFunctions
 	{
 		if (g_BrowserGlobalVar.funcSpeedupCallback)
 		{
-			static_cast<EASYCEF::SpeedUpWork>(g_BrowserGlobalVar.funcSpeedupCallback)(static_cast<float>(args->GetDouble(0)));
+			reinterpret_cast<EASYCEF::SpeedUpWork>(g_BrowserGlobalVar.funcSpeedupCallback)(static_cast<float>(args->GetDouble(0)));
 		}
 	}
-
-	//void asyncInvokedJSMethod(const CefRefPtr<CefBrowser> browser, const CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	//{
-	//	
-	//}
 
 }
 
@@ -86,12 +80,6 @@ namespace RenderSyncWorkFunctions
 
 		v8Context->Enter();
 
-		auto js = R"((function (x,y) {{
-var e=document.elementFromPoint(x,y);
-if(e===null)return null;
-else return e.getAttribute("{}");
-}})({},{}))";
-
 		POINT pt = { args->GetInt(1), args->GetInt(2) };
 
 	//	LOG(INFO) << GetCurrentProcessId() << "]ClientAppRenderer::OnProcessMessageReceived(" << "(" << pt.x << "," << pt.y << ")";
@@ -103,7 +91,30 @@ else return e.getAttribute("{}");
 		//后面看看怎么用function替代Eval
 		//auto dwTimeTest1 = GetTimeNow();
 
-		bool bOpr = v8Context->Eval(std::format(js, args->GetString(0).ToString(), pt.x, pt.y), CefString(), 0, jsRetval, exception);
+		std::string strJS;
+		
+#if HAVE_CPP_FORMAT
+		auto js = R"((function (x,y) {{
+var e=document.elementFromPoint(x,y);
+if(e===null)return null;
+else return e.getAttribute("{}");
+}})({},{}))";
+
+		strJS = std::format(js, args->GetString(0).ToString(), pt.x, pt.y);
+#else
+		std::ostringstream ss;
+		ss << R"(function (x,y) {
+var e=document.elementFromPoint(x,y);
+if(e===null)return null;
+else return e.getAttribute("{}");
+})()" << pt.x << "," << pt.y << ")";
+
+		strJS = ss.str();
+#endif
+
+		bool bOpr = v8Context->Eval(strJS, CefString(), 0, jsRetval, exception);
+			
+			
 
 		//auto dwTimeTest2 = GetTimeNow();
 

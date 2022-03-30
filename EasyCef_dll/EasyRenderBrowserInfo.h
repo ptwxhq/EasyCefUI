@@ -17,8 +17,8 @@ public:
 			BROWSER_WEB = 2,
 			BROWSER_ALL = BROWSER_UI | BROWSER_WEB
 		} type = BROWSER_NONE;
-		HWND hUIWnd = nullptr;
 		CefRefPtr<CefBrowser> browser;
+		HWND hUIWnd = nullptr;
 
 		BrsData(TYPE t, CefRefPtr<CefBrowser> b, HWND h = nullptr) :type(t), browser(b), hUIWnd(h) {}
 	};

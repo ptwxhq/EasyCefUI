@@ -8,8 +8,6 @@
 #include "WebViewControl.h"
 #include "EasyIPC.h"
 
-#include <format>
-
 
 bool QueryNodeAttrib(CefRefPtr<WebViewControl> item, int x, int y, std::string name, std::wstring& outVal);
 //////////////////////////////////////////////////////
@@ -186,7 +184,14 @@ namespace wrapQweb {
 				strParam = "''";
 			}
 
+#if HAVE_CPP_FORMAT
 			auto fmt = std::format("window.invokeMethod('{}', '{}', {}, {})", utf8_module, utf8_method, strParam, bNoticeJSTrans2JSON ? "true" : "false");
+#else
+			std::ostringstream ss;
+			ss << "window.invokeMethod('" << utf8_module << "', '" << utf8_method << ", " << strParam << ", " << (bNoticeJSTrans2JSON ? "true" : "false");
+			auto fmt = ss.str();
+
+#endif
 
 			frame->ExecuteJavaScript(fmt, "", 0);
 
@@ -406,10 +411,10 @@ namespace wrapQweb {
 			{
 				IMPLEMENT_REFCOUNTING(RemoveAllCookie);
 			public:
-				virtual bool Visit(const CefCookie& cookie,
+				bool Visit(const CefCookie& cookie,
 					int count,
 					int total,
-					bool& deleteCookie)
+					bool& deleteCookie) override
 				{
 					deleteCookie = true;
 					return true;

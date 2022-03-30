@@ -133,9 +133,9 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
             {
                 RECT rect = {};
                 GetClientRect(hAttchWnd, &rect);
-                windowInfo.SetAsChild(hAttchWnd, 
+                windowInfo.SetAsChild(hAttchWnd,
 #if CEF_VERSION_MAJOR > 95
-                    CefRect({ rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top })
+                    CefRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
 #else
                     rect
 #endif
@@ -313,7 +313,7 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
                 EasyWebViewMgr::GetInstance().CleanDelayItem(nullptr);
             }
 
-            static_cast<EASYCEF::CloseHandler>(g_BrowserGlobalVar.funcCloseCallback)();
+            reinterpret_cast<EASYCEF::CloseHandler>(g_BrowserGlobalVar.funcCloseCallback)();
         }
         
 

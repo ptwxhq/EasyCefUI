@@ -49,7 +49,7 @@ void LayeredWindowInfo::Update(__in HWND window, __in HDC source)
 	m_info.hdcSrc = source;
 
 	BOOL bRet = UpdateLayeredWindowIndirect(window, &m_info);
-	VERIFY(bRet);
+	ASSERT(bRet);
 	if (!bRet)
 	{
 		//解决被脚本修改导致界面异常

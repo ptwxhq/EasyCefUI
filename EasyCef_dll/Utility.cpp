@@ -5,12 +5,11 @@
 #include <Winternl.h>
 #include "Utility.h"
 
-
 #include <ShlObj_core.h>
 
 #include "include/base/cef_logging.h"
 #include <random>
-#include <format>
+
 
 void GetLocalPaths();
 
@@ -275,9 +274,9 @@ bool GetParentProcessInfo(DWORD *pdwId, std::wstring* pstrPathOut)
     if (bFirstRun)
     {
         bFirstRun = false;
-        typedef LONG(WINAPI* pfnNtQueryInformationProcess)(HANDLE, UINT, PVOID, ULONG, PULONG);
+        typedef NTSTATUS(WINAPI* pfnNtQueryInformationProcess)(HANDLE, UINT, PVOID, ULONG, PULONG);
         pfnNtQueryInformationProcess _NtQueryInformationProcess = nullptr;
-        PROCESS_BASIC_INFORMATION pbi;
+        PROCESS_BASIC_INFORMATION pbi = {};
         auto ntdll = GetModuleHandleA("ntdll");
         if (ntdll)
             _NtQueryInformationProcess = (pfnNtQueryInformationProcess)GetProcAddress(ntdll, "NtQueryInformationProcess");
@@ -285,28 +284,32 @@ bool GetParentProcessInfo(DWORD *pdwId, std::wstring* pstrPathOut)
         {
             HANDLE hProcessSelf = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, GetCurrentProcessId());
 
-            long status = _NtQueryInformationProcess(hProcessSelf,
+            NTSTATUS status = _NtQueryInformationProcess(hProcessSelf,
                 ProcessBasicInformation,
                 (PVOID)&pbi,
                 sizeof(PROCESS_BASIC_INFORMATION),
                 NULL
             );
             CloseHandle(hProcessSelf);
-            dwProcessId = (DWORD)pbi.Reserved3;
-
-            HANDLE hProcessPar = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, dwProcessId);
-            if (hProcessPar != INVALID_HANDLE_VALUE)
+            if (0 == status)
             {
-                DWORD dwLen = MAXSHORT;
-                auto strPathBuf = new WCHAR[dwLen];
-                if (QueryFullProcessImageNameW(hProcessPar, 0, strPathBuf, &dwLen))
+                dwProcessId = (DWORD)pbi.Reserved3;
+
+                HANDLE hProcessPar = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, dwProcessId);
+                if (hProcessPar != INVALID_HANDLE_VALUE)
                 {
-                    strPath = strPathBuf;
+                    DWORD dwLen = MAXSHORT;
+                    auto strPathBuf = new WCHAR[dwLen];
+                    if (QueryFullProcessImageNameW(hProcessPar, 0, strPathBuf, &dwLen))
+                    {
+                        strPath = strPathBuf;
+                    }
+                    delete[] strPathBuf;
+
+                    CloseHandle(hProcessPar);
                 }
-                delete[] strPathBuf;
-                
-                CloseHandle(hProcessPar);
             }
+            
         }
         
     }
@@ -655,7 +658,13 @@ std::string GetTimeString(const CefTime& value) {
     else
         month = "Invalid";
 
+#if HAVE_CPP_FORMAT
     return std::format("{} {}, {} {:02}:{:02}:{:02}", month, value.day_of_month, value.year, value.hour, value.minute, value.second);
+#else
+    std::ostringstream ss;
+    ss << month << " " << value.day_of_month << ", " << value.year << " " << std::setfill('0') << std::setw(2) << value.hour << ":" << value.minute << ":" << value.second;
+    return ss.str();
+#endif
 }
 
 std::string GetBinaryString(CefRefPtr<CefBinaryValue> value) {
@@ -740,7 +749,7 @@ std::string GetCertificateInformation(const std::string& url,
 
     // Build a table showing certificate information. Various types of invalid
     // certificates can be tested using https://badssl.com/.
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << "<h3>X.509 Certificate Information:</h3>"
         "<table border=1><tr><th>Field</th><th>Value</th></tr>";
 
@@ -860,7 +869,7 @@ std::string GetErrorPage(const std::string& failed_url, const std::string& other
     };
 
 
-    std::stringstream ss;
+    std::ostringstream ss;
     ss << R"(<html><head><title>Page failed to load</title></head><style>
 @media (prefers-color-scheme: light) {
 body {

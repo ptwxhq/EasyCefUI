@@ -19,7 +19,6 @@
 
 #include "osr_dragdrop_events.h"
 
-#include "../EasyLayeredWindow.h"
 
 namespace client {
 
@@ -84,14 +83,14 @@ class DropTargetWin : public IDropTarget {
 
  protected:
   DropTargetWin(OsrDragEvents* callback, HWND hWnd)
-      : ref_count_(0), callback_(callback), hWnd_(hWnd) {}
+      : ref_count_(0), callback_(callback), hWnd_(hWnd), hWndPreview_(nullptr) {}
   virtual ~DropTargetWin() {}
 
  private:
   OsrDragEvents* callback_;
   HWND hWnd_;
 
-  std::unique_ptr<EasyMiniLayeredWindow> m_pMiniWnd;
+  HWND hWndPreview_;
 
   CefRefPtr<CefDragData> current_drag_data_;
 };
