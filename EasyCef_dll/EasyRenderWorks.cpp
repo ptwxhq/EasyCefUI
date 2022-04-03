@@ -207,7 +207,7 @@ void EasyRenderWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bo
 		m_UIWorkInstance = new RenderUIWorks;
 	}
 
-	if (bNeedUIThread /*&& pData->Name == "invokedJSMethod"*/)
+	if (bNeedUIThread)
 	{
 		auto& ipcclient = EasyIPCClient::GetInstance();
 		//LOG(INFO) << GetCurrentProcessId() << "] UIWork IsMainThreadBlocking:(" << ipcclient.IsMainThreadBlocking();

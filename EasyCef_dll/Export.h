@@ -117,4 +117,52 @@ EASYCEF_EXP_API void SetFunctionFlag(EasyCefFunctionFlag *pFlag);
 //仅限chromium87或以下版本，需要加载前设置，如不设置则默认使用系统flash
 EASYCEF_EXP_API void SetFlashPluginPath(LPCWSTR lpszPath);
 
+
+struct EasyReqRspRule
+{
+	enum RULE_MATCH_TYPE
+	{
+		KEYWORD,
+		HOST,
+		REGEX,
+	};
+
+	enum RULE_MODIFY_TYPE
+	{
+		NONE,
+		REQUEST_HEAD,
+		REQUEST_POSTDATA,
+		RESPONSE_HEAD,
+		RESPONSE_DATA,
+	};
+
+	RULE_MATCH_TYPE MatchType;
+	RULE_MODIFY_TYPE ModifyType;
+
+	bool bContinueSearch;	//有效执行（添加/修改/删除）到本条时是否继续操作
+	bool bReplaceCaseInsensitive;
+	bool bAddIfNotExist; //仅header，bReplaceUseRegex true时无效
+	bool bReplaceUseRegex;
+
+	LPCSTR strUrlMathInfo;	   //KEYWORD空值表示所有
+	LPCSTR strHeadField; //REQUEST_HEAD RESPONSE_HEAD
+	LPCSTR strSearch;	  //使用strHeadField时可为空，为插入内容
+	LPCSTR strReplace;
+
+
+	EasyReqRspRule()
+	{
+		memset(this, 0, sizeof(EasyReqRspRule));
+	}
+
+};
+
+
+EASYCEF_EXP_API unsigned AddReqRspRule(const EasyReqRspRule* pRule);
+EASYCEF_EXP_API bool SetReqRspRule(unsigned id, const EasyReqRspRule* pRule);
+//origin: 0 1 2 最前 当前位 最后 有结果且变化true
+EASYCEF_EXP_API bool SetReqRspOrder(unsigned id, long offset, int origin);
+EASYCEF_EXP_API bool DelReqRspRule(unsigned id);
+EASYCEF_EXP_API bool GetReqRspRule(unsigned id, EasyReqRspRule* pRule);
+
 };

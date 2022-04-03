@@ -4,6 +4,7 @@
 
 #include "extlib/pack.h"
 #include <algorithm>
+#include "include/wrapper/cef_stream_resource_handler.h"
 
 #pragma comment(lib, "packlib.lib")
 
@@ -31,49 +32,26 @@ void RegEasyCefSchemes()
 
 EasySchemesHandlerFactory::EasySchemesHandlerFactory()
 {
-	mapSchemes.insert(std::make_pair(PACKSCHEME, EasyResourceHandler::RESTYPE::XPACK));
-	mapSchemes.insert(std::make_pair("http", EasyResourceHandler::RESTYPE::FAKEHTTP));
-	mapSchemes.insert(std::make_pair("file", EasyResourceHandler::RESTYPE::FILE));
-	mapSchemes.insert(std::make_pair("disk", EasyResourceHandler::RESTYPE::FILE));
-	mapSchemes.insert(std::make_pair(EASYCEFSCHEME, EasyResourceHandler::RESTYPE::INTERNALUI));
+	mapSchemes.insert(std::make_pair(PACKSCHEME, RESTYPE::XPACK));
+	mapSchemes.insert(std::make_pair("http", RESTYPE::FAKEHTTP));
+	mapSchemes.insert(std::make_pair("file", RESTYPE::FILE));
+	mapSchemes.insert(std::make_pair("disk", RESTYPE::FILE));
+	mapSchemes.insert(std::make_pair(EASYCEFSCHEME, RESTYPE::INTERNALUI));
 }
 
 CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& scheme_name, CefRefPtr<CefRequest> request)
 {
 	CEF_REQUIRE_IO_THREAD();
 
-	auto type = EasyResourceHandler::RESTYPE::UNKNOWN;
+	//LOG(INFO) << GetCurrentProcessId() << "] EasySchemesHandlerFactory url:" << request->GetURL() << "\n";
+
+	auto type = RESTYPE::UNKNOWN;
 
 	auto it = mapSchemes.find(scheme_name.ToString());
 	if (it != mapSchemes.end())
 	{
 		type = it->second;
 	}
-
-	if (type == EasyResourceHandler::RESTYPE::XPACK)
-	{
-		if (request->GetURL().ToString().find(PROXY_MARK_PATH) != std::string::npos)
-		{
-			//type = EasyResourceHandler::RESTYPE::PROXY;
-			return nullptr;
-		}
-	}
-
-	return new EasyResourceHandler(type);
-}
-
-bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_request, CefRefPtr<CefCallback> callback)
-{
-	DCHECK(!CefCurrentlyOn(TID_UI) && !CefCurrentlyOn(TID_IO));
-
-	handle_request = true;
-
-	//如果没有被注册为正常域名则以下将无法解析，故不能使用下面的，得自己解析
-	//CefURLParts url_parts;
-	//if (!CefParseURL(request->GetURL(), url_parts))
-	//{
-	//	return false;
-	//}
 
 	DomainPackInfo::Uri url_parts(request->GetURL());
 
@@ -86,270 +64,176 @@ bool EasyResourceHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reque
 
 #endif
 
-	const std::wstring strDecodedPath = CefURIDecode(url_parts.Path_, false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
-
-
-	enum class STATUSCODE {
+	enum class STATUSCODE : int {
 		E_UNSET,
+		E200 = 200,
 		E400 = 400,
-		E403 = 403,
 		E404 = 404,
-		E500 = 500
 	};
+
+	std::string strStatusText = "UNDEFINE";
 
 	STATUSCODE sCurrent = STATUSCODE::E_UNSET;
 
-	do 
+	CefRefPtr<CefStreamReader> stream;
+
+	const std::wstring strDecodedPath = CefURIDecode(url_parts.Path_, false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
+
+	std::string ansipath = CefString(url_parts.Path_);
+	const size_t sep = ansipath.find_last_of(".");
+	auto mime_type_ = CefGetMimeType(ansipath.substr(sep + 1)).ToString();
+	if (mime_type_.empty())
 	{
-		bool bHaveFile = false;
-
-		switch (m_type)
-		{
-		case EasyResourceHandler::RESTYPE::UNKNOWN:
-			break;
-		case EasyResourceHandler::RESTYPE::XPACK:
-		case EasyResourceHandler::RESTYPE::FAKEHTTP:
-			{
-				//检查域名是否已注册，无效返回400
-				auto strPackFilePath = DomainPackInfo::GetInstance().GetDomainPath(url_parts.Host_.c_str());
-				if (strPackFilePath.empty())
-				{
-					sCurrent = STATUSCODE::E400;
-					break;
-				}
-
-				std::wstring strPathInZip = strDecodedPath;
-
-				if (strPathInZip.empty())
-				{
-					sCurrent = STATUSCODE::E404;
-					break;
-				}
-
-
-				//过滤?和#
-				WCHAR aNoPathChar[] = { '?', '#' };
-				for (size_t i = 0; i < _countof(aNoPathChar); i++)
-				{
-					auto cCheck = strPathInZip.find(aNoPathChar[i]);
-					if (cCheck != std::string::npos)
-					{
-						strPathInZip = strPathInZip.substr(0, cCheck);
-					}
-				}
-			
-				//首页未定义的情况，自动标记为index.html
-				if (strPathInZip == L"/")
-				{
-					strPathInZip = LR"(\index.html)";
-				}
-
-				std::replace(strPathInZip.begin(), strPathInZip.end(), L'/', L'\\');
-
-				//因路径本身错误导致的不进行修正，直接判断
-
-				XPackData *pPackData;
-				int packstatus = UnzipExistPackFile(strPackFilePath.c_str(), strPathInZip.c_str(), &pPackData);
-
-				if (0 == packstatus)
-				{
-					data_.assign(*pPackData, pPackData->GetLen());
-					pPackData->Free();
-					DCHECK(!data_.empty());
-					bHaveFile = true;
-				}
-				else if (-1 == packstatus)
-				{
-					unsigned char* databuf = 0;
-					unsigned long data_len = 0;
-					if (exZipFile(strPackFilePath.c_str(), strPathInZip.c_str(), &databuf, &data_len)) {
-						data_.assign(reinterpret_cast<char*>(databuf), data_len);
-						freeBuf(databuf);
-						DCHECK(!data_.empty());
-						bHaveFile = true;
-					}
-					else
-					{
-						sCurrent = STATUSCODE::E404;
-						break;
-					}
-				}
-				else
-				{
-					sCurrent = STATUSCODE::E404;
-					break;
-				}
-			
-			}
-			break;
-		case EasyResourceHandler::RESTYPE::FILE:
-			{
-				std::wstring strPath = strDecodedPath;
-				
-				std::replace(strPath.begin(), strPath.end(), L'/', L'\\');
-				if (strPath.front() == '\\')
-					strPath.erase(0, 1);
-				
-				if (!PathFileExistsW(strPath.c_str()))
-				{
-					sCurrent = STATUSCODE::E404;
-					break;
-				}
-
-				std::ifstream fs;
-				fs.open(strPath, std::ios::binary | std::ios::ate);
-				if (!fs.is_open())
-				{
-					sCurrent = STATUSCODE::E403;
-					break;
-				}
-
-				//这边懒得处理文件过大的情况了，直接读取
-
-				const auto size = fs.tellg();
-				if (size < 1024 * 1024 * 1024)
-				{
-					fs.seekg(std::ios::beg);
-					data_.resize((size_t)size);
-					fs.read(data_.data(), size);
-
-					bHaveFile = true;
-				}
-				else
-				{
-					sCurrent = STATUSCODE::E500;
-					data_ = "file is too large";
-				}
-			}
-			break;
-		case EasyResourceHandler::RESTYPE::INTERNALUI:
-			{
-				if (url_parts.Host_ == L"info")
-				{
-					std::wstring strData = strDecodedPath;
-					if (strData[0] == '/')
-					{
-						strData.erase(0, 1);
-					}
-					
-					auto binhtml = CefBase64Decode(strData);
-					if (binhtml)
-					{
-						data_.resize(binhtml->GetSize());
-						binhtml->GetData(data_.data(), binhtml->GetSize(), 0);
-
-						bHaveFile = true;
-					}
-		
-				}
-			}
-			break;
-		//case EasyResourceHandler::RESTYPE::PROXY:
-		//	{
-		//		auto nPos = strDecodedPath.find(WIDE_STR(PROXY_MARK_PATH));
-		//		if (nPos != std::string::npos)
-		//		{
-		//			auto strRealUrl = strDecodedPath.substr(nPos + (sizeof(PROXY_MARK_PATH) - 1));
-		//			data_ = CefString(strRealUrl);
-		//			bHaveFile = true;
-		//		}
-		//	}
-		//	break;
-		default:
-			break;
-		}
-
-		switch (sCurrent)
-		{
-		case STATUSCODE::E_UNSET:
-			break;
-		case STATUSCODE::E400:
-			data_ = "invalid xpack host";
-			break;
-		case STATUSCODE::E403:
-			data_ = "cannot open file";
-			break;
-		case STATUSCODE::E404:
-			data_ = "404 file " + CefString(url_parts.Path_).ToString() + " not exist";
-
-			break;
-		default:
-			break;
-		}
-
-		if (!bHaveFile)
-		{
-			data_ = webinfo::GetErrorPage("", data_);
-			statuscode_ = (int)sCurrent;
-			mime_type_ = "text/html";
-			break;
-		}
-
-		//处理
-		std::string ansipath = CefString(url_parts.Path_);
-		const size_t sep = ansipath.find_last_of(".");
-		mime_type_ = CefGetMimeType(ansipath.substr(sep + 1)).ToString();
-		if (mime_type_.empty())
-		{
-			mime_type_ = "text/html";
-		}
-
-		statuscode_ = 200;
-		break;
-	}while (false);
-
-	return true;
-}
-
-void EasyResourceHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)
-{
-	CEF_REQUIRE_IO_THREAD();
-
-	//if (m_type == RESTYPE::PROXY)
-	//{
-	//	redirectUrl = data_;
-	//}
-
-
-	DCHECK(!data_.empty());
-
-	response->SetMimeType(mime_type_);
-	response->SetStatus(statuscode_);
-	
-
-	//std::hash<std::string> eTag;
-	//auto hashRes = eTag(data_);
-
-	//response->SetHeaderByName("Etag", std::format("{:x}", hashRes), true);
-
-	// Set the resulting response length
-	response_length = data_.length();
-}
-
-bool EasyResourceHandler::Read(void* data_out, int bytes_to_read, int& bytes_read, CefRefPtr<CefResourceReadCallback> callback)
-{
-	DCHECK(!CefCurrentlyOn(TID_UI) && !CefCurrentlyOn(TID_IO));
-
-	bool has_data = false;
-	bytes_read = 0;
-
-	if (offset_ < data_.length()) {
-		// Copy the next block of data into the buffer.
-		int transfer_size =
-			std::min(bytes_to_read, static_cast<int>(data_.length() - offset_));
-		memcpy(data_out, data_.c_str() + offset_, transfer_size);
-		offset_ += transfer_size;
-
-		bytes_read = transfer_size;
-		has_data = true;
+		mime_type_ = "text/html";
 	}
 
-	return has_data;
-}
 
-void EasyResourceHandler::Cancel()
-{
-	CEF_REQUIRE_IO_THREAD();
+	switch (type)
+	{
+	case RESTYPE::UNKNOWN:
+		break;
+	case RESTYPE::XPACK:
+	case RESTYPE::FAKEHTTP:
+		{
+			//检查域名是否已注册，无效返回400
+			auto strPackFilePath = DomainPackInfo::GetInstance().GetDomainPath(url_parts.Host_.c_str());
+			if (strPackFilePath.empty())
+			{
+				sCurrent = STATUSCODE::E400;
+				strStatusText = "UNREGISTERED";
+				break;
+			}
+
+			if (strDecodedPath.empty())
+			{
+				sCurrent = STATUSCODE::E404;
+				break;
+			}
+
+			//过滤?和#
+			std::wstring strPathInZip = GetUrlWithoutQueryOrFragment(strDecodedPath);
+
+			std::replace(strPathInZip.begin(), strPathInZip.end(), L'/', L'\\');
+
+			//尾部未定义的情况，自动标记为index.html
+			if (strPathInZip.back() == '\\')
+			{
+				strPathInZip += L"index.html";
+			}
+
+			//因路径本身错误导致的不进行修正，直接判断
+
+			XPackData* pPackData;
+			int packstatus = UnzipExistPackFile(strPackFilePath.c_str(), strPathInZip.c_str(), &pPackData);
+
+			if (0 == packstatus)
+			{
+				stream = CefStreamReader::CreateForData(*pPackData, pPackData->GetLen());
+				pPackData->Free();
+			}
+			else if (-1 == packstatus)
+			{
+				unsigned char* databuf = 0;
+				unsigned long data_len = 0;
+				if (exZipFile(strPackFilePath.c_str(), strPathInZip.c_str(), &databuf, &data_len)) {
+
+					stream = CefStreamReader::CreateForData(databuf, data_len);
+					freeBuf(databuf);
+				}
+				else
+				{
+					sCurrent = STATUSCODE::E404;
+					break;
+				}
+			}
+			else
+			{
+				sCurrent = STATUSCODE::E404;
+				break;
+			}
+
+			sCurrent = STATUSCODE::E200;
+
+		}
+		break;
+	case RESTYPE::FILE:
+		{
+			std::wstring strPath = strDecodedPath;
+
+			std::replace(strPath.begin(), strPath.end(), L'/', L'\\');
+			if (strPath.front() == '\\')
+				strPath.erase(0, 1);
+
+			stream = CefStreamReader::CreateForFile(strPath);
+			if (!stream)
+			{
+				sCurrent = STATUSCODE::E404;
+				break;
+			}
+
+			sCurrent = STATUSCODE::E200;
+		}
+		break;
+	case RESTYPE::INTERNALUI:
+	{
+		if (url_parts.Host_ == L"info")
+		{
+			std::wstring strData = strDecodedPath;
+			if (strData[0] == '/')
+			{
+				strData.erase(0, 1);
+			}
+
+			auto binhtml = CefBase64Decode(strData);
+			if (binhtml)
+			{
+				auto pBuf = std::make_unique<char[]>(binhtml->GetSize());
+				binhtml->GetData(pBuf.get(), binhtml->GetSize(), 0);
+				stream = CefStreamReader::CreateForData(pBuf.get(), binhtml->GetSize());
+			}
+			else
+			{
+				//异常内容
+
+			}
+
+			sCurrent = STATUSCODE::E200;
+		}
+	}
+	break;
+
+	default:
+		break;
+	}
+
+	if (!stream && sCurrent == STATUSCODE::E_UNSET)
+	{
+		sCurrent = STATUSCODE::E404;
+	}
+
+	std::string ErrorInfo = "Unknow";
+	switch (sCurrent)
+	{
+	case STATUSCODE::E_UNSET:
+		assert(0);
+		break;
+	case STATUSCODE::E404:
+		strStatusText = "NOT FOUND";
+		ErrorInfo = "404 file " + CefString(url_parts.Path_).ToString() + " not exist";
+
+		break;
+	default:
+		break;
+	}
+
+	if (!stream)
+	{
+		auto data = webinfo::GetErrorPage("", ErrorInfo);
+		stream = CefStreamReader::CreateForData(data.data(), data.size());
+		mime_type_ = "text/html";
+	}
+
+	return new CefStreamResourceHandler(static_cast<int>(sCurrent), strStatusText, mime_type_, CefResponse::HeaderMap(), stream);
 }
 
 bool DomainPackInfo::RegisterPackDomain(LPCWSTR lpszDomain, LPCWSTR lpszFilePath)

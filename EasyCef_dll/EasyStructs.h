@@ -84,6 +84,19 @@ struct WebViewExtraAttr
 };
 
 
+class EasyCefRect : public CefRect
+{
+public:
+	EasyCefRect(int x, int y, int width, int height) {
+		Set(x, y, width, height);
+	}
+
+	operator RECT()	const
+	{
+		return { x, y, x + width, y + height };
+	}
+};
+
 
 
 
@@ -102,8 +115,6 @@ extern const char* ExtraKeyNameUIWndHwnd;
 #define EASYCEFSCHEMEW WIDE_STR(EASYCEFSCHEME)
 #define EASYCEFPROTOCOLW WIDE_STR(EASYCEFPROTOCOL)
 
-#define PROXY_MARK_PATH "/::/"
-
 #define PACKSCHEME "xpack"
-#define PACKPROTOCOL "xpack""://"
+#define PACKPROTOCOL PACKSCHEME"://"
 

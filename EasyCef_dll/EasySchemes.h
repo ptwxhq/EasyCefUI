@@ -4,58 +4,16 @@
 #include <unordered_map>
 
 
-class EasyResourceHandler : public CefResourceHandler
+class EasySchemesHandlerFactory : public CefSchemeHandlerFactory
 {
-public:
-
 	enum class RESTYPE
 	{
 		UNKNOWN,
 		XPACK,
 		FILE,
 		INTERNALUI,
-//		PROXY,
 		FAKEHTTP,//XPACK
 	};
-
-
-	EasyResourceHandler(RESTYPE type) :m_type(type) {
-	}
-
-	//代替原有的ProcessRequest
-	bool Open(CefRefPtr<CefRequest> request,
-		bool& handle_request,
-		CefRefPtr<CefCallback> callback) override;
-
-	void GetResponseHeaders(CefRefPtr<CefResponse> response,
-		int64& response_length,
-		CefString& redirectUrl) override;
-
-
-	//和Skip一起替代原有ReadResponse
-	bool Read(void* data_out,
-		int bytes_to_read,
-		int& bytes_read,
-		CefRefPtr<CefResourceReadCallback> callback) override;
-
-	void Cancel() override;
-
-	IMPLEMENT_REFCOUNTING(EasyResourceHandler);
-	DISALLOW_COPY_AND_ASSIGN(EasyResourceHandler);
-
-private:
-	RESTYPE m_type;
-	int statuscode_ = 0;
-	size_t offset_ = 0;
-	std::string data_;
-	std::string mime_type_;
-
-
-};
-
-
-class EasySchemesHandlerFactory : public CefSchemeHandlerFactory
-{
 public:
 	EasySchemesHandlerFactory();
 	CefRefPtr<CefResourceHandler> Create(
@@ -66,7 +24,7 @@ public:
 
 	IMPLEMENT_REFCOUNTING(EasySchemesHandlerFactory);
 private:
-	std::unordered_map<std::string, EasyResourceHandler::RESTYPE> mapSchemes;
+	std::unordered_map<std::string, RESTYPE> mapSchemes;
 };
 
 

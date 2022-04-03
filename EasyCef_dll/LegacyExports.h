@@ -104,8 +104,6 @@ namespace wrapQweb {
 
 	typedef void(__stdcall* call_NativeFrameComplate)(HWND, LPCWSTR url, LPCWSTR frameName);
 
-	typedef void(__stdcall* call_NativeFrameBegin)(HWND, LPCWSTR url, LPCWSTR frameName);
-
 	typedef void(__stdcall* call_newNativeUrl)(HWND, LPCWSTR url, LPCWSTR frameName);
 
 	typedef bool(__stdcall* call_doMenuCommand)(HWND, int id);

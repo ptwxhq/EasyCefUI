@@ -478,6 +478,14 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 				else if (dwWait == WAIT_TIMEOUT)
 				{
 					LOG(WARNING) << GetCurrentProcessId() << "] Timeout:" << dwWait;
+					if (IsServer())
+					{
+						assert(0 && "M->S IPC Timeout");
+					}
+					else
+					{
+						assert(0 && "S->M IPC Timeout");
+					}
 					break;
 				}
 				else

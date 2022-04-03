@@ -436,7 +436,7 @@ CefRefPtr<CefV8Value> CefValueToCefV8Value(CefRefPtr<CefValue> value)
             CefRefPtr<CefDictionaryValue> dict = value->GetDictionary();
             CefDictionaryValue::KeyList keys;
             dict->GetKeys(keys);
-            for (unsigned int i = 0; i < keys.size(); i++) {
+            for (size_t i = 0; i < keys.size(); ++i) {
                 CefString key = keys[i];
                 result->SetValue(key, CefValueToCefV8Value(dict->GetValue(key)), V8_PROPERTY_ATTRIBUTE_NONE);
             }
@@ -448,7 +448,7 @@ CefRefPtr<CefV8Value> CefValueToCefV8Value(CefRefPtr<CefValue> value)
             CefRefPtr<CefListValue> list = value->GetList();
             int size = list->GetSize();
             result = CefV8Value::CreateArray(size);
-            for (int i = 0; i < size; i++) {
+            for (int i = 0; i < size; ++i) {
                 result->SetValue(i, CefValueToCefV8Value(list->GetValue(i)));
             }
         }
@@ -642,6 +642,99 @@ bool IsSystemWindows11OrGreater()
     return false;
 }
 
+bool ReplaceSubstr(const std::string& input, const std::string& search, const std::string& replace, std::string& output)
+{
+    output.clear();
+    auto itPos = input.begin();
+    auto itInBegin = itPos;
+
+    auto inEnd = input.end();
+
+    bool bFound = false;
+
+    while (true)
+    {
+        itPos = std::search(itPos, inEnd, search.begin(), search.end());
+
+        output.append(itInBegin, itPos);
+
+        if (itPos == inEnd)
+        {
+            break;
+        }
+
+        bFound = true;
+
+        output += replace;
+
+        itPos += search.length();
+
+        itInBegin = itPos;
+    }
+
+    return bFound;
+}
+
+bool ReplaceSubstrCaseinsensitive(const std::string& input, std::string search, const std::string& replace, std::string& output)
+{
+    output.clear();
+    std::transform(search.begin(), search.end(), search.begin(), tolower);
+
+    auto itPos = input.begin();
+    auto itInBegin = itPos;
+
+    auto inEnd = input.end();
+
+    bool bFound = false;
+
+    while (true)
+    {
+        itPos = std::search(itPos, inEnd, search.begin(), search.end(),
+            [](const char c1, const char c2) {
+                return tolower(c1) == c2;
+            }
+        );
+
+        output.append(itInBegin, itPos);
+
+        if (itPos == inEnd)
+        {
+            break;
+        }
+
+        bFound = true;
+
+        output += replace;
+
+        itPos += search.length();
+
+        itInBegin = itPos;
+    }
+
+    return bFound;
+}
+
+bool ReplaceAllSubString(bool bCaseinsensitive, const std::string& input, const std::string search, const std::string& replace, std::string& output)
+{
+    if (bCaseinsensitive)
+    {
+        return ReplaceSubstrCaseinsensitive(input, search, replace, output);
+    }
+    else
+    {
+        return ReplaceSubstr(input, search, replace, output);
+    }
+}
+
+// Returns |url| without the query or fragment components, if any.
+std::wstring GetUrlWithoutQueryOrFragment(const std::wstring& url) {
+    // Find the first instance of '?' or '#'.
+    const size_t pos = std::min(url.find('?'), url.find('#'));
+    if (pos != std::string::npos)
+        return url.substr(0, pos);
+
+    return url;
+}
 
 namespace webinfo {
 
@@ -892,7 +985,7 @@ margin:10px 20px;
             << "</a><br/>";
     }
 
-    if (error_code < 10000)
+    if (error_code != ERR_NONE)
     {
         ss << "Error: " << GetErrorString(error_code) << " ("
             << error_code << ")";
@@ -910,7 +1003,7 @@ margin:10px 20px;
 // Load a data: URI containing the error message.
 void LoadErrorPage(CefRefPtr<CefFrame> frame, const std::string& failed_url, cef_errorcode_t error_code, const std::string& other_info)
 {
-    frame->LoadURL(/*GetDataURI(ss.str(), "text/html")*/GetInternalPage(GetErrorPage(failed_url, other_info, error_code)));
+    frame->LoadURL(GetInternalPage(GetErrorPage(failed_url, other_info, error_code)));
 }
 
 }

@@ -111,6 +111,9 @@
     <ClInclude Include="version.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="EasyReqRespModify.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -190,6 +193,9 @@
     </ClCompile>
     <ClCompile Include="cefclient\osr_ime_handler_win.cc">
       <Filter>cefclient</Filter>
+    </ClCompile>
+    <ClCompile Include="EasyReqRespModify.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

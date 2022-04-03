@@ -66,10 +66,17 @@ void SetAllowDarkMode(int nValue);
 bool IsSystemWindows7OrOlder();
 bool IsSystemWindows11OrGreater();
 
+bool ReplaceSubstr(const std::string& input, const std::string& search, const std::string& replace, std::string& output);
+bool ReplaceSubstrCaseinsensitive(const std::string& input, std::string search, const std::string& replace, std::string &output);
+
+bool ReplaceAllSubString(bool bCaseinsensitive, const std::string& input, const std::string search, const std::string& replace, std::string& output);
+
+std::wstring GetUrlWithoutQueryOrFragment(const std::wstring& url);
+
 namespace webinfo {
 
 	std::string GetCertificateInformation(const std::string& url, CefRefPtr<CefX509Certificate> cert, cef_cert_status_t certstatus);
-	std::string GetErrorPage(const std::string& failed_url, const std::string& other_info, cef_errorcode_t error_code = (cef_errorcode_t)10000);
+	std::string GetErrorPage(const std::string& failed_url, const std::string& other_info, cef_errorcode_t error_code = ERR_NONE);
 	void LoadErrorPage(CefRefPtr<CefFrame> frame, const std::string& failed_url, cef_errorcode_t error_code, const std::string& other_info);
 }
 

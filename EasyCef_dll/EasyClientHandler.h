@@ -166,12 +166,7 @@ public:
         cef_errorcode_t cert_error,
         const CefString& request_url,
         CefRefPtr<CefSSLInfo> ssl_info,
-#if CEF_VERSION_MAJOR > 95
-        CefRefPtr<CefCallback>
-#else
-        CefRefPtr<CefRequestCallback>
-#endif // CEF_VERSION_MAJOR > 95
-        callback) override;
+        CefRefPtr<CEF_REQUEST_CALLBACK> callback) override;
 
 
     /////////////////
@@ -213,22 +208,16 @@ public:
         const CefString& request_initiator,
         bool& disable_default_handling) override;
 
-    CefRefPtr<CefResponseFilter> GetResourceResponseFilter(
-        CefRefPtr<CefBrowser> browser,
-        CefRefPtr<CefFrame> frame,
-        CefRefPtr<CefRequest> request,
-        CefRefPtr<CefResponse> response) override;
-
     ReturnValue OnBeforeResourceLoad(
         CefRefPtr<CefBrowser> browser,
         CefRefPtr<CefFrame> frame,
         CefRefPtr<CefRequest> request,
-#if CEF_VERSION_MAJOR > 95
-        CefRefPtr<CefCallback>
-#else
-        CefRefPtr<CefRequestCallback>
-#endif // CEF_VERSION_MAJOR > 95
-        callback) override;
+        CefRefPtr<CEF_REQUEST_CALLBACK> callback) override;
+
+    CefRefPtr<CefResourceHandler> GetResourceHandler(
+        CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefFrame> frame,
+        CefRefPtr<CefRequest> request) override;
 
 protected:
     bool m_bIsUIControl = false;

@@ -236,11 +236,7 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
         }
 
         window_info.SetAsChild(pParams->hParent,
-#if CEF_VERSION_MAJOR > 95
-            CefRect(rcChild.left, rcChild.top, rcChild.right - rcChild.left, rcChild.bottom - rcChild.top)
-#else
-            rcChild
-#endif
+            EasyCefRect(rcChild.left, rcChild.top, rcChild.right - rcChild.left, rcChild.bottom - rcChild.top)
             );
 
     }
@@ -526,12 +522,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
     }
     else
     {
-#if CEF_VERSION_MAJOR > 95
-        CefRect
-#else
-        RECT
-#endif
-         rcCef = { 0, 0, pParams->rc.right - pParams->rc.left, pParams->rc.bottom - pParams->rc.top };
+        EasyCefRect rcCef = { 0, 0, pParams->rc.right - pParams->rc.left, pParams->rc.bottom - pParams->rc.top };
         window_info.SetAsChild(*pWindow, rcCef);
     }
 

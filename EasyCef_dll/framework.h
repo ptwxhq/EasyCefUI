@@ -44,10 +44,15 @@ typedef unsigned long wvhandle;
 #define CEF_FUNC_BIND base::Bind
 #endif
 
+#if CEF_VERSION_MAJOR > 95
+#define CEF_REQUEST_CALLBACK CefCallback
+#else
+#define CEF_REQUEST_CALLBACK CefRequestCallback
+#endif
+
 #if !defined(__clang__) && _MSVC_LANG > 202002L
 #define HAVE_CPP_FORMAT	1
 #include <format>
 #else
-#include <sstream>
 #include <iomanip>
 #endif

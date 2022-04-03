@@ -6,12 +6,14 @@
 #include "EasyIPC.h"
 #include "EasyWebViewMgr.h"
 #include "WebViewControl.h"
-
+#include "EasyReqRespModify.h"
 #include "extlib/pack.h"
+
 
 
 #if defined(CEF_USE_SANDBOX)
 #include "include/cef_sandbox_win.h"
+
 CefScopedSandboxInfo g_scoped_sandbox;
 
 #pragma comment(lib, "cef_sandbox.lib")
@@ -323,5 +325,73 @@ void SetFlashPluginPath(LPCWSTR lpszPath)
 		g_BrowserGlobalVar.FlashPluginPath = lpszPath;
 	}
 }
+
+unsigned AddReqRspRule(const EasyReqRspRule* pRule)
+{
+	EasyReplaceRule	r1;
+	r1.bAddIfNotExist = pRule->bAddIfNotExist;
+	r1.bContinueSearch = pRule->bContinueSearch;
+	r1.bReplaceCaseInsensitive = pRule->bReplaceCaseInsensitive;
+	r1.ModifyType = static_cast<RULE_MODIFY_TYPE>(pRule->ModifyType);
+	r1.strHeadField = pRule->strHeadField ? pRule->strHeadField : "";
+	r1.strReplace = pRule->strReplace ? pRule->strReplace : "";
+	r1.SetUrlMatchType(pRule->strUrlMathInfo ? pRule->strUrlMathInfo : "", static_cast<RULE_MATCH_TYPE>(pRule->MatchType));
+	r1.SetSearchContents(pRule->strSearch ? pRule->strSearch : "", pRule->bReplaceUseRegex);
+
+	auto id = EasyReqRespModifyMgr::GetInstance().AddRule(r1);
+
+	return id;
+}
+
+
+bool SetReqRspRule(unsigned id, const EasyReqRspRule* pRule)
+{
+	auto rule = EasyReqRespModifyMgr::GetInstance().FindRule(id);
+	if (rule)
+	{
+		EasyReplaceRule& r1 = *rule;
+		r1.bAddIfNotExist = pRule->bAddIfNotExist;
+		r1.bContinueSearch = pRule->bContinueSearch;
+		r1.bReplaceCaseInsensitive = pRule->bReplaceCaseInsensitive;
+		r1.ModifyType = static_cast<RULE_MODIFY_TYPE>(pRule->ModifyType);
+		r1.strHeadField = pRule->strHeadField ? pRule->strHeadField : "";
+		r1.strReplace = pRule->strReplace ? pRule->strReplace : "";
+		r1.SetUrlMatchType(pRule->strUrlMathInfo ? pRule->strUrlMathInfo : "", static_cast<RULE_MATCH_TYPE>(pRule->MatchType));
+		r1.SetSearchContents(pRule->strSearch ? pRule->strSearch : "", pRule->bReplaceUseRegex);
+		return true;
+	}
+	return false;
+}
+
+bool SetReqRspOrder(unsigned id, long offset, int origin)
+{
+	return EasyReqRespModifyMgr::GetInstance().SetOrderInfo(id, offset, origin);
+}
+bool DelReqRspRule(unsigned id)
+{
+	return EasyReqRespModifyMgr::GetInstance().DelRule(id);
+}
+
+bool GetReqRspRule(unsigned id, EasyReqRspRule* pRule)
+{
+	auto rule = EasyReqRespModifyMgr::GetInstance().FindRule(id);
+	if (rule)
+	{
+		pRule->bAddIfNotExist = rule->bAddIfNotExist;
+		pRule->bContinueSearch = rule->bContinueSearch;
+		pRule->bReplaceCaseInsensitive = rule->bReplaceCaseInsensitive;
+		pRule->ModifyType = static_cast<EasyReqRspRule::RULE_MODIFY_TYPE>(rule->ModifyType);
+		pRule->strHeadField = rule->strHeadField.c_str();
+		pRule->strReplace = rule->strReplace.c_str();
+		pRule->strUrlMathInfo = rule->GetMatchInfo().c_str();
+		pRule->bReplaceUseRegex = rule->GetIsReplaceUseRegex();
+		pRule->strSearch = rule->GetSearchInfo().c_str();
+		pRule->MatchType = static_cast<EasyReqRspRule::RULE_MATCH_TYPE>(rule->GetMatchType());
+		return true;
+	}
+
+	return false;
+}
+
 
 }

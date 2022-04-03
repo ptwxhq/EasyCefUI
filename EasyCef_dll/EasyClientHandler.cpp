@@ -14,6 +14,7 @@
 #include "include/cef_resource_bundle.h"
 #include "include/cef_pack_strings.h"
 #include "EasySchemes.h"
+#include "EasyReqRespModify.h"
 
 
 bool QueryNodeAttrib(CefRefPtr<WebViewControl> item, int x, int y, std::string name, std::wstring& outVal)
@@ -134,11 +135,7 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
                 RECT rect = {};
                 GetClientRect(hAttchWnd, &rect);
                 windowInfo.SetAsChild(hAttchWnd,
-#if CEF_VERSION_MAJOR > 95
-                    CefRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
-#else
-                    rect
-#endif
+                    EasyCefRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
                 );
 
                 //这边得使用相同的handler
@@ -717,13 +714,7 @@ bool EasyClientHandler::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPt
     return false;
 }
 
-bool EasyClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser, cef_errorcode_t cert_error, const CefString& request_url, CefRefPtr<CefSSLInfo> ssl_info, 
-#if CEF_VERSION_MAJOR > 95
-    CefRefPtr<CefCallback>
-#else
-    CefRefPtr<CefRequestCallback>
-#endif // CEF_VERSION_MAJOR > 95
-    callback)
+bool EasyClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser, cef_errorcode_t cert_error, const CefString& request_url, CefRefPtr<CefSSLInfo> ssl_info, CefRefPtr<CEF_REQUEST_CALLBACK> callback)
 {
     bool bAllowUnsecure = false;
     auto domain = DomainPackInfo::GetFormatedDomain(request_url.ToWString().c_str());
@@ -734,12 +725,11 @@ bool EasyClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser, cef_er
 
     if (bAllowUnsecure)
     {
-#if CEF_VERSION_MAJOR > 95
-        callback->Continue();
-#else
-        callback->Continue(true);
-#endif // CEF_VERSION_MAJOR > 95
-        
+        callback->Continue(
+#if CEF_VERSION_MAJOR <= 95
+            true
+#endif
+        );
         return true;
     }
     else
@@ -847,138 +837,33 @@ CefRefPtr<CefResourceRequestHandler> EasyClientHandler::GetResourceRequestHandle
     return nullptr;
 }
 
-CefRefPtr<CefResponseFilter> EasyClientHandler::GetResourceResponseFilter(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CefResponse> response)
+CefResourceRequestHandler::ReturnValue EasyClientHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, CefRefPtr<CEF_REQUEST_CALLBACK> callback)
 {
-
-    //设置profile.managed_plugins_allowed_for_urls之后下面也没必要了
-#if 0
-#if CEF_VERSION_MAJOR <= 87
-
-    static bool bRead = false;
-    static bool bReplace = false;
-    if (!bRead)
-    {
-        bRead = true;
-        bReplace = (1 == GetPrivateProfileIntW(L"Settings", L"FlashHostReplace", 0, g_BrowserGlobalVar.BrowserSettingsPath.c_str()));
-    }
-
-    if (!bReplace)
-        return nullptr;
-
-    //由于chromium的安全限制，跨域flash显示大小在400x300或者以下时url需要进行一些替换伪装以便能直接播放
-    //目前还找不到直接在自定义协议上自动播放flash的方法，使用xpack需要使用http://ui.pack替代
-
-    auto strRequestUrl = request->GetURL().ToString();
-    if (strRequestUrl.substr(0, sizeof(PACKPROTOCOL) - 1) == PACKPROTOCOL)
-    {
-        //减少误伤
-        return nullptr;
-    }
-
-    if (browser->GetMainFrame()->GetURL().empty())
-        return nullptr;
-
-    auto strMIME = response->GetMimeType().ToString();
-    if (strMIME.find("text/html") == std::string::npos && strMIME.find("/javascript") == std::string::npos)
-    {
-        return nullptr;
-    }
-
-
-    class ReplaceFlashUrlResponseFilter : public CefResponseFilter {
-    public:
-        ReplaceFlashUrlResponseFilter(const CefString& url)
-            : m_out_written(0), m_worked(false), m_str_main_url(url) {}
-
-        bool InitFilter() override {
-            return true;
-        }
-
-        FilterStatus Filter(void* data_in,
-            size_t data_in_size,
-            size_t& data_in_read,
-            void* data_out,
-            size_t data_out_size,
-            size_t& data_out_written) override {
-            DCHECK((data_in_size == 0U && !data_in) || (data_in_size > 0U && data_in));
-            DCHECK_EQ(data_in_read, 0U);
-            DCHECK(data_out);
-            DCHECK_GT(data_out_size, 0U);
-            DCHECK_EQ(data_out_written, 0U);
-
-            // All data will be read.
-            data_in_read = data_in_size;
-  
-            m_str_data.append((const char*)data_in, data_in_size);
-
-            if (data_in_size != 0)
-                return RESPONSE_FILTER_NEED_MORE_DATA;
-
-            //完整文件都读取好了再处理写入
-            if (!m_worked)
-            {
-                m_worked = true;
-
-
-                CefURLParts url_parts;
-                if (CefParseURL(m_str_main_url, url_parts))
-                {
-                    std::string replace_str;
-                    replace_str = CefString(&url_parts.scheme).ToString() + "://" + CefString(&url_parts.host).ToString();
-
-                    std::regex word_regex(R"reg((?:http|https)://[^:<>"']*\.swf)reg", std::regex_constants::icase);
-
-                    replace_str += PROXY_MARK_PATH;
-                    replace_str += "$&";
-
-                    m_str_data = std::regex_replace(m_str_data, word_regex, replace_str);
-                }
-            }
-
-
-            data_out_written = std::min(m_str_data.size() - m_out_written, data_out_size);
-
-            memcpy(data_out, m_str_data.data() + m_out_written, data_out_written);
-            m_out_written += data_out_written;
-            if (m_out_written < m_str_data.size())
-                return  RESPONSE_FILTER_NEED_MORE_DATA;
-
-            return RESPONSE_FILTER_DONE;
-        }
-
-    private:
-        IMPLEMENT_REFCOUNTING(ReplaceFlashUrlResponseFilter);
-        bool m_worked;
-        size_t m_out_written;
-        std::string m_str_data;
-        CefString m_str_main_url;
-    };
-
-
-    return new ReplaceFlashUrlResponseFilter(browser->GetMainFrame()->GetURL());
-#endif
-#endif
-
-    return nullptr;
-}
-
-CefResourceRequestHandler::ReturnValue EasyClientHandler::OnBeforeResourceLoad(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, 
-#if CEF_VERSION_MAJOR > 95
-    CefRefPtr<CefCallback>
-#else
-    CefRefPtr<CefRequestCallback>
-#endif // CEF_VERSION_MAJOR > 95
-    callback)
-{
-
     auto strUrl = request->GetURL().ToString();
-    auto nPos = strUrl.find(PROXY_MARK_PATH);
-    if (nPos != std::string::npos)
+
+    //LOG(INFO) << GetCurrentProcessId() << "] OnBeforeResourceLoad id:" << request->GetIdentifier() << " url:" << strUrl << "\n";
+
+    std::vector<RuleID> RequestListIds;
+    if (EasyReqRespModifyMgr::GetInstance().CheckMatchUrl(strUrl, &RequestListIds, nullptr, 1))
     {
-        strUrl = strUrl.substr(nPos + (sizeof(PROXY_MARK_PATH) - 1));
-        request->SetURL(strUrl);
+        EasyReqRespModifyMgr::GetInstance().ModifyRequest(RequestListIds, request);
     }
 
     return RV_CONTINUE;
+}
+
+CefRefPtr<CefResourceHandler> EasyClientHandler::GetResourceHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request)
+{
+    auto strUrl = request->GetURL().ToString();
+
+    //LOG(INFO) << GetCurrentProcessId() << "] GetResourceHandler id:" << request->GetIdentifier() << " url:" << strUrl << "\n";
+
+    std::vector<RuleID> ResponseListIds;
+    if (EasyReqRespModifyMgr::GetInstance().CheckMatchUrl(strUrl, nullptr, &ResponseListIds, 2))
+    {
+        return new EasyReqRespHandler(browser, std::move(ResponseListIds));
+    }
+
+    return nullptr;
 }
 
