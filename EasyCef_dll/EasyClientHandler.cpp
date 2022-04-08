@@ -310,7 +310,7 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
                 EasyWebViewMgr::GetInstance().CleanDelayItem(nullptr);
             }
 
-            reinterpret_cast<EASYCEF::CloseHandler>(g_BrowserGlobalVar.funcCloseCallback)();
+            g_BrowserGlobalVar.funcCloseCallback();
         }
         
 

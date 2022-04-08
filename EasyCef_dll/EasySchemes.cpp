@@ -1,12 +1,9 @@
 ﻿#include "pch.h"
 #include "EasySchemes.h"
 #include <fstream>
-
-#include "extlib/pack.h"
 #include <algorithm>
 #include "include/wrapper/cef_stream_resource_handler.h"
 
-#pragma comment(lib, "packlib.lib")
 
 void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
@@ -97,7 +94,7 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 		{
 			//检查域名是否已注册，无效返回400
 			auto strPackFilePath = DomainPackInfo::GetInstance().GetDomainPath(url_parts.Host_.c_str());
-			if (strPackFilePath.empty())
+			if (!g_BrowserGlobalVar.funcXpackExtract || strPackFilePath.empty())
 			{
 				sCurrent = STATUSCODE::E400;
 				strStatusText = "UNREGISTERED";
@@ -122,38 +119,18 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 			}
 
 			//因路径本身错误导致的不进行修正，直接判断
-
-			XPackData* pPackData;
-			int packstatus = UnzipExistPackFile(strPackFilePath.c_str(), strPathInZip.c_str(), &pPackData);
-
-			if (0 == packstatus)
+			BYTE* pData = nullptr;
+			DWORD dwSize = 0;
+			if (g_BrowserGlobalVar.funcXpackExtract(strPackFilePath.c_str(), strPathInZip.c_str(), &pData, &dwSize))
 			{
-				stream = CefStreamReader::CreateForData(*pPackData, pPackData->GetLen());
-				pPackData->Free();
-			}
-			else if (-1 == packstatus)
-			{
-				unsigned char* databuf = 0;
-				unsigned long data_len = 0;
-				if (exZipFile(strPackFilePath.c_str(), strPathInZip.c_str(), &databuf, &data_len)) {
-
-					stream = CefStreamReader::CreateForData(databuf, data_len);
-					freeBuf(databuf);
-				}
-				else
-				{
-					sCurrent = STATUSCODE::E404;
-					break;
-				}
+				stream = CefStreamReader::CreateForData(pData, dwSize);
+				g_BrowserGlobalVar.funcXpackFreeData(pData);
+				sCurrent = STATUSCODE::E200;
 			}
 			else
 			{
 				sCurrent = STATUSCODE::E404;
-				break;
 			}
-
-			sCurrent = STATUSCODE::E200;
-
 		}
 		break;
 	case RESTYPE::FILE:
@@ -246,7 +223,7 @@ bool DomainPackInfo::RegisterPackDomain(LPCWSTR lpszDomain, LPCWSTR lpszFilePath
 	if (!Domain.empty())
 	{
 		m_DomainMap.insert(std::make_pair(std::move(Domain), lpszFilePath));
-		PreLoadPackFile(lpszFilePath);
+
 		return true;
 	}
 
@@ -262,7 +239,6 @@ void DomainPackInfo::UnregisterPackDomain(LPCWSTR lpszDomain)
 		auto it = m_DomainMap.find(Domain);
 		if (it != m_DomainMap.end())
 		{
-			CleanLoadedPacks(it->second.c_str());
 			m_DomainMap.erase(it);
 		}
 

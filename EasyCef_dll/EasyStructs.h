@@ -38,11 +38,17 @@ struct BrowserGlobalVar
 
 	void* sandbox_info = nullptr;
 
-	//std::string IpcServerName;	//主浏览器进程的
+	using CloseCallback = void(*)();
+	CloseCallback funcCloseCallback;
 
-	void* funcCloseCallback = nullptr;
+	using SpeedupCallback = void(*)(float);
+	SpeedupCallback funcSpeedupCallback;
 
-	void* funcSpeedupCallback = nullptr;
+	using XpackExtract = bool(*)(LPCWSTR lpszPackFile, LPCWSTR lpszFileItem, BYTE** ppOut, DWORD* pLen);
+	XpackExtract funcXpackExtract;
+
+	using XpackFreeData = void(*)(BYTE* pOut);
+	XpackFreeData funcXpackFreeData;
 
 	PreferredAppMode DarkModeType = PreferredAppMode::Default;
 

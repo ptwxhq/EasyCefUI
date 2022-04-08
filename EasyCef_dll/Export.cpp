@@ -7,7 +7,6 @@
 #include "EasyWebViewMgr.h"
 #include "WebViewControl.h"
 #include "EasyReqRespModify.h"
-#include "extlib/pack.h"
 
 
 
@@ -55,12 +54,12 @@ void UnregisterPackDomain(LPCWSTR lpszDomain)
 
 void SetSpeedUpWork(SpeedUpWork func)
 {
-	g_BrowserGlobalVar.funcSpeedupCallback = reinterpret_cast<void*>(func);
+	g_BrowserGlobalVar.funcSpeedupCallback = func;
 }
 
 void SetCloseHandler(CloseHandler func)
 {
-	g_BrowserGlobalVar.funcCloseCallback = reinterpret_cast<void*>(func);
+	g_BrowserGlobalVar.funcCloseCallback = func;
 }
 
 void RunMsgLoop()
@@ -80,7 +79,6 @@ void QuitMsgLoop()
 
 void ShutEasyCef()
 {
-	CleanLoadedPacks(nullptr);
 	CefShutdown();
 }
 
@@ -393,5 +391,21 @@ bool GetReqRspRule(unsigned id, EasyReqRspRule* pRule)
 	return false;
 }
 
+bool SetXPackWorkCall(XPackExtractWork funWork, XPackFreeData funFree)
+{
+	if (funWork && funFree)
+	{
+		g_BrowserGlobalVar.funcXpackExtract = funWork;
+		g_BrowserGlobalVar.funcXpackFreeData = funFree;
+		return true;
+	}
+
+	return false;
+}
+
+/*
+
+
+*/
 
 }

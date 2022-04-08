@@ -14,7 +14,7 @@ namespace RenderAsyncWorkFunctions
 	{
 		if (g_BrowserGlobalVar.funcSpeedupCallback)
 		{
-			reinterpret_cast<EASYCEF::SpeedUpWork>(g_BrowserGlobalVar.funcSpeedupCallback)(static_cast<float>(args->GetDouble(0)));
+			g_BrowserGlobalVar.funcSpeedupCallback(static_cast<float>(args->GetDouble(0)));
 		}
 	}
 

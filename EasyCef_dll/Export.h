@@ -63,7 +63,8 @@ namespace EASYCEF {
 
 typedef void(*SpeedUpWork)(float);
 typedef void(*CloseHandler)();
-
+typedef bool(*XPackExtractWork)(LPCWSTR lpszPackFile, LPCWSTR lpszFileItem, BYTE** ppOut, DWORD *pLen);
+typedef void(*XPackFreeData)(BYTE* pOut);
 
 typedef struct EasyInitConfig
 {
@@ -164,5 +165,8 @@ EASYCEF_EXP_API bool SetReqRspRule(unsigned id, const EasyReqRspRule* pRule);
 EASYCEF_EXP_API bool SetReqRspOrder(unsigned id, long offset, int origin);
 EASYCEF_EXP_API bool DelReqRspRule(unsigned id);
 EASYCEF_EXP_API bool GetReqRspRule(unsigned id, EasyReqRspRule* pRule);
+
+//
+EASYCEF_EXP_API bool SetXPackWorkCall(XPackExtractWork funWork, XPackFreeData funFree);
 
 };
