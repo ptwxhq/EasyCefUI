@@ -30,7 +30,7 @@ bool EasyReplaceRule::CheckRegex(int type)
 		}
 		
 	}
-	catch (const std::exception& e)
+	catch (const std::exception&)
 	{
 		ModifyType = RULE_MODIFY_TYPE::NONE;
 		bSucc = false;
@@ -494,6 +494,11 @@ bool EasyReqRespHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reques
 void EasyReqRespHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)
 {
 	auto strMimeType = m_Response->GetMimeType();
+	if (strMimeType.empty())
+	{
+		//非200时可能会是空，补全一下
+		strMimeType = MIME_HTML;
+	}
 
 	response->SetMimeType(strMimeType);
 	auto status = m_Response->GetStatus();

@@ -84,7 +84,7 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 	auto mime_type_ = CefGetMimeType(ansipath.substr(sep + 1)).ToString();
 	if (mime_type_.empty())
 	{
-		mime_type_ = "text/html";
+		mime_type_ = MIME_HTML;
 	}
 
 
@@ -228,9 +228,9 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 
 	if (!stream)
 	{
+		mime_type_ = MIME_HTML;
 		auto data = webinfo::GetErrorPage("", ErrorInfo);
 		stream = CefStreamReader::CreateForData(data.data(), data.size());
-		mime_type_ = "text/html";
 	}
 
 	return new CefStreamResourceHandler(static_cast<int>(sCurrent), strStatusText, mime_type_, CefResponse::HeaderMap(), stream);

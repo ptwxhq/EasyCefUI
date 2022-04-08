@@ -118,3 +118,5 @@ extern const char* ExtraKeyNameUIWndHwnd;
 #define PACKSCHEME "xpack"
 #define PACKPROTOCOL PACKSCHEME"://"
 
+#define MIME_HTML "text/html"
+
