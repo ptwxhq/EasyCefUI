@@ -256,6 +256,12 @@ LRESULT EasyUIWindowBase::Cls_OnDpiChanged(HWND hwnd, WPARAM wParam, LPARAM lPar
 	return 0;
 }
 
+void EasyUIWindowBase::Cls_OnMove(HWND hwnd, int x, int y)
+{
+	if (m_browser)
+		m_browser->GetHost()->NotifyMoveOrResizeStarted();
+}
+
 
 BOOL EasyUIWindowBase::ProcessWindowMessage(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, LRESULT& lResult, DWORD dwMsgMapID)
 {
@@ -267,6 +273,7 @@ BOOL EasyUIWindowBase::ProcessWindowMessage(HWND hWnd, UINT uMsg, WPARAM wParam,
 	{
 		MYHANDLE_MSG(WM_NCHITTEST, Cls_OnNCHitTest);
 		MYHANDLE_MSG(WM_GETMINMAXINFO, Cls_OnGetMinMaxInfo);
+		MYHANDLE_MSG(WM_MOVE, Cls_OnMove);
 		
 		
 	case WM_DPICHANGED:

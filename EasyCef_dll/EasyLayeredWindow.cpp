@@ -160,6 +160,40 @@ bool EasyLayeredWindow::StartDragging(CefRefPtr<CefDragData> drag_data, CefRende
 	return true;
 }
 
+void EasyLayeredWindow::SetPopupRectInWebView(const CefRect& original_rect)
+{
+	original_popup_rect_ = original_rect;
+	CefRect rc(original_rect);
+	// if x or y are negative, move them to 0.
+	if (rc.x < 0)
+		rc.x = 0;
+	if (rc.y < 0)
+		rc.y = 0;
+	// if popup goes outside the view, try to reposition origin
+	if (rc.x + rc.width > view_width_)
+		rc.x = view_width_ - rc.width;
+	if (rc.y + rc.height > view_height_)
+		rc.y = view_height_ - rc.height;
+	// if x or y became negative, move them to 0 again.
+	if (rc.x < 0)
+		rc.x = 0;
+	if (rc.y < 0)
+		rc.y = 0;
+
+	popup_rect_ = rc;
+}
+
+void EasyLayeredWindow::ClearPopupRects()
+{
+	popup_rect_.Set(0, 0, 0, 0);
+	original_popup_rect_.Set(0, 0, 0, 0);
+}
+
+bool EasyLayeredWindow::CheckViewSizeChanged(int width, int height)
+{
+	return view_width_ != width || view_height_ != height;
+}
+
 CefBrowserHost::DragOperationsMask EasyLayeredWindow::OnDragEnter(CefRefPtr<CefDragData> drag_data, CefMouseEvent ev, CefBrowserHost::DragOperationsMask effect)
 {
 	if (m_browser) {
@@ -467,19 +501,6 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 	return 0;
 }
 
-LRESULT EasyLayeredWindow::OnMove(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle)
-{
-	//auto ret = DefWindowProc(msg, wp, lp);
-
-	if (m_browser)
-	{
-
-		m_browser->GetHost()->NotifyMoveOrResizeStarted();
-	}
-	//handle = 0;
-	return 0;
-}
-
 LRESULT EasyLayeredWindow::OnFocus(UINT msg, WPARAM, LPARAM, BOOL&)
 {
 #if CEF_VERSION_MAJOR < 95
@@ -729,8 +750,7 @@ void EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 		m_bitmap = std::make_unique<GdiBitmap>(width, height);
 	}
 
-	view_width_ = width;
-	view_height_ = height;
+	ASSERT(view_width_ == width && view_height_ == height);
 
 	memcpy(m_bitmap->GetBits(), pData, width * height * 4);
 

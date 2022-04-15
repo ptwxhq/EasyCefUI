@@ -197,9 +197,6 @@ public:
 
 private:
 
-	void ClearPopupRects();
-	CefRect GetPopupRectInWebView(const CefRect& original_rect);
-
 	EasyUIWindowBase* GetWindowPtr() override {
 		return m_pWindow.get();
 	}

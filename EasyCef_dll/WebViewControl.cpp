@@ -219,6 +219,11 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
                             SetWindowPos(pContext->pThis->GetHWND(), nullptr, 0, 0, width, height, SWP_NOZORDER | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
                         }
                         break;
+                    case WM_MOVE:
+                        {
+                            pContext->pThis->m_browser->GetHost()->NotifyMoveOrResizeStarted();
+                        }
+                        break;
                     case WM_DESTROY:
                         RemoveWindowSubclass(hWnd, pContext->proc, uIdSubclass);
                         delete pContext;
@@ -598,10 +603,7 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
 {
     if (type == PET_VIEW)
     {
-        const int old_width = m_pWindow->view_width_;
-        const int old_height = m_pWindow->view_height_;
-
-        if (old_width != width || old_height != height)
+        if (m_pWindow->CheckViewSizeChanged(width, height))
         {
             //由于画面已经开始发生改变，此时的画面大小是旧的，画面无效，为了减少闪烁，这边丢弃画面等待更新
             return;
@@ -619,7 +621,7 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
             }
         }
 
-        if (!m_pWindow->popup_rect_.IsEmpty())
+        if (!m_pWindow->GetPopupRect().IsEmpty())
         {
             m_browser->GetHost()->Invalidate(PET_POPUP);
             return;
@@ -627,7 +629,7 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
     }
     else //PET_POPUP
     {
-        m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), m_pWindow->popup_rect_.x, m_pWindow->popup_rect_.y, width, height, false);
+        m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), m_pWindow->GetPopupRect().x, m_pWindow->GetPopupRect().y, width, height, false);
 
     }
 
@@ -646,37 +648,11 @@ bool WebViewTransparentUIControl::GetScreenPoint(CefRefPtr<CefBrowser> browser, 
 }
 
 
-void WebViewTransparentUIControl::ClearPopupRects() {
-
-    m_pWindow->popup_rect_.Set(0, 0, 0, 0);
-    m_pWindow->original_popup_rect_.Set(0, 0, 0, 0);
-}
-
-CefRect WebViewTransparentUIControl::GetPopupRectInWebView(const CefRect& original_rect) {
-    CefRect rc(original_rect);
-    // if x or y are negative, move them to 0.
-    if (rc.x < 0)
-        rc.x = 0;
-    if (rc.y < 0)
-        rc.y = 0;
-    // if popup goes outside the view, try to reposition origin
-    if (rc.x + rc.width > m_pWindow->view_width_)
-        rc.x = m_pWindow->view_width_ - rc.width;
-    if (rc.y + rc.height > m_pWindow->view_height_)
-        rc.y = m_pWindow->view_height_ - rc.height;
-    // if x or y became negative, move them to 0 again.
-    if (rc.x < 0)
-        rc.x = 0;
-    if (rc.y < 0)
-        rc.y = 0;
-    return rc;
-}
-
 void WebViewTransparentUIControl::OnPopupShow(CefRefPtr<CefBrowser> browser, bool show)
 {
     if (!show) {
         // Clear the popup rectangle.
-        ClearPopupRects();
+        m_pWindow->ClearPopupRects();
         browser->GetHost()->Invalidate(PET_VIEW);
     }
 }
@@ -685,8 +661,7 @@ void WebViewTransparentUIControl::OnPopupSize(CefRefPtr<CefBrowser> browser, con
 {
     if (rect.width <= 0 || rect.height <= 0)
         return;
-    m_pWindow->original_popup_rect_ = rect;
-    m_pWindow->popup_rect_ = GetPopupRectInWebView(m_pWindow->original_popup_rect_);
+    m_pWindow->SetPopupRectInWebView(rect);
 }
 
 void WebViewTransparentUIControl::OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds)

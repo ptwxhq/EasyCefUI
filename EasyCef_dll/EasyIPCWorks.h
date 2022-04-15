@@ -43,7 +43,7 @@ protected:
 	typedef void(*HandleAsyncCallback)(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, const CefRefPtr<CefListValue>&);
 	typedef std::unordered_map<std::string, HandleAsyncCallback> AsyncFunctionMap;
 
-	virtual void UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread) = 0;
+	virtual void UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread);
 
 	SyncFunctionMap m_mapSyncFuncs;
 	AsyncFunctionMap m_mapAsyncFuncs;

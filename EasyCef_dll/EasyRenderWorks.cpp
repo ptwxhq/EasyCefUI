@@ -1,12 +1,8 @@
 #include "pch.h"
 #include "EasyRenderWorks.h"
 #include "Export.h"
-#include "include/base/cef_callback.h"
-#include "include/wrapper/cef_closure_task.h"
 
 #include "EasyRenderBrowserInfo.h"
-#include "EasyIPC.h"
-
 
 namespace RenderAsyncWorkFunctions
 {
@@ -207,47 +203,5 @@ void EasyRenderWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bo
 		m_UIWorkInstance = new RenderUIWorks;
 	}
 
-	if (bNeedUIThread)
-	{
-		auto& ipcclient = EasyIPCClient::GetInstance();
-		//LOG(INFO) << GetCurrentProcessId() << "] UIWork IsMainThreadBlocking:(" << ipcclient.IsMainThreadBlocking();
-		if (ipcclient.IsMainThreadBlocking())
-		{
-			HANDLE hWait = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-
-			ipcclient.SetOnceMainThreadBlockingWorkCall([this, pData, hWait] {
-				UIWork(pData, false);
-				SetEvent(hWait);
-				});
-
-			if (ipcclient.TriggerBlockingWorkEvent())
-			{
-				WaitForSingleObject(hWait, 15000);
-			}
-			
-			CloseHandle(hWait);
-
-			//LOG(INFO) << GetCurrentProcessId() << "] EasyIPCClient specia end:(" << pData->ReturnVal;
-
-			return;
-		}
-	}
-
-
-
-	if (bNeedUIThread && !CefCurrentlyOn(TID_RENDERER))
-	{
-	//	LOG(INFO) << GetCurrentProcessId() << "] EasyRenderWorks::UIWork  needpost " << pData->Name;
-		// Execute on the UI thread.
-		bool bPostSucc = CefPostTask(TID_RENDERER, CEF_FUNC_BIND(&EasyRenderWorks::UIWorks::DoWork, m_UIWorkInstance, pData));
-
-		if (!bPostSucc)
-		{
-			pData->Signal.set_value();
-		}
-
-		return;
-	}
-
-	m_UIWorkInstance->DoWork(pData);
+	__super::UIWork(pData, bNeedUIThread);
 }

@@ -1,5 +1,8 @@
 ﻿#include "pch.h"
 #include "EasyIPCWorks.h"
+#include "EasyIPC.h"
+#include "include/base/cef_callback.h"
+#include "include/wrapper/cef_closure_task.h"
 
 bool EasyIPCWorks::DoSyncWork(const std::string name, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 {
@@ -77,4 +80,49 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 
 	//LOG(INFO) << GetCurrentProcessId() << "] SetWorkCall:f->t (" << pData << ") " << input << "out:" << output;
 
+}
+
+void EasyIPCWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread)
+{
+	if (bNeedUIThread)
+	{
+		//比如在主线程调用invokedJSMethod，然后js再调用invokeMethod的话会导致直接发送失败，需要下面的特化处理
+		auto pIPC = IsBrowser() ? static_cast<EasyIPCBase*>(&EasyIPCServer::GetInstance()) : static_cast<EasyIPCBase*>(&EasyIPCClient::GetInstance());
+
+		//LOG(INFO) << GetCurrentProcessId() << "] UIWork IsMainThreadBlocking:(" << pIPC->IsMainThreadBlocking();
+		if (pIPC->IsMainThreadBlocking())
+		{
+			auto pWait = std::make_shared<std::promise<void>>();
+
+			pIPC->SetOnceMainThreadBlockingWorkCall([this, pData, pWait] {
+				UIWork(pData, false);
+				pWait->set_value();
+				});
+
+			if (pIPC->TriggerBlockingWorkEvent())
+			{
+				pWait->get_future().wait_for(std::chrono::milliseconds(15000));
+			}
+
+			//LOG(INFO) << GetCurrentProcessId() << "] EasyIPCwork specia end:(" << pData->ReturnVal;
+
+			return;
+		}
+	}
+
+	auto NeedTID = IsBrowser() ? TID_UI : TID_RENDERER;
+	if (bNeedUIThread && !CefCurrentlyOn(NeedTID))
+	{
+		// Execute on the UI thread.
+		bool bPostSucc = CefPostTask(NeedTID, CEF_FUNC_BIND(&UIWorks::DoWork, m_UIWorkInstance, pData));
+
+		if (!bPostSucc)
+		{
+			pData->Signal.set_value();
+		}
+
+		return;
+	}
+
+	m_UIWorkInstance->DoWork(pData);
 }

@@ -3,12 +3,6 @@
 #include "EasyWebViewMgr.h"
 #include "WebViewControl.h"
 #include "LegacyImplement.h"
-#include "EasyIPC.h"
-
-
-#include "include/base/cef_callback.h"
-#include "include/wrapper/cef_closure_task.h"
-#include "include/cef_origin_whitelist.h"
 
 
 inline void WriteJSON(CefRefPtr<CefValue>& node, CefString& retval)
@@ -661,49 +655,7 @@ void EasyBrowserWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, b
 		m_UIWorkInstance = new BrowserUIWorks;
 	}
 
-	//如果在主线程调用invokedJSMethod，然后js再调用invokeMethod的话会导致直接发送失败，需要下面的特化处理
-	if (bNeedUIThread /*&& pData->Name == "invokeMethod"*/)
-	{
-		auto& ipcserver = EasyIPCServer::GetInstance();
-		//LOG(INFO) << GetCurrentProcessId() << "] UIWork IsMainThreadBlocking:(" << ipcserver.IsMainThreadBlocking();
-		if (ipcserver.IsMainThreadBlocking())
-		{
-			HANDLE hWait = CreateEventW(nullptr, TRUE, FALSE, nullptr);
-
-			ipcserver.SetOnceMainThreadBlockingWorkCall([this, pData, hWait] {
-				UIWork(pData, false);
-				SetEvent(hWait);
-				});
-
-			if (ipcserver.TriggerBlockingWorkEvent())
-			{
-				WaitForSingleObject(hWait, 15000);
-			}
-
-			CloseHandle(hWait);
-
-			//LOG(INFO) << GetCurrentProcessId() << "] EasyIPCServer specia end:(" << pData->ReturnVal;
-
-			return;
-		}
-
-	}
-
-
-	if (bNeedUIThread && !CefCurrentlyOn(TID_UI))
-	{
-		// Execute on the UI thread.
-		bool bPostSucc = CefPostTask(TID_UI, CEF_FUNC_BIND(&EasyBrowserWorks::UIWorks::DoWork, m_UIWorkInstance, pData));
-
-		if (!bPostSucc)
-		{
-			pData->Signal.set_value();
-		}
-
-		return;
-	}
-
-	m_UIWorkInstance->DoWork(pData);
+	__super::UIWork(pData, bNeedUIThread);
 }
 
 bool EasyBrowserWorks::DoJSKeySyncWork(const std::string name, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)

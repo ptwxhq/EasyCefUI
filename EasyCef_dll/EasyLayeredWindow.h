@@ -147,8 +147,7 @@ public:
 
         MESSAGE_HANDLER(WM_WINDOWPOSCHANGED, OnWindowPosChanged)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
-        MESSAGE_HANDLER(WM_MOVING, OnMove)
-        MESSAGE_HANDLER(WM_MOVE, OnMove)
+
 
         MESSAGE_HANDLER(WM_SETFOCUS, OnFocus)
         MESSAGE_HANDLER(WM_KILLFOCUS, OnFocus)
@@ -166,7 +165,6 @@ public:
         MESSAGE_HANDLER(WM_CREATE, OnCreate)
         MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 
-        //CEF windowless窗口中还是有些bug，比如框架页里面baidu搜索框无法输入
         MESSAGE_HANDLER(WM_IME_SETCONTEXT, OnIMESetContext)
         MESSAGE_HANDLER(WM_IME_STARTCOMPOSITION, OnIMEStartComposition)
         MESSAGE_HANDLER(WM_IME_COMPOSITION, OnIMEComposition)
@@ -179,7 +177,6 @@ public:
     LRESULT OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&);
     LRESULT OnWindowPosChanged(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle);
     LRESULT OnSize(UINT msg, WPARAM wp,LPARAM lp, BOOL &handle);
-    LRESULT OnMove(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle);
 
     LRESULT OnFocus(UINT, WPARAM, LPARAM, BOOL&);
     LRESULT OnCaptureLost(UINT, WPARAM, LPARAM, BOOL&);
@@ -218,15 +215,18 @@ public:
         current_drag_op_ = operation;
     }
 
-    //临时
 
+    void SetPopupRectInWebView(const CefRect& original_rect);
+    void ClearPopupRects();
 
-    int view_width_ = 0;
-    int view_height_ = 0;
-    CefRect popup_rect_;
-    CefRect original_popup_rect_;
+    CefRect GetPopupRect() const {
+        return popup_rect_;
+    };
+
+    bool CheckViewSizeChanged(int width, int height);
 
 private:
+
 
     CefBrowserHost::DragOperationsMask OnDragEnter(
         CefRefPtr<CefDragData> drag_data,
@@ -248,6 +248,11 @@ private:
 
     int view_width_old_ = 0;
     int view_height_old_ = 0;
+    int view_width_ = 0;
+    int view_height_ = 0;
+    CefRect popup_rect_;
+    CefRect original_popup_rect_;
+
 
     // Mouse state tracking.
     bool mouse_rotation_ = {};
