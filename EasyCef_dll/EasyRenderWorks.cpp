@@ -162,46 +162,35 @@ EasyRenderWorks& EasyRenderWorks::GetInstance()
 	return obj;
 }
 
-void EasyRenderWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread)
+void EasyRenderWorks::DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) 
 {
-	if (!m_UIWorkInstance)
+
+	//LOG(INFO) << GetCurrentProcessId() << "] EasyRenderWorks::UIWork  DoWork " << pData->Name;
+
+	if (pData->DataInvalid)
+		return;
+
+	do
 	{
-		class RenderUIWorks : public UIWorks {
-			void DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) override {
+		auto browser = EasyRenderBrowserInfo::GetInstance().GetBrowser(pData->BrowserId);
+		if (!browser)
+			break;
 
-	//			LOG(INFO) << GetCurrentProcessId() << "] EasyRenderWorks::UIWork  DoWork " << pData->Name;
+		CefRefPtr<CefFrame> frame;
+		if (pData->FrameId > -1)
+		{
+			frame = browser->GetFrame(pData->FrameId);
+		}
 
-				if (pData->DataInvalid)
-					return;
+		CefString strReturn;
 
-				do
-				{
-					auto browser = EasyRenderBrowserInfo::GetInstance().GetBrowser(pData->BrowserId);
-					if (!browser)
-						break;
+		if (DoSyncWork(pData->Name, browser, frame, pData->Args, strReturn))
+		{
+			pData->ReturnVal = strReturn.ToString();
+		}
 
-					CefRefPtr<CefFrame> frame;
-					if (pData->FrameId > -1)
-					{
-						frame = browser->GetFrame(pData->FrameId);
-					}
+	} while (false);
 
-					CefString strReturn;
+	pData->Signal.set_value();
 
-					if (EasyRenderWorks::GetInstance().DoSyncWork(pData->Name, browser, frame, pData->Args, strReturn))
-					{
-						pData->ReturnVal = strReturn.ToString();
-					}
-
-				} while (false);
-
-				pData->Signal.set_value();
-
-			}
-		};
-
-		m_UIWorkInstance = new RenderUIWorks;
-	}
-
-	__super::UIWork(pData, bNeedUIThread);
 }

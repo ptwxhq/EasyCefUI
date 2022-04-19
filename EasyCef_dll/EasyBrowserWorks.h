@@ -4,7 +4,7 @@
 
 class EasyBrowserWorks : public EasyIPCWorks
 {
-	DISALLOW_COPY_AND_ASSIGN(EasyBrowserWorks);
+	MYDISALLOW_COPY_AND_ASSIGN(EasyBrowserWorks);
 	EasyBrowserWorks();
 
 	typedef void(*HandleJSKeyCallback)(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, CefString&);
@@ -16,7 +16,7 @@ class EasyBrowserWorks : public EasyIPCWorks
 	SyncJSKeyMap m_mapSyncJsKeyFuncs;
 	ASyncJSKeyMap m_mapAsyncJsKeyFuncs;
 
-	void UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread) override;
+	void DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) override;
 
 public:
 	static EasyBrowserWorks& GetInstance();

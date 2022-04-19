@@ -113,74 +113,71 @@ void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
 	static std::string strParseDomJS;
 	if (strParseDomJS.empty())
 	{
-		strParseDomJS = R"((
-    function () {
-        const edges = [
-)";
+		strParseDomJS = R"((function(){const edges = [)";
 
 		if (IsSystemWindows11OrGreater())
 		{
-			strParseDomJS += R"(   { cls: "captionMaxButton", nc: "maxbutton" },)";
+			strParseDomJS += R"({ cls: "captionMaxButton", nc: "maxbutton" },)";
 		}
 
 		strParseDomJS += R"(
-            { cls: "borderTop", nc: "top" },
-            { cls: "borderTopLeft", nc: "topleft" },
-            { cls: "borderTopRight", nc: "topright" },
-            { cls: "borderLeft", nc: "left" },
-            { cls: "borderRight", nc: "right" },
-            { cls: "borderBottom", nc: "bottom" },
-            { cls: "borderBottomLeft", nc: "bottomleft" },
-            { cls: "borderBottomRight", nc: "bottomright" }
-        ];
+{ cls: "borderTop", nc: "top" },
+{ cls: "borderTopLeft", nc: "topleft" },
+{ cls: "borderTopRight", nc: "topright" },
+{ cls: "borderLeft", nc: "left" },
+{ cls: "borderRight", nc: "right" },
+{ cls: "borderBottom", nc: "bottom" },
+{ cls: "borderBottomLeft", nc: "bottomleft" },
+{ cls: "borderBottomRight", nc: "bottomright" }
+];
 
-        function isArray(myArray) {
-            return myArray.constructor.toString().indexOf("Array") > -1;
-        }
+function isArray(myArray) {
+return myArray.constructor.toString().indexOf("Array") > -1;
+}
 
-        var eleList = new Array();
+var eleList = new Array();
 
-        function getNeedEleInfo() {
-            eleList.splice(0, eleList.length);
-            for (let index = 0; index < edges.length; ++index) {
-                let eles = document.body.querySelectorAll("div." + edges[index].cls);
-                for (let i = 0; i < eles.length; ++i) {
-                    let ele = eles[i];
-                    let attr = ele.getAttribute("data-nc");
-                    if (attr == edges[index].nc) {
-                        eleList.push(ele);
-                        resizeObserver.observe(ele);
-                    }
-                }
-            }
-        }
+function getNeedEleInfo() {
+eleList.splice(0, eleList.length);
+for (let index = 0; index < edges.length; ++index) {
+let eles = document.body.querySelectorAll("div." + edges[index].cls);
+for (let i = 0; i < eles.length; ++i) {
+let ele = eles[i];
+let attr = ele.getAttribute("data-nc");
+if (attr == edges[index].nc) {
+eleList.push(ele);
+resizeObserver.observe(ele);
+}
+}
+}
+}
 
-        function updateNcEleRects(myArray) {
-            getNeedEleInfo();
-            var notify_nc_alledge = new Object();
-            myArray.forEach(ele => {
-                let attr = ele.getAttribute("data-nc");
-                let drect = ele.getBoundingClientRect();
+function updateNcEleRects(myArray) {
+getNeedEleInfo();
+var notify_nc_alledge = new Object();
+myArray.forEach(ele => {
+let attr = ele.getAttribute("data-nc");
+let drect = ele.getBoundingClientRect();
 
-                if (!isArray(!notify_nc_alledge[attr]))
-                    notify_nc_alledge[attr] = new Array();
+if (!isArray(!notify_nc_alledge[attr]))
+notify_nc_alledge[attr] = new Array();
 
-                notify_nc_alledge[attr].push({ left: drect.left, top: drect.top, right: drect.right, bottom: drect.bottom });
-            });
+notify_nc_alledge[attr].push({ left: drect.left, top: drect.top, right: drect.right, bottom: drect.bottom });
+});
 
-            nativeapp.nc_setalledge = notify_nc_alledge;
-            return notify_nc_alledge;
-        }
+nativeapp.nc_setalledge = notify_nc_alledge;
+return notify_nc_alledge;
+}
 
-        var timeoutID;
+var timeoutID;
 
-        const resizeObserver = new ResizeObserver(entries => {
-            window.clearTimeout(timeoutID);
-            timeoutID = window.setTimeout(updateNcEleRects, 200, eleList);
-        });
+const resizeObserver = new ResizeObserver(entries => {
+window.clearTimeout(timeoutID);
+timeoutID = window.setTimeout(updateNcEleRects, 200, eleList);
+});
 
-        getNeedEleInfo();
-    }()
+getNeedEleInfo();
+}()
 )
 )";
 

@@ -15,7 +15,6 @@ public:
 			BROWSER_NONE = 0,
 			BROWSER_UI = 1,
 			BROWSER_WEB = 2,
-			BROWSER_ALL = BROWSER_UI | BROWSER_WEB
 		} type = BROWSER_NONE;
 		CefRefPtr<CefBrowser> browser;
 		HWND hUIWnd = nullptr;
@@ -40,7 +39,7 @@ public:
 	HWND GetHwnd(int id) const;
 
 private:
-	DISALLOW_COPY_AND_ASSIGN(EasyRenderBrowserInfo);
+	MYDISALLOW_COPY_AND_ASSIGN(EasyRenderBrowserInfo);
 	EasyRenderBrowserInfo() = default;
 	std::unordered_map<int, std::unique_ptr<BrsData>> m_mapBrowsers;
 

@@ -43,8 +43,6 @@ public:
 
     void OnAfterCreated(CefRefPtr<CefBrowser> browser) override;
 
-    bool DoClose(CefRefPtr<CefBrowser> browser) override;
-
     void OnBeforeClose(CefRefPtr<CefBrowser> browser) override;
 
     ////////////////////////////////////////
@@ -147,8 +145,6 @@ public:
 
     void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
         TerminationStatus status) override;
-
-    void OnDocumentAvailableInMainFrame(CefRefPtr<CefBrowser> browser) override;
 
     bool OnBeforeBrowse(CefRefPtr<CefBrowser> browser,
         CefRefPtr<CefFrame> frame,

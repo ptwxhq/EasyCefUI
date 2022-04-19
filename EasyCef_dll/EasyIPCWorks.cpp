@@ -114,7 +114,7 @@ void EasyIPCWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool 
 	if (bNeedUIThread && !CefCurrentlyOn(NeedTID))
 	{
 		// Execute on the UI thread.
-		bool bPostSucc = CefPostTask(NeedTID, CEF_FUNC_BIND(&UIWorks::DoWork, m_UIWorkInstance, pData));
+		bool bPostSucc = CefPostTask(NeedTID, CEF_FUNC_BIND(&EasyIPCWorks::DoWork, this, pData));
 
 		if (!bPostSucc)
 		{
@@ -124,5 +124,5 @@ void EasyIPCWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool 
 		return;
 	}
 
-	m_UIWorkInstance->DoWork(pData);
+	DoWork(pData);
 }

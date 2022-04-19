@@ -226,7 +226,7 @@ std::shared_ptr<EasyReplaceRule> EasyReqRespModifyMgr::CreateNewRule()
 	auto pNewRule = std::make_shared<EasyReplaceRule>();
 	pNewRule->Id = ++m_IdGen;
 	m_listRuleOrder.push_back(pNewRule->Id);
-	auto res = m_mapRules.insert(std::make_pair(pNewRule->Id, pNewRule));
+	m_mapRules.insert(std::make_pair(pNewRule->Id, pNewRule));
 
 	return pNewRule;
 }

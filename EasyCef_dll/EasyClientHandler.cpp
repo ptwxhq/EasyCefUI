@@ -236,15 +236,6 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 
 }
 
-bool EasyClientHandler::DoClose(CefRefPtr<CefBrowser> browser)
-{
-    CEF_REQUIRE_UI_THREAD();
-
-    // Allow the close. For windowed browsers this will result in the OS close
-    // event being sent.
-    return false;
-}
-
 void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
     CEF_REQUIRE_UI_THREAD();
@@ -665,11 +656,6 @@ void EasyClientHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
     webinfo::LoadErrorPage(frame, "", (cef_errorcode_t)100001, str);
 
     //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnRenderProcessTerminated:(" << browser << ") res: " << status;
-}
-
-void EasyClientHandler::OnDocumentAvailableInMainFrame(CefRefPtr<CefBrowser> browser)
-{
-     //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnDocumentAvailableInMainFrame:(" << browser << ")";
 }
 
 bool EasyClientHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)

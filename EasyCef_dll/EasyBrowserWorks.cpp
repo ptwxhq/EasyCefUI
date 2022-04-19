@@ -628,34 +628,22 @@ EasyBrowserWorks& EasyBrowserWorks::GetInstance()
 	return obj;
 }
 
-void EasyBrowserWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread)
-{
-	if (!m_UIWorkInstance)
+void EasyBrowserWorks::DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) {
+
+	if (pData->DataInvalid)
+		return;
+
+	auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(pData->BrowserId);
+	if (item)
 	{
-		class BrowserUIWorks : public UIWorks {
-			void DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) override {
-
-				if (pData->DataInvalid)
-					return;
-
-				auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(pData->BrowserId);
-				if (item)
-				{
-					CefString ReturnVal;
-					if (EasyBrowserWorks::GetInstance().DoSyncWork(pData->Name, item->GetBrowser(), item->GetBrowser()->GetFrame(pData->FrameId), pData->Args, ReturnVal))
-					{
-						pData->ReturnVal = ReturnVal.ToString();
-					}
-				}
-
-				pData->Signal.set_value();
-			}
-		};
-
-		m_UIWorkInstance = new BrowserUIWorks;
+		CefString ReturnVal;
+		if (DoSyncWork(pData->Name, item->GetBrowser(), item->GetBrowser()->GetFrame(pData->FrameId), pData->Args, ReturnVal))
+		{
+			pData->ReturnVal = ReturnVal.ToString();
+		}
 	}
 
-	__super::UIWork(pData, bNeedUIThread);
+	pData->Signal.set_value();
 }
 
 bool EasyBrowserWorks::DoJSKeySyncWork(const std::string name, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)

@@ -50,7 +50,7 @@ public:
 	static DomainPackInfo& GetInstance();
 	static std::wstring GetFormatedDomain(LPCWSTR lpszDomain);
 private:
-	DISALLOW_COPY_AND_ASSIGN(DomainPackInfo);
+	MYDISALLOW_COPY_AND_ASSIGN(DomainPackInfo);
 	DomainPackInfo() = default;
 	std::unordered_map<std::wstring, std::wstring> m_DomainMap;
 };

@@ -84,7 +84,7 @@ private:
 
 class EasyReqRespModifyMgr
 {
-	DISALLOW_COPY_AND_ASSIGN(EasyReqRespModifyMgr);
+	MYDISALLOW_COPY_AND_ASSIGN(EasyReqRespModifyMgr);
 	EasyReqRespModifyMgr() = default;
 public:
 
@@ -120,7 +120,7 @@ class EasyReqRespHandler :
 	public CefURLRequestClient
 {
 	IMPLEMENT_REFCOUNTING(EasyReqRespHandler);
-	DISALLOW_COPY_AND_ASSIGN(EasyReqRespHandler);
+	MYDISALLOW_COPY_AND_ASSIGN(EasyReqRespHandler);
 
 	void RunRequestOnUIThread(CefRefPtr<CefRequest> request);
 

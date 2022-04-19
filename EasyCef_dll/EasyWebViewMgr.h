@@ -7,7 +7,7 @@ class WebViewControl;
 
 class EasyWebViewMgr
 {
-	DISALLOW_COPY_AND_ASSIGN(EasyWebViewMgr);
+	MYDISALLOW_COPY_AND_ASSIGN(EasyWebViewMgr);
 	EasyWebViewMgr() = default;
 
 	wvhandle GetNewHandleId();

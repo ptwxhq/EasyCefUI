@@ -5,7 +5,7 @@
 #include <future>
 
 
-class EasyIPCWorks
+class EasyIPCWorks : public CefRefCount
 {
 public:
 	struct BRDataPack
@@ -20,14 +20,7 @@ public:
 		std::promise<void> Signal;
 	};
 
-	class UIWorks : public CefBaseRefCounted {
-	public:
-		UIWorks() {}
-		virtual void DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) = 0;
-	private:
-		IMPLEMENT_REFCOUNTING(UIWorks);
-	};
-
+	
 
 	bool DoSyncWork(const std::string name, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval);
 	bool DoAsyncWork(const std::string name, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args);
@@ -43,15 +36,10 @@ protected:
 	typedef void(*HandleAsyncCallback)(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, const CefRefPtr<CefListValue>&);
 	typedef std::unordered_map<std::string, HandleAsyncCallback> AsyncFunctionMap;
 
-	virtual void UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread);
+	void UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread);
+	virtual void DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) = 0;
 
 	SyncFunctionMap m_mapSyncFuncs;
 	AsyncFunctionMap m_mapAsyncFuncs;
-
-	CefRefPtr<UIWorks> m_UIWorkInstance;
-
-
-
-
 };
 

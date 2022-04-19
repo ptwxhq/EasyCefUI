@@ -11,10 +11,10 @@ constexpr int g_IpcMaxMemorySize = 1024 * 1024 * 4;
 
 class CEasyFileMap
 {
-	DISALLOW_COPY_AND_ASSIGN(CEasyFileMap);
+	MYDISALLOW_COPY_AND_ASSIGN(CEasyFileMap);
 public:
 	class MAP {
-		DISALLOW_COPY_AND_ASSIGN(MAP);
+		MYDISALLOW_COPY_AND_ASSIGN(MAP);
 		void* m_pFileMapView = nullptr;
 	public:
 		operator char* () {
@@ -120,11 +120,6 @@ void EasyIPCBase::SetOnceMainThreadBlockingWorkCall(OnceBlockingWorkCall call)
 EasyIPCBase::~EasyIPCBase()
 {
 	Stop();
-}
-
-bool EasyIPCBase::IsSending()
-{
-	return m_bIsSending;
 }
 
 void EasyIPCBase::SetMainThread(DWORD dwId)
@@ -372,8 +367,6 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 	if (srcLen > g_IpcMaxMemorySize - 8)
 		return false;
 
-	m_bIsSending = true;
-
 	const auto nNowR = ++m_SendRound;
 
 	const bool bIsMainThread = GetCurrentThreadId() == GetMainThreadId();
@@ -512,8 +505,6 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 	
 	if (hEvent)
 		CloseHandle(hEvent);
-
-	m_bIsSending = false;
 
 	if (bIsMainThread)
 	{

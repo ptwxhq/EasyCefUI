@@ -4,10 +4,10 @@
 
 class EasyRenderWorks : public EasyIPCWorks
 {
-	DISALLOW_COPY_AND_ASSIGN(EasyRenderWorks);
+	MYDISALLOW_COPY_AND_ASSIGN(EasyRenderWorks);
 	EasyRenderWorks();
 
-	void UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread) override;
+	void DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) override;
 
 public:
 	static EasyRenderWorks& GetInstance();

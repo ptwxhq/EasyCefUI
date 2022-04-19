@@ -56,3 +56,8 @@ typedef unsigned long wvhandle;
 #else
 #include <iomanip>
 #endif
+
+
+#define MYDISALLOW_COPY_AND_ASSIGN(TypeName) \
+  TypeName(const TypeName&) = delete;               \
+  void operator=(const TypeName&) = delete

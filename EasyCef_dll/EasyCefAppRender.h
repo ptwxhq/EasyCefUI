@@ -87,7 +87,7 @@ public:
 
 
 private:
-    DISALLOW_COPY_AND_ASSIGN(EasyCefAppRender);
+    MYDISALLOW_COPY_AND_ASSIGN(EasyCefAppRender);
 
 };
 

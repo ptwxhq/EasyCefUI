@@ -18,26 +18,18 @@ public:
 	typedef std::function<void(const std::string&, std::string&)> WorkCall;
 	typedef std::function<void()> OnceBlockingWorkCall;
 
-	virtual void SetWorkCall(WorkCall call);
+	void SetWorkCall(WorkCall call);
 
-	virtual void SetOnceMainThreadBlockingWorkCall(OnceBlockingWorkCall call);
+	void SetOnceMainThreadBlockingWorkCall(OnceBlockingWorkCall call);
 
-	virtual bool Init();
+	void ThdRun();
 
-	//阻塞
-	virtual void Run();
-
-	virtual bool Stop();
-
-	//使用这个则不能自己init
-	virtual void ThdRun();
-
-	static LRESULT CALLBACK WORKPROC(HWND, UINT msg, WPARAM wp, LPARAM lp);
+	bool Stop();
 
 	static const std::string GetShareMemName(IPCHandle hFrom, IPCHandle hTo);
 	static const std::string GetShareMemName(IPCHandle hFrom, IPCHandle hTo, size_t id);
 
-	virtual bool SendData(IPCHandle handle, const std::string& send, std::string& ret);
+	bool SendData(IPCHandle handle, const std::string& send, std::string& ret);
 
 	virtual ~EasyIPCBase();
 
@@ -45,24 +37,30 @@ public:
 
 	virtual bool IsServer() = 0;
 
-	bool IsSending();
-
 	void SetMainThread(DWORD dwId);
-
-	DWORD GetMainThreadId() const {
-		return m_dwMainThreadId;
-	}
 
 	bool IsMainThreadBlocking() const {
 		return m_bIsMainThreadBlocking;
 	}
 
+
 	bool TriggerBlockingWorkEvent();
 
 
 protected:
+
+	static LRESULT CALLBACK WORKPROC(HWND, UINT msg, WPARAM wp, LPARAM lp);
+
+	bool Init();
+	//阻塞
+	void Run();
+
+	DWORD GetMainThreadId() const {
+		return m_dwMainThreadId;
+	}
+
+
 	bool m_bIsRunning = false;
-	bool m_bIsSending = false;
 	bool m_bIsMainThreadBlocking = false;
 
 
@@ -76,9 +74,6 @@ protected:
 
 	std::atomic_ulong m_SendRound;
 
-	//to handle, flag
-	std::unordered_map<IPCHandle, std::unique_ptr<std::promise<void>>> m_MsgShareMemQueue;
-
 	std::condition_variable m_listDataUpdate;
 	std::mutex m_MutWorkthd;
 	std::list<std::shared_ptr<std::string>> m_listStrContName;
@@ -91,6 +86,7 @@ private:
 
 class EasyIPCServer : public EasyIPCBase
 {
+	MYDISALLOW_COPY_AND_ASSIGN(EasyIPCServer);
 	friend class EasyIPCBase;
 public:
 	static EasyIPCServer& GetInstance();
@@ -113,6 +109,7 @@ protected:
 
 class EasyIPCClient : public EasyIPCBase
 {
+	MYDISALLOW_COPY_AND_ASSIGN(EasyIPCClient);
 public:
 	static EasyIPCClient& GetInstance();
 
