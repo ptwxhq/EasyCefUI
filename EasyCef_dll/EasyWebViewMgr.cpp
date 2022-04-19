@@ -248,8 +248,8 @@ void EasyWebViewMgr::CleanDelayItem(HWND hWnd)
 		auto nLastCount = m_DelayCleanList.size();
 		while (it != m_DelayCleanList.end())
 		{
-			//win7下非透明窗口销毁beforeclose时不会进入正常销毁流程？目前看可以在beforeclose结束之后正常退出且不会出现有引用的问题
-			if (IsSystemWindows7OrOlder() && it->second->IsUIControl() && !it->second->IsTransparentUI())
+			//非透明窗口销毁beforeclose时不会进入正常销毁流程？目前看可以在beforeclose结束之后正常退出且不会出现有引用的问题
+			if (it->second->IsUIControl() && !it->second->IsTransparentUI())
 			{
 				++it;
 				continue;

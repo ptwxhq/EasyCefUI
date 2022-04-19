@@ -188,7 +188,7 @@ namespace wrapQweb {
 			auto fmt = std::format("window.invokeMethod('{}', '{}', {}, {})", utf8_module, utf8_method, strParam, bNoticeJSTrans2JSON ? "true" : "false");
 #else
 			std::ostringstream ss;
-			ss << "window.invokeMethod('" << utf8_module << "', '" << utf8_method << ", " << strParam << ", " << (bNoticeJSTrans2JSON ? "true" : "false");
+			ss << "window.invokeMethod('" << utf8_module << "', '" << utf8_method << "', " << strParam << ", " << (bNoticeJSTrans2JSON ? "true" : "false") << ")";
 			auto fmt = ss.str();
 
 #endif

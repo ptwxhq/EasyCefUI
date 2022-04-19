@@ -628,7 +628,8 @@ EasyBrowserWorks& EasyBrowserWorks::GetInstance()
 	return obj;
 }
 
-void EasyBrowserWorks::DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) {
+void EasyBrowserWorks::DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData)
+{
 
 	if (pData->DataInvalid)
 		return;
