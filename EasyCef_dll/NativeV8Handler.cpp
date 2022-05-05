@@ -162,7 +162,7 @@ let drect = ele.getBoundingClientRect();
 if (!isArray(!notify_nc_alledge[attr]))
 notify_nc_alledge[attr] = new Array();
 
-notify_nc_alledge[attr].push({ left: drect.left, top: drect.top, right: drect.right, bottom: drect.bottom });
+notify_nc_alledge[attr].push({ left: Math.floor(drect.left), top: Math.floor(drect.top), right: Math.floor(drect.right), bottom: Math.floor(drect.bottom) });
 });
 
 nativeapp.nc_setalledge = notify_nc_alledge;

@@ -2,7 +2,10 @@
 
 #include "include/cef_scheme.h"
 #include <unordered_map>
+#include <include/wrapper/cef_resource_manager.h>
 
+
+extern CefRefPtr<CefResourceManager> g_resource_manager;
 
 class EasySchemesHandlerFactory : public CefSchemeHandlerFactory
 {

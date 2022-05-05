@@ -61,3 +61,6 @@ typedef unsigned long wvhandle;
 #define MYDISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&) = delete;               \
   void operator=(const TypeName&) = delete
+
+
+#define DPI_1X 96.0f

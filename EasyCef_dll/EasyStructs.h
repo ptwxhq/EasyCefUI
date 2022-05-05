@@ -93,14 +93,25 @@ struct WebViewExtraAttr
 class EasyCefRect : public CefRect
 {
 public:
+
+	EasyCefRect() = default;
+
 	EasyCefRect(int x, int y, int width, int height) {
 		Set(x, y, width, height);
+	}
+
+	EasyCefRect(const CefRect& rc) :CefRect(rc) {
 	}
 
 	operator RECT()	const
 	{
 		return { x, y, x + width, y + height };
 	}
+
+	void CopyRect(const RECT* lprcSrc) {
+		Set(lprcSrc->left, lprcSrc->top, lprcSrc->right - lprcSrc->left, lprcSrc->bottom - lprcSrc->top);
+	}
+
 };
 
 

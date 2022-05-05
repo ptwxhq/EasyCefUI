@@ -134,7 +134,6 @@ public:
     EasyLayeredWindow();
 
     BEGIN_MSG_MAP(EasyLayeredWindow)
-        CHAIN_MSG_MAP(EasyUIWindowBase)
         MESSAGE_HANDLER(WM_LBUTTONDOWN, OnMouseEvent)
         MESSAGE_HANDLER(WM_RBUTTONDOWN, OnMouseEvent)
         MESSAGE_HANDLER(WM_MBUTTONDOWN, OnMouseEvent)
@@ -171,7 +170,7 @@ public:
         MESSAGE_HANDLER(WM_IME_ENDCOMPOSITION, OnIMECancelCompositionEvent)
 
         MESSAGE_HANDLER(WM_WININICHANGE, OnWinIniChange)
-
+        CHAIN_MSG_MAP(EasyUIWindowBase)
     END_MSG_MAP()
 
     LRESULT OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&);
@@ -224,6 +223,10 @@ public:
     };
 
     bool CheckViewSizeChanged(int width, int height);
+
+    bool IsTransparentUI() override { return true; }
+
+    void DpiChangeWork() override;
 
 private:
 

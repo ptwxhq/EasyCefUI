@@ -1,10 +1,9 @@
 ﻿#include "pch.h"
 #include "EasyUIWindow.h"
 #include "EasyWebViewMgr.h"
+#include "Utility.h"
 #include <Windowsx.h>
 #undef SubclassWindow
-
-#define DPI_1X 96.0f
 
 
 
@@ -105,11 +104,15 @@ void EasyUIWindowBase::SetDraggableRegion(const std::vector<CefDraggableRegion>&
 	// Determine new draggable region.
 	std::vector<CefDraggableRegion>::const_iterator it = regions.begin();
 	for (; it != regions.end(); ++it) {
-		HRGN region = ::CreateRectRgn(it->bounds.x, it->bounds.y,
-			it->bounds.x + it->bounds.width,
-			it->bounds.y + it->bounds.height);
+		const auto realRegion = LogicalToDevice({ it->bounds.x, it->bounds.y, it->bounds.width, it->bounds.height }, device_scale_factor_);
+		HRGN region = ::CreateRectRgn(realRegion.x, realRegion.y,
+			realRegion.x + realRegion.width,
+			realRegion.y + realRegion.height);
 		::CombineRgn(m_EdgeRegions[E_CAPTION], m_EdgeRegions[E_CAPTION], region,
 			it->draggable ? RGN_OR : RGN_DIFF);
+
+
+		//LOG(INFO) << "Range:" << std::format("{},{},{},{}\n", it->bounds.x , it->bounds.y ,it->bounds.width, it->bounds.height);
 
 		::DeleteObject(region);
 	}
@@ -124,7 +127,9 @@ void EasyUIWindowBase::SetEdgeNcAera(HT_INFO ht, const std::vector<RECT>& vecRc)
 
 	for (auto& it : vecRc)
 	{
-		HRGN region = ::CreateRectRgn(it.left, it.top, it.right, it.bottom);
+		const auto realRegion = LogicalToDevice({ it.left, it.top, it.right, it.bottom }, device_scale_factor_);
+
+		HRGN region = ::CreateRectRgn(realRegion.x, realRegion.y, realRegion.width, realRegion.height);
 		::CombineRgn(m_EdgeRegions[ht], m_EdgeRegions[ht], region, true ? RGN_OR : RGN_DIFF);
 		::DeleteObject(region);
 	}
@@ -225,19 +230,32 @@ UINT EasyUIWindowBase::Cls_OnNCHitTest(HWND hwnd, int x, int y)
 	return hit;
 }
 
-void EasyUIWindowBase::Cls_OnGetMinMaxInfo(HWND , LPMINMAXINFO lpMinMaxInfo)
+void EasyUIWindowBase::Cls_OnGetMinMaxInfo(HWND hWnd, LPMINMAXINFO lpMinMaxInfo)
 {
 	RECT rcScr;
-	SystemParametersInfo(SPI_GETWORKAREA, 0, &rcScr, 0);
+	auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+
+	MONITORINFO MoInfo = { sizeof(MoInfo) };
+
+	if (GetMonitorInfoW(hMoni, &MoInfo))
+	{
+		CopyRect(&rcScr, &MoInfo.rcWork);
+	}
+	else
+	{
+		SystemParametersInfo(SPI_GETWORKAREA, 0, &rcScr, 0);
+	}
+
 	lpMinMaxInfo->ptMaxSize.x = rcScr.right - rcScr.left;
 	lpMinMaxInfo->ptMaxSize.y = rcScr.bottom - rcScr.top;
-	lpMinMaxInfo->ptMaxPosition.x = rcScr.left;
-	lpMinMaxInfo->ptMaxPosition.y = rcScr.top;
+	//以下值是基于主显示器的，不能用虚拟坐标
+	lpMinMaxInfo->ptMaxPosition.x = 0;
+	lpMinMaxInfo->ptMaxPosition.y = 0;
 }
 
 LRESULT EasyUIWindowBase::Cls_OnDpiChanged(HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
-	if (LOWORD(wParam) != HIWORD(lParam)) {
+	if (LOWORD(wParam) != HIWORD(wParam)) {
 		NOTIMPLEMENTED() << "Received non-square scaling factors";
 		return 0;
 	}
@@ -248,18 +266,65 @@ LRESULT EasyUIWindowBase::Cls_OnDpiChanged(HWND hwnd, WPARAM wParam, LPARAM lPar
 
 	device_scale_factor_ = display_scale_factor;
 
+	DpiChangeWork();
+
 	// Suggested size and position of the current window scaled for the new DPI.
 	const RECT* rect = reinterpret_cast<RECT*>(lParam);
 	SetWindowPos(nullptr, rect->left, rect->top, rect->right - rect->left,
 		rect->bottom - rect->top, SWP_NOZORDER);
 
-	return 0;
+
+
+	return 1;
 }
 
 void EasyUIWindowBase::Cls_OnMove(HWND hwnd, int x, int y)
 {
 	if (m_browser)
 		m_browser->GetHost()->NotifyMoveOrResizeStarted();
+}
+
+BOOL EasyUIWindowBase::Cls_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
+{
+	device_scale_factor_ = GetWindowScaleFactor(hwnd);
+
+	//int nAddWidth = lpCreateStruct->cx * (device_scale_factor_ - 1);
+	//int nAddHeight = lpCreateStruct->cy * (device_scale_factor_ - 1);
+
+	////lpCreateStruct->x -= nAddWidth / 2;
+	////lpCreateStruct->y -= nAddHeight / 2;
+
+	//lpCreateStruct->cx += nAddWidth;
+	//lpCreateStruct->cy += nAddHeight;
+
+	if (!called_enable_non_client_dpi_scaling_ && IsProcessPerMonitorDpiAware()) {
+		// This call gets Windows to scale the non-client area when WM_DPICHANGED
+		// is fired on Windows versions < 10.0.14393.0.
+		// Derived signature; not available in headers.
+		typedef LRESULT(WINAPI* EnableChildWindowDpiMessagePtr)(HWND, BOOL);
+		static EnableChildWindowDpiMessagePtr func_ptr =
+			reinterpret_cast<EnableChildWindowDpiMessagePtr>(GetProcAddress(
+				GetModuleHandle(L"user32.dll"), "EnableChildWindowDpiMessage"));
+		if (func_ptr)
+			func_ptr(hwnd, TRUE);
+	}
+
+	return TRUE;
+}
+
+BOOL EasyUIWindowBase::Cls_OnNCCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
+{
+	if (IsProcessPerMonitorDpiAware()) {
+		// This call gets Windows to scale the non-client area when WM_DPICHANGED
+		// is fired on Windows versions >= 10.0.14393.0.
+		typedef BOOL(WINAPI* EnableNonClientDpiScalingPtr)(HWND);
+		static EnableNonClientDpiScalingPtr func_ptr =
+			reinterpret_cast<EnableNonClientDpiScalingPtr>(GetProcAddress(
+				GetModuleHandle(L"user32.dll"), "EnableNonClientDpiScaling"));
+		called_enable_non_client_dpi_scaling_ = !!(func_ptr && func_ptr(hwnd));
+	}
+
+	return TRUE;
 }
 
 
@@ -274,6 +339,8 @@ BOOL EasyUIWindowBase::ProcessWindowMessage(HWND hWnd, UINT uMsg, WPARAM wParam,
 		MYHANDLE_MSG(WM_NCHITTEST, Cls_OnNCHitTest);
 		MYHANDLE_MSG(WM_GETMINMAXINFO, Cls_OnGetMinMaxInfo);
 		MYHANDLE_MSG(WM_MOVE, Cls_OnMove);
+		MYHANDLE_MSG(WM_CREATE, Cls_OnCreate);
+		MYHANDLE_MSG(WM_NCCREATE, Cls_OnNCCreate);
 		
 		
 	case WM_DPICHANGED:

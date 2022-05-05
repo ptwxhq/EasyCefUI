@@ -593,10 +593,22 @@ void WebViewTransparentUIControl::SetToolTip(const CefString& str)
 
 void WebViewTransparentUIControl::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
+    CEF_REQUIRE_UI_THREAD();
+    DCHECK_GT(m_pWindow->GetDeviceScaleFactor(), 0);
+
     RECT rc = {};
     GetClientRect(browser->GetHost()->GetWindowHandle(), &rc);
 
-    rect = { 0,0, rc.right,rc.bottom };
+    rect.x = rect.y = 0;
+    rect.width = DeviceToLogical(rc.right,
+        m_pWindow->GetDeviceScaleFactor());
+    if (rect.width == 0)
+        rect.width = 1;
+    rect.height = DeviceToLogical(rc.bottom,
+        m_pWindow->GetDeviceScaleFactor());
+    if (rect.height == 0)
+        rect.height = 1;
+
 }
 
 void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height)
@@ -639,11 +651,32 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
 bool WebViewTransparentUIControl::GetScreenPoint(CefRefPtr<CefBrowser> browser, int viewX, int viewY, int& screenX, int& screenY)
 {
     HWND root_window = GetAncestor(browser->GetHost()->GetWindowHandle(), GA_ROOT);
-    POINT pt = { viewX, viewY };
-    ClientToScreen(root_window, &pt);
-    screenX = pt.x;
-    screenY = pt.y;
+    POINT screen_pt = { LogicalToDevice(viewX, m_pWindow->GetDeviceScaleFactor()),
+                     LogicalToDevice(viewY, m_pWindow->GetDeviceScaleFactor()) };
+    ClientToScreen(root_window, &screen_pt);
+    screenX = screen_pt.x;
+    screenY = screen_pt.y;
 
+    return true;
+}
+
+bool WebViewTransparentUIControl::GetScreenInfo(CefRefPtr<CefBrowser> browser, CefScreenInfo& screen_info)
+{
+    CEF_REQUIRE_UI_THREAD();
+    DCHECK_GT(m_pWindow->GetDeviceScaleFactor(), 0);
+
+    if (!::IsWindow(GetHWND()))
+        return false;
+
+    CefRect view_rect;
+    GetViewRect(browser, view_rect);
+
+    screen_info.device_scale_factor = m_pWindow->GetDeviceScaleFactor();
+
+    // The screen info rectangles are used by the renderer to create and position
+    // popups. Keep popups inside the view rectangle.
+    screen_info.rect = view_rect;
+    screen_info.available_rect = view_rect;
     return true;
 }
 
@@ -661,7 +694,8 @@ void WebViewTransparentUIControl::OnPopupSize(CefRefPtr<CefBrowser> browser, con
 {
     if (rect.width <= 0 || rect.height <= 0)
         return;
-    m_pWindow->SetPopupRectInWebView(rect);
+
+    m_pWindow->SetPopupRectInWebView(LogicalToDevice(rect, m_pWindow->GetDeviceScaleFactor()));
 }
 
 void WebViewTransparentUIControl::OnImeCompositionRangeChanged(CefRefPtr<CefBrowser> browser, const CefRange& selected_range, const RectList& character_bounds)

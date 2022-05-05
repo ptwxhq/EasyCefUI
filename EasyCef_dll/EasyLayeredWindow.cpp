@@ -136,8 +136,16 @@ EasyLayeredWindow::EasyLayeredWindow(): m_info(1, 1)
 
 void EasyLayeredWindow::ImePosChange(const CefRange& selected_range, const CefRenderHandler::RectList& character_bounds)
 {
-	if(ime_handler_)
-		ime_handler_->ChangeCompositionRange(selected_range, character_bounds);
+	if (ime_handler_)
+	{
+		// Convert from view coordinates to device coordinates.
+		CefRenderHandler::RectList device_bounds;
+		CefRenderHandler::RectList::const_iterator it = character_bounds.begin();
+		for (; it != character_bounds.end(); ++it) {
+			device_bounds.push_back(LogicalToDevice(*it, device_scale_factor_));
+		}
+		ime_handler_->ChangeCompositionRange(selected_range, device_bounds);
+	}
 }
 
 bool EasyLayeredWindow::StartDragging(CefRefPtr<CefDragData> drag_data, CefRenderHandler::DragOperationsMask allowed_ops, int x, int y)
@@ -192,6 +200,20 @@ void EasyLayeredWindow::ClearPopupRects()
 bool EasyLayeredWindow::CheckViewSizeChanged(int width, int height)
 {
 	return view_width_ != width || view_height_ != height;
+}
+
+void EasyLayeredWindow::DpiChangeWork()
+{
+	if (m_browser)
+	{
+		m_browser->GetHost()->NotifyScreenInfoChanged();
+	}
+
+	if (m_hToolTip)
+	{
+		::PostMessage(m_hToolTip, WM_CLOSE, 0, 0);
+		m_hToolTip = nullptr;
+	}
 }
 
 CefBrowserHost::DragOperationsMask EasyLayeredWindow::OnDragEnter(CefRefPtr<CefDragData> drag_data, CefMouseEvent ev, CefBrowserHost::DragOperationsMask effect)
@@ -591,11 +613,14 @@ LRESULT EasyLayeredWindow::OnKeyEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&)
 
 LRESULT EasyLayeredWindow::OnCreate(UINT, WPARAM, LPARAM lp, BOOL& handle)
 {
-	handle = FALSE;
+	auto pCREATESTRUCT = (CREATESTRUCT*)lp;
+	Cls_OnCreate(m_hWnd, pCREATESTRUCT);
+
+	handle = TRUE;
 	if (g_BrowserGlobalVar.FunctionFlag.bUIImeFollow)
 		ime_handler_.reset(new client::OsrImeHandlerWin(m_hWnd));
 
-	auto pCREATESTRUCT = (CREATESTRUCT*)lp;
+
 
 	m_info.SetWindowPos({ pCREATESTRUCT->x, pCREATESTRUCT->y });
 	m_info.SetWindowSize({ pCREATESTRUCT->cx, pCREATESTRUCT->cy });

@@ -403,6 +403,11 @@ bool SetXPackWorkCall(XPackExtractWork funWork, XPackFreeData funFree)
 	return false;
 }
 
+float GetWindowScaleFactor(HWND hwnd)
+{
+	return ::GetWindowScaleFactor(hwnd);
+}
+
 /*
 
 

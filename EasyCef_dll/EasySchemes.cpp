@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "include/wrapper/cef_stream_resource_handler.h"
 
+CefRefPtr<CefResourceManager> g_resource_manager;
 
 void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
@@ -23,9 +24,120 @@ void RegEasyCefSchemes()
 	CefRegisterSchemeHandlerFactory("file", "", factory);
 	CefRegisterSchemeHandlerFactory("disk", "", factory);
 
+	CefRegisterSchemeHandlerFactory("http", "todisk", factory);
+
 	CefRegisterSchemeHandlerFactory(EASYCEFSCHEME, "", factory);
 
 }
+
+class SaveFileToDiskProvider : public CefResourceManager::Provider {
+
+	#define ToDiskUrl "http://todisk/"
+	const int LenOfUrl = _countof(ToDiskUrl) - 1;
+public:
+
+	SaveFileToDiskProvider() = default;
+
+	bool OnRequest(scoped_refptr<CefResourceManager::Request> request) override {
+		CEF_REQUIRE_IO_THREAD();
+
+		const std::string& url = request->url();
+		const int len = LenOfUrl;
+		if (url.compare(0, len, ToDiskUrl) != 0) {
+			return false;
+		}
+
+		std::string status;
+
+		CefResponse::HeaderMap response_headers;
+		response_headers.insert(std::make_pair("Access-Control-Allow-Origin", "*"));
+
+		int code = 400;
+		auto response = SaveContents(request->request(), code, status);
+
+		request->Continue(new CefStreamResourceHandler(code, status, "text/plain; charset=utf-8",
+			response_headers, response));
+
+		return true;
+	}
+
+private:
+	CefRefPtr<CefStreamReader> SaveContents(CefRefPtr<CefRequest> request, int& code, std::string& status)
+	{
+		code = 403;
+		status = "Path Invalid";
+
+		auto url = request->GetURL().ToWString();
+		auto localpath = url.substr(LenOfUrl);
+		std::replace(localpath.begin(), localpath.end(), L'/', L'\\');
+
+		do
+		{
+			if (PathIsRelativeW(localpath.c_str()))
+			{
+				break;
+			}
+
+			if (_waccess_s(localpath.c_str(), 0) == 0)
+			{
+				status = "File is exist";
+				break;
+			}
+
+			status = "No post data";
+			CefRefPtr<CefPostData> postData = request->GetPostData();
+			if (!postData)
+				break;
+			
+			CefPostData::ElementVector elements;
+			postData->GetElements(elements);
+			if (elements.size() == 0)
+				break;
+			
+			for (auto element : elements)
+			{
+				auto type = element->GetType();
+
+				if (element->GetType() == PDE_TYPE_BYTES) {
+
+					auto write = CefStreamWriter::CreateForFile(localpath);
+					if (write)
+					{
+						size_t size = element->GetBytesCount();
+						char* bytes = new char[size];
+						element->GetBytes(size, bytes);
+						auto written = write->Write(bytes, size, 1);
+						delete[] bytes;
+
+						if (written == size)
+						{
+							code = 200;
+							status = "OK";
+						}
+						else
+						{
+							code = 500;
+							status = "Write size error";
+						}
+					
+					}
+					else
+					{
+						code = 500;
+						status = "Fail to create file. errno:" + std::to_string(errno);
+					}
+
+				}
+			}
+
+		} while (false);
+
+
+		return CefStreamReader::CreateForData(static_cast<void*>(const_cast<char*>(status.c_str())), status.size());
+	}
+
+	MYDISALLOW_COPY_AND_ASSIGN(SaveFileToDiskProvider);
+};
 
 EasySchemesHandlerFactory::EasySchemesHandlerFactory()
 {
@@ -34,6 +146,11 @@ EasySchemesHandlerFactory::EasySchemesHandlerFactory()
 	mapSchemes.insert(std::make_pair("file", RESTYPE::FILE));
 	mapSchemes.insert(std::make_pair("disk", RESTYPE::FILE));
 	mapSchemes.insert(std::make_pair(EASYCEFSCHEME, RESTYPE::INTERNALUI));
+
+
+	g_resource_manager = new CefResourceManager();
+
+	g_resource_manager->AddProvider(new SaveFileToDiskProvider, 0, std::string());
 }
 
 CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& scheme_name, CefRefPtr<CefRequest> request)
@@ -73,6 +190,8 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 	STATUSCODE sCurrent = STATUSCODE::E_UNSET;
 
 	CefRefPtr<CefStreamReader> stream;
+
+	CefResponse::HeaderMap header;
 
 	const std::wstring strDecodedPath = CefURIDecode(url_parts.Path_, false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
 
@@ -135,7 +254,7 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 		break;
 	case RESTYPE::FILE:
 		{
-			std::wstring strPath = strDecodedPath;
+			std::wstring strPath = GetUrlWithoutQueryOrFragment(strDecodedPath);
 
 			std::replace(strPath.begin(), strPath.end(), L'/', L'\\');
 			if (strPath.front() == '\\')
@@ -178,6 +297,30 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 		}
 	}
 	break;
+	//case RESTYPE::TODISK:
+	//	{
+	//		std::wstring strPath = GetUrlWithoutQueryOrFragment(strDecodedPath);
+
+	//		std::replace(strPath.begin(), strPath.end(), L'/', L'\\');
+	//		if (strPath.front() == '\\')
+	//			strPath.erase(0, 1);
+
+	//		if (request->GetResourceType() == RT_XHR)
+	//		{
+	//			int a;
+	//				a = 1;
+	//		}
+
+	//		//为了安全可以过滤可执行文件
+	//		sCurrent = STATUSCODE::E200;
+	//		header.insert(std::make_pair("Access-Control-Allow-Origin", "*") );
+	//		assert(request->GetPostData());
+
+	//		CefResponse::HeaderMap response_headers;			
+	//		GetDumpResponse(request, response_headers);
+
+	//	}
+	//	break;
 
 	default:
 		break;
@@ -210,7 +353,7 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 		stream = CefStreamReader::CreateForData(data.data(), data.size());
 	}
 
-	return new CefStreamResourceHandler(static_cast<int>(sCurrent), strStatusText, mime_type_, CefResponse::HeaderMap(), stream);
+	return new CefStreamResourceHandler(static_cast<int>(sCurrent), strStatusText, mime_type_, header, stream);
 }
 
 bool DomainPackInfo::RegisterPackDomain(LPCWSTR lpszDomain, LPCWSTR lpszFilePath)
@@ -345,3 +488,6 @@ void DomainPackInfo::Uri::Parse(const std::wstring& uri)
 		QueryString_.assign(queryStart, uri.end());
 
 }
+
+
+

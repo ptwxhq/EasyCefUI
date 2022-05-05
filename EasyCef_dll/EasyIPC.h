@@ -26,7 +26,6 @@ public:
 
 	bool Stop();
 
-	static const std::string GetShareMemName(IPCHandle hFrom, IPCHandle hTo);
 	static const std::string GetShareMemName(IPCHandle hFrom, IPCHandle hTo, size_t id);
 
 	bool SendData(IPCHandle handle, const std::string& send, std::string& ret);

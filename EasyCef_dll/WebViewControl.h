@@ -176,6 +176,9 @@ public:
 		int& screenX,
 		int& screenY) override;
 
+	bool GetScreenInfo(CefRefPtr<CefBrowser> browser,
+		CefScreenInfo& screen_info) override;
+
 	void OnPopupShow(CefRefPtr<CefBrowser> browser, bool show) override;
 
 	void OnPopupSize(CefRefPtr<CefBrowser> browser, const CefRect& rect) override;

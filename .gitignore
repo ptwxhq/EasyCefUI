@@ -34,6 +34,9 @@
 #Dir
 Debug
 Release
+.vs
+.vscode
 
 EasyCef_dll/cef.props
 *.aps
+

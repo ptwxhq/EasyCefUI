@@ -105,6 +105,8 @@ namespace JSKeysGet
 			val = GetSystemMetrics(SM_CXSCREEN);
 		}
 
+		val = DeviceToLogical(val, GetWindowScaleFactor(hWnd));
+
 		retval = CefV8Value::CreateInt(val);
 		return true;
 	}
@@ -125,6 +127,8 @@ namespace JSKeysGet
 		{
 			val = GetSystemMetrics(SM_CYSCREEN);
 		}
+
+		val = DeviceToLogical(val, GetWindowScaleFactor(hWnd));
 
 		retval = CefV8Value::CreateInt(val);
 		return true;
@@ -147,8 +151,10 @@ namespace JSKeysGet
 		{
 			SystemParametersInfo(SPI_GETWORKAREA, 0, &rcScr, 0);
 		}
+		
+		int dw = DeviceToLogical(rcScr.right - rcScr.left, GetWindowScaleFactor(hWnd));
 
-		retval = CefV8Value::CreateInt(rcScr.right - rcScr.left);
+		retval = CefV8Value::CreateInt(dw);
 		return true;
 	}
 
@@ -170,7 +176,9 @@ namespace JSKeysGet
 			SystemParametersInfo(SPI_GETWORKAREA, 0, &rcScr, 0);
 		}
 
-		retval = CefV8Value::CreateInt(rcScr.bottom - rcScr.top);
+		int dh = DeviceToLogical(rcScr.bottom - rcScr.top, GetWindowScaleFactor(hWnd));
+
+		retval = CefV8Value::CreateInt(dh);
 		return true;
 	}
 
@@ -186,7 +194,10 @@ namespace JSKeysGet
 
 			RECT rc = {};
 			GetWindowRect(hWnd, &rc);
-			retval = CefV8Value::CreateInt(rc.left - MoInfo.rcMonitor.left);
+
+			const int x = DeviceToLogical(rc.left - MoInfo.rcMonitor.left, GetWindowScaleFactor(hWnd));
+
+			retval = CefV8Value::CreateInt(x);
 			return true;
 		}
 
@@ -205,7 +216,11 @@ namespace JSKeysGet
 
 			RECT rc = {};
 			GetWindowRect(hWnd, &rc);
-			retval = CefV8Value::CreateInt(rc.top - MoInfo.rcMonitor.top);
+
+			const int y = DeviceToLogical(rc.top - MoInfo.rcMonitor.top, GetWindowScaleFactor(hWnd));
+
+
+			retval = CefV8Value::CreateInt(y);
 			return true;
 		}
 
@@ -219,7 +234,10 @@ namespace JSKeysGet
 		{
 			RECT rc = {};
 			GetWindowRect(hWnd, &rc);
-			retval = CefV8Value::CreateInt(rc.right - rc.left);
+
+			const int width = DeviceToLogical(rc.right - rc.left, GetWindowScaleFactor(hWnd));
+
+			retval = CefV8Value::CreateInt(width);
 			return true;
 		}
 
@@ -233,7 +251,10 @@ namespace JSKeysGet
 		{
 			RECT rc = {};
 			GetWindowRect(hWnd, &rc);
-			retval = CefV8Value::CreateInt(rc.bottom - rc.top);
+
+			const int height = DeviceToLogical(rc.bottom - rc.top, GetWindowScaleFactor(hWnd));
+
+			retval = CefV8Value::CreateInt(height);
 			return true;
 		}
 

@@ -38,19 +38,27 @@ public:
 
     virtual void SetAlpha(BYTE alpha, bool bRepaint) = 0;
 
+    virtual bool IsTransparentUI() = 0;
+
+    float GetDeviceScaleFactor() const {
+        return device_scale_factor_;
+    }
+
+    virtual void DpiChangeWork() {};
+
     EasyUIWindowBase();
     virtual ~EasyUIWindowBase();
 
     void OnFinalMessage(HWND h) override;
 
-private:
+protected:
     UINT Cls_OnNCHitTest(HWND hwnd, int x, int y);
     void Cls_OnGetMinMaxInfo(HWND hwnd, LPMINMAXINFO lpMinMaxInfo);
     LRESULT Cls_OnDpiChanged(HWND hwnd, WPARAM wParam, LPARAM lParam);
     void Cls_OnMove(HWND hwnd, int x, int y);
+    BOOL Cls_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct);
+    BOOL Cls_OnNCCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct);
 
-
-protected:
 
     BOOL ProcessWindowMessage(
         HWND hWnd,
@@ -69,6 +77,7 @@ protected:
 
 
 private:
+    bool called_enable_non_client_dpi_scaling_ = false;
     bool m_bEdgeRegionExist[HT_INFO::E_END] = {};
     HRGN m_EdgeRegions[HT_INFO::E_END] = {};
 
@@ -81,11 +90,10 @@ class EasyOpaqueWindow : public EasyUIWindowBase
 public:
 
     BEGIN_MSG_MAP(EasyOpaqueWindow)
-        CHAIN_MSG_MAP(EasyUIWindowBase)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
         MESSAGE_HANDLER(WM_NCACTIVATE, OnNcActivate)
         MESSAGE_HANDLER(WM_NCPAINT, OnNcPaint)
-
+        CHAIN_MSG_MAP(EasyUIWindowBase)
     END_MSG_MAP()
 
     LRESULT OnSize(UINT msg, WPARAM wParam, LPARAM lParam, BOOL& handle);
@@ -94,6 +102,6 @@ public:
 
 
     void SetAlpha(BYTE alpha, bool) override;
-
+    bool IsTransparentUI() override { return false; }
 };
 

@@ -27,8 +27,8 @@ bool IsKeyDown(WPARAM wparam);
 
 // Returns the device scale factor. For example, 200% display scaling will
 // return 2.0.
-float GetDeviceScaleFactor();
-
+float GetWindowScaleFactor(HWND hwnd);
+bool IsProcessPerMonitorDpiAware();
 
 // Convert |value| from logical coordinates to device coordinates.
 int LogicalToDevice(int value, float device_scale_factor);

@@ -169,4 +169,6 @@ EASYCEF_EXP_API bool GetReqRspRule(unsigned id, EasyReqRspRule* pRule);
 //
 EASYCEF_EXP_API bool SetXPackWorkCall(XPackExtractWork funWork, XPackFreeData funFree);
 
+EASYCEF_EXP_API float GetWindowScaleFactor(HWND hwnd);
+
 };

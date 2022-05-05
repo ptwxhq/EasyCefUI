@@ -185,6 +185,8 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
     return false;
 }
 
+
+
 void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
     CEF_REQUIRE_UI_THREAD();
@@ -234,6 +236,7 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
         }
     }
 
+   
 }
 
 void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
@@ -833,9 +836,16 @@ CefResourceRequestHandler::ReturnValue EasyClientHandler::OnBeforeResourceLoad(C
     if (EasyReqRespModifyMgr::GetInstance().CheckMatchUrl(strUrl, &RequestListIds, nullptr, 1))
     {
         EasyReqRespModifyMgr::GetInstance().ModifyRequest(RequestListIds, request);
+        return RV_CONTINUE;
+    }
+
+    if (m_bIsUIControl)
+    {
+        return g_resource_manager->OnBeforeResourceLoad(browser, frame, request, callback);
     }
 
     return RV_CONTINUE;
+ 
 }
 
 CefRefPtr<CefResourceHandler> EasyClientHandler::GetResourceHandler(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request)
@@ -848,6 +858,11 @@ CefRefPtr<CefResourceHandler> EasyClientHandler::GetResourceHandler(CefRefPtr<Ce
     if (EasyReqRespModifyMgr::GetInstance().CheckMatchUrl(strUrl, nullptr, &ResponseListIds, 2))
     {
         return new EasyReqRespHandler(browser, std::move(ResponseListIds));
+    }
+
+    if (m_bIsUIControl)
+    {
+        return g_resource_manager->GetResourceHandler(browser, frame, request);
     }
 
     return nullptr;
