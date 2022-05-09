@@ -68,7 +68,10 @@ private:
 		status = "Path Invalid";
 
 		auto url = request->GetURL().ToWString();
-		auto localpath = url.substr(LenOfUrl);
+		auto encodedpath = url.substr(LenOfUrl);
+
+		std::wstring localpath = CefURIDecode(encodedpath, false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
+
 		std::replace(localpath.begin(), localpath.end(), L'/', L'\\');
 
 		do
@@ -109,7 +112,7 @@ private:
 						auto written = write->Write(bytes, size, 1);
 						delete[] bytes;
 
-						if (written == size)
+						if (written == 1)
 						{
 							code = 200;
 							status = "OK";
@@ -119,7 +122,6 @@ private:
 							code = 500;
 							status = "Write size error";
 						}
-					
 					}
 					else
 					{
