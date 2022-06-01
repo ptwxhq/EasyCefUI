@@ -377,7 +377,7 @@ std::string GetRandomString(size_t length)
 
     std::random_device random_device;
     std::mt19937 generator(random_device());
-    const std::uniform_int_distribution<> distribution(0, _countof(CHARACTERS) - 1);
+    const std::uniform_int_distribution<> distribution(0, _countof(CHARACTERS) - 2);
 
     std::string random_string;
 

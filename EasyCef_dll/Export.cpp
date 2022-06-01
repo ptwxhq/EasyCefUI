@@ -412,10 +412,10 @@ float GetWindowScaleFactor(HWND hwnd)
 
 
 
-bool AddMemoryFile(const void* pData, unsigned int nDataLen, size_t* id, LPCWSTR lpszDomain)
+bool AddMemoryFile(const void* pData, unsigned int nDataLen, size_t* id, LPCWSTR lpszDomain, LPCWSTR lpszExtName)
 {
 	size_t nid = 0;
-	auto ret = g_MemFileMgr.AddMemoryFile(pData, nDataLen, nid, lpszDomain);
+	auto ret = g_MemFileMgr.AddMemoryFile(pData, nDataLen, nid, lpszDomain, lpszExtName);
 	if (ret && id)
 	{
 		*id = nid;

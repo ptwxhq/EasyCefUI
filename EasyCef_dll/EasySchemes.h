@@ -3,6 +3,7 @@
 #include "include/cef_scheme.h"
 #include <unordered_map>
 #include <include/wrapper/cef_resource_manager.h>
+#include <mutex>
 
 
 extern CefRefPtr<CefResourceManager> g_resource_manager;
@@ -16,9 +17,10 @@ struct EasyMemoryFile
 
 class EasyMemoryFileMgr
 {
+	std::mutex m_mutex;
 	std::unordered_map<size_t, EasyMemoryFile> mapUserData;
 public:
-	bool AddMemoryFile(const void* pData, unsigned int nDataLen, size_t& id, LPCWSTR lpszDomain = nullptr);
+	bool AddMemoryFile(const void* pData, unsigned int nDataLen, size_t& id, LPCWSTR lpszDomain, LPCWSTR lpszExtName);
 	void DelMemoryFile(size_t id);
 	bool GetMemoryFileUrl(size_t id, CefString& lpszUrl);
 	bool GetDataByUrl(const CefString& strUrl, std::string& data);

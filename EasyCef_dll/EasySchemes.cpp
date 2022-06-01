@@ -304,7 +304,7 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 	break;
 	case RESTYPE::MEMORY:
 	{
-		std::wstring strUrl = GetUrlWithoutQueryOrFragment(strDecodedPath);
+		std::wstring strUrl = url_parts.Protocol_ + L"://" + url_parts.Host_ + GetUrlWithoutQueryOrFragment(strDecodedPath);
 		std::string data;
 		if (g_MemFileMgr.GetDataByUrl(strUrl, data))
 		{
@@ -510,7 +510,7 @@ void DomainPackInfo::Uri::Parse(const std::wstring& uri)
 
 }
 
-bool EasyMemoryFileMgr::AddMemoryFile(const void* pData, unsigned int nDataLen, size_t& id, LPCWSTR lpszDomain)
+bool EasyMemoryFileMgr::AddMemoryFile(const void* pData, unsigned int nDataLen, size_t& id, LPCWSTR lpszDomain, LPCWSTR lpszExtName)
 {
 	EasyMemoryFile file;
 	file.data.assign(static_cast<const char*>(pData), nDataLen);
@@ -531,10 +531,25 @@ bool EasyMemoryFileMgr::AddMemoryFile(const void* pData, unsigned int nDataLen, 
 	strUrl += L"/";
 	strUrl += CefString(GetRandomString(32));
 
+	std::wstring strExt;
+	if (lpszExtName && lpszExtName[0])
+	{
+		strExt = lpszExtName;
+		transform(strExt.begin(), strExt.end(), strExt.begin(), tolower);
+	}
+	else
+	{
+		strExt += L"bin";
+	}
+
+	strUrl += L"." + strExt;
+
 	file.url = strUrl;
 
 	std::hash<std::wstring> hash;
 	file.id = hash(strUrl);
+
+	std::lock_guard lock(m_mutex);
 
 	mapUserData.insert(std::make_pair(file.id, file));
 
@@ -544,11 +559,13 @@ bool EasyMemoryFileMgr::AddMemoryFile(const void* pData, unsigned int nDataLen, 
 
 void EasyMemoryFileMgr::DelMemoryFile(size_t id)
 {
+	std::lock_guard lock(m_mutex);
 	mapUserData.erase(id);
 }
 
 bool EasyMemoryFileMgr::GetMemoryFileUrl(size_t id, CefString& lpszUrl)
 {
+	std::lock_guard lock(m_mutex);
 	auto it = mapUserData.find(id);
 	if (it != mapUserData.end())
 	{
@@ -564,10 +581,13 @@ bool EasyMemoryFileMgr::GetDataByUrl(const CefString& strUrl, std::string& data)
 	std::hash<std::wstring> hash;
 	auto id = hash(strUrl.ToWString());
 
+	std::lock_guard lock(m_mutex);
+
 	auto it = mapUserData.find(id);
 	if (it != mapUserData.end())
 	{
 		data = it->second.data;
+		return true;
 	}
 
 	return false;
