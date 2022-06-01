@@ -7,6 +7,7 @@
 #include "EasyWebViewMgr.h"
 #include "WebViewControl.h"
 #include "EasyReqRespModify.h"
+#include "EasySchemes.h"
 
 
 
@@ -28,6 +29,7 @@ CefScopedSandboxInfo g_scoped_sandbox;
 #endif
 
 void GetLocalPaths();
+extern EasyMemoryFileMgr g_MemFileMgr;
 
 namespace EASYCEF {
 
@@ -406,6 +408,49 @@ bool SetXPackWorkCall(XPackExtractWork funWork, XPackFreeData funFree)
 float GetWindowScaleFactor(HWND hwnd)
 {
 	return ::GetWindowScaleFactor(hwnd);
+}
+
+
+
+bool AddMemoryFile(const void* pData, unsigned int nDataLen, size_t* id, LPCWSTR lpszDomain)
+{
+	size_t nid = 0;
+	auto ret = g_MemFileMgr.AddMemoryFile(pData, nDataLen, nid, lpszDomain);
+	if (ret && id)
+	{
+		*id = nid;
+	}
+
+	return ret;
+}
+
+void DelMemoryFile(size_t id)
+{
+	g_MemFileMgr.DelMemoryFile(id);
+}
+
+bool GetMemoryFileUrl(size_t id, LPWSTR lpszUrl, unsigned int nInLen, unsigned int* nOutLen)
+{
+	CefString szUrl;
+	if (g_MemFileMgr.GetMemoryFileUrl(id, szUrl))
+	{
+		auto ws = szUrl.ToWString();
+		if (lpszUrl)
+		{
+			auto nLast = std::min(nInLen, ws.size());
+			wcsncpy_s(lpszUrl, nInLen, ws.c_str(), nLast);
+			lpszUrl[nLast] = 0;
+		}
+
+		if (nOutLen)
+		{
+			*nOutLen = ws.size() + 1;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 /*

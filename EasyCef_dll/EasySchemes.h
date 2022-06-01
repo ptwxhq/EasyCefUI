@@ -7,6 +7,23 @@
 
 extern CefRefPtr<CefResourceManager> g_resource_manager;
 
+struct EasyMemoryFile
+{
+	size_t id = 0;
+	CefString url;
+	std::string data;
+};
+
+class EasyMemoryFileMgr
+{
+	std::unordered_map<size_t, EasyMemoryFile> mapUserData;
+public:
+	bool AddMemoryFile(const void* pData, unsigned int nDataLen, size_t& id, LPCWSTR lpszDomain = nullptr);
+	void DelMemoryFile(size_t id);
+	bool GetMemoryFileUrl(size_t id, CefString& lpszUrl);
+	bool GetDataByUrl(const CefString& strUrl, std::string& data);
+};
+
 class EasySchemesHandlerFactory : public CefSchemeHandlerFactory
 {
 	enum class RESTYPE
@@ -16,6 +33,7 @@ class EasySchemesHandlerFactory : public CefSchemeHandlerFactory
 		FILE,
 		INTERNALUI,
 		FAKEHTTP,//XPACK
+		MEMORY,
 	};
 public:
 	EasySchemesHandlerFactory();
@@ -25,9 +43,11 @@ public:
 		const CefString& scheme_name,
 		CefRefPtr<CefRequest> request) override;
 
+
 	IMPLEMENT_REFCOUNTING(EasySchemesHandlerFactory);
 private:
 	std::unordered_map<std::string, RESTYPE> mapSchemes;
+
 };
 
 

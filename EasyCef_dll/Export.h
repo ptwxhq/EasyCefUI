@@ -171,4 +171,9 @@ EASYCEF_EXP_API bool SetXPackWorkCall(XPackExtractWork funWork, XPackFreeData fu
 
 EASYCEF_EXP_API float GetWindowScaleFactor(HWND hwnd);
 
+
+EASYCEF_EXP_API bool AddMemoryFile(const void* pData, unsigned int nDataLen, size_t* id, LPCWSTR lpszDomain = nullptr);
+EASYCEF_EXP_API void DelMemoryFile(size_t id);
+EASYCEF_EXP_API bool GetMemoryFileUrl(size_t id, LPWSTR lpszUrl, unsigned int nInLen, unsigned int* nOutLen);
+
 };

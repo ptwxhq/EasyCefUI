@@ -5,6 +5,7 @@
 #include "include/wrapper/cef_stream_resource_handler.h"
 
 CefRefPtr<CefResourceManager> g_resource_manager;
+EasyMemoryFileMgr g_MemFileMgr;
 
 void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
@@ -23,6 +24,7 @@ void RegEasyCefSchemes()
 	//为了让xpack可以读取file协议，只能自己重写实现读取并注册了
 	CefRegisterSchemeHandlerFactory("file", "", factory);
 	CefRegisterSchemeHandlerFactory("disk", "", factory);
+	CefRegisterSchemeHandlerFactory("memory", "", factory);
 
 	CefRegisterSchemeHandlerFactory("http", "todisk", factory);
 
@@ -147,6 +149,7 @@ EasySchemesHandlerFactory::EasySchemesHandlerFactory()
 	mapSchemes.insert(std::make_pair("http", RESTYPE::FAKEHTTP));
 	mapSchemes.insert(std::make_pair("file", RESTYPE::FILE));
 	mapSchemes.insert(std::make_pair("disk", RESTYPE::FILE));
+	mapSchemes.insert(std::make_pair("memory", RESTYPE::MEMORY));
 	mapSchemes.insert(std::make_pair(EASYCEFSCHEME, RESTYPE::INTERNALUI));
 
 
@@ -297,6 +300,22 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 
 			sCurrent = STATUSCODE::E200;
 		}
+	}
+	break;
+	case RESTYPE::MEMORY:
+	{
+		std::wstring strUrl = GetUrlWithoutQueryOrFragment(strDecodedPath);
+		std::string data;
+		if (g_MemFileMgr.GetDataByUrl(strUrl, data))
+		{
+			sCurrent = STATUSCODE::E200;
+			stream = CefStreamReader::CreateForData(data.data(), data.size());
+		}
+		else
+		{
+			sCurrent = STATUSCODE::E404;
+		}
+		
 	}
 	break;
 	//case RESTYPE::TODISK:
@@ -491,5 +510,65 @@ void DomainPackInfo::Uri::Parse(const std::wstring& uri)
 
 }
 
+bool EasyMemoryFileMgr::AddMemoryFile(const void* pData, unsigned int nDataLen, size_t& id, LPCWSTR lpszDomain)
+{
+	EasyMemoryFile file;
+	file.data.assign(static_cast<const char*>(pData), nDataLen);
+	if (file.data.empty())
+		return false;
 
+	std::wstring strUrl = L"memory://";
+	if (lpszDomain && lpszDomain[0])
+	{
+		DomainPackInfo::Uri url_parts(lpszDomain);
+		strUrl += url_parts.Host_;
+	}
+	else
+	{
+		strUrl += L"localhost";
+	}
 
+	strUrl += L"/";
+	strUrl += CefString(GetRandomString(32));
+
+	file.url = strUrl;
+
+	std::hash<std::wstring> hash;
+	file.id = hash(strUrl);
+
+	mapUserData.insert(std::make_pair(file.id, file));
+
+	id = file.id;
+	return true;
+}
+
+void EasyMemoryFileMgr::DelMemoryFile(size_t id)
+{
+	mapUserData.erase(id);
+}
+
+bool EasyMemoryFileMgr::GetMemoryFileUrl(size_t id, CefString& lpszUrl)
+{
+	auto it = mapUserData.find(id);
+	if (it != mapUserData.end())
+	{
+		lpszUrl = it->second.url;
+		return true;
+	}
+
+	return false;
+}
+
+bool EasyMemoryFileMgr::GetDataByUrl(const CefString& strUrl, std::string& data)
+{
+	std::hash<std::wstring> hash;
+	auto id = hash(strUrl.ToWString());
+
+	auto it = mapUserData.find(id);
+	if (it != mapUserData.end())
+	{
+		data = it->second.data;
+	}
+
+	return false;
+}

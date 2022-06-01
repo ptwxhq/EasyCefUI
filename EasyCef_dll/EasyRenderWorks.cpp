@@ -90,7 +90,7 @@ namespace RenderSyncWorkFunctions
 		std::string strJS;
 		
 #if HAVE_CPP_FORMAT
-		auto js = R"((function (x,y) {{
+		constexpr auto js = R"((function (x,y) {{
 var e=document.elementFromPoint(x,y);
 if(e===null)return null;
 else return e.getAttribute("{}");
