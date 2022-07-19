@@ -82,7 +82,6 @@ public:
 class GdiBitmap {
     const UINT m_width;
     const UINT m_height;
-    const UINT m_stride;
     BYTE* m_bits;
     HBITMAP m_oldBitmap;
 
@@ -102,10 +101,6 @@ public:
 
     LONG GetHeight() const {
         return m_height;
-    }
-
-    UINT GetStride() const {
-        return m_stride;
     }
 
     BYTE* GetBits() const {
@@ -194,8 +189,8 @@ public:
 
     LRESULT OnIgnore(UINT, WPARAM, LPARAM, BOOL&) { return 0; }
 
-    void SetBitmapData(const void* pData, int width, int height);
-    void SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize);
+    bool SetBitmapData(const void* pData, int width, int height);
+    bool SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize, int src_width);
     void Render();
 
 
@@ -248,6 +243,10 @@ private:
     int GetPopupXOffset() const;
     int GetPopupYOffset() const;
 
+
+    bool window_size_changed_ = true;
+    int paint_width_old_ = 0;
+    int paint_height_old_ = 0;
 
     int view_width_old_ = 0;
     int view_height_old_ = 0;

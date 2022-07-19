@@ -82,7 +82,6 @@ GdiBitmap::GdiBitmap(__in UINT width,
 	__in UINT height) :
 	m_width(width),
 	m_height(height),
-	m_stride((width * 32 + 31) / 32 * 4),
 	m_bits(0),
 	m_oldBitmap(0) {
 
@@ -199,7 +198,17 @@ void EasyLayeredWindow::ClearPopupRects()
 
 bool EasyLayeredWindow::CheckViewSizeChanged(int width, int height)
 {
-	return view_width_ != width || view_height_ != height;
+	if (window_size_changed_)
+	{
+		if (paint_width_old_ != width || paint_height_old_ != height)
+		{
+			paint_width_old_ = width;
+			paint_height_old_ = height;
+			window_size_changed_ = false;
+		}
+	}
+
+	return window_size_changed_;
 }
 
 void EasyLayeredWindow::DpiChangeWork()
@@ -509,6 +518,7 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 
 	if (view_width_old_ != view_width_ || view_height_old_ != view_height_)
 	{
+		window_size_changed_ = true;
 		m_info.SetWindowSize({ view_width_, view_height_ });
 
 		if (m_browser)
@@ -768,11 +778,17 @@ LRESULT EasyLayeredWindow::OnPaint(UINT, WPARAM, LPARAM, BOOL& handle)
 	return 0;
 }
 
-void EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
+bool EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 {
 	if (!m_bitmap || m_bitmap->GetWidth() != width || m_bitmap->GetHeight() != height)
 	{
 		m_bitmap = std::make_unique<GdiBitmap>(width, height);
+	}
+
+	if (view_width_ != width || view_height_ != height)
+	{
+		//可能是从非标准dpi转为标准dpi
+		return false;
 	}
 
 	ASSERT(view_width_ == width && view_height_ == height);
@@ -780,12 +796,46 @@ void EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 	memcpy(m_bitmap->GetBits(), pData, width * height * 4);
 
 	m_info.SetDirtyRect(nullptr);
+
+	return true;
 }
 
-void EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize)
+bool EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize, int src_width)
 {
-	ASSERT(x + width <= m_bitmap->GetWidth());
-	ASSERT(y + height <= m_bitmap->GetHeight());
+	//ASSERT(x + width <= m_bitmap->GetWidth());
+	//ASSERT(y + height <= m_bitmap->GetHeight());
+	bool bIsTL = false;
+	bool bImageNeedReset = false;
+	if (x == 0 && y == 0)
+	{
+		bIsTL = true;
+	}
+
+	if (x + width > m_bitmap->GetWidth())
+	{
+		if (!bIsTL)
+		{
+			return false;
+		}
+
+		bImageNeedReset = true;
+	}
+
+	if (y + height > m_bitmap->GetHeight())
+	{
+		if (!bIsTL)
+		{
+			return false;
+		}
+
+		bImageNeedReset = true;
+	}
+
+	if (bImageNeedReset)
+	{
+		m_bitmap = std::make_unique<GdiBitmap>(view_width_, view_height_);
+	}
+
 
 	if (SameSize)
 	{
@@ -801,13 +851,15 @@ void EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width
 	{
 		for (int iLine = 0; iLine < height; iLine++)
 		{
-			memcpy(m_bitmap->GetBits() + ((y + iLine) * m_bitmap->GetWidth() + x) * 4, pData + iLine * width * 4, width * 4);
+			memcpy(m_bitmap->GetBits() + ((y + iLine) * m_bitmap->GetWidth() + x) * 4, pData + ((y + iLine) * src_width + x) * 4, width * 4);
 		}
 
 
 		RECT rc = { x,y, x + width,y + height };
 		m_info.SetDirtyRect(&rc);
 	}
+
+	return true;
 }
 
 void EasyLayeredWindow::Render()

@@ -200,11 +200,7 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
             //附着父窗口并跟随大小
        //注意子类化跨线程问题，需要与父窗口创建在同一线程
 
-            struct SubProcContext
-            {
-                WebViewBrowserControl* pThis;
-                SUBCLASSPROC proc;
-            };
+            using SubProcContext = std::tuple<WebViewBrowserControl*, SUBCLASSPROC>;
 
             static auto SubWndProc = [](HWND hWnd, UINT uMsg, WPARAM wParam,
                 LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)->LRESULT {
@@ -216,23 +212,24 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
                         {
                             UINT width = LOWORD(lParam);
                             UINT height = HIWORD(lParam);
-                            SetWindowPos(pContext->pThis->GetHWND(), nullptr, 0, 0, width, height, SWP_NOZORDER | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
+                            SetWindowPos(std::get<0>(*pContext)->GetHWND(), nullptr, 0, 0, width, height, SWP_NOZORDER | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
                         }
                         break;
                     case WM_MOVE:
                         {
-                            pContext->pThis->m_browser->GetHost()->NotifyMoveOrResizeStarted();
+                        std::get<0>(*pContext)->m_browser->GetHost()->NotifyMoveOrResizeStarted();
                         }
                         break;
                     case WM_DESTROY:
-                        RemoveWindowSubclass(hWnd, pContext->proc, uIdSubclass);
+                        RemoveWindowSubclass(hWnd, std::get<1>(*pContext), uIdSubclass);
                         delete pContext;
                     }
 
                     return DefSubclassProc(hWnd, uMsg, wParam, lParam);
             };
 
-            VERIFY(SetWindowSubclass(pParams->hParent, SubWndProc, m_itemHandle, (DWORD_PTR)new SubProcContext{ this, SubWndProc }));
+  
+            VERIFY(SetWindowSubclass(pParams->hParent, SubWndProc, m_itemHandle, (DWORD_PTR)new std::tuple<WebViewBrowserControl*, SUBCLASSPROC>{ this, SubWndProc }));
 
         }
         else
@@ -599,13 +596,35 @@ void WebViewTransparentUIControl::GetViewRect(CefRefPtr<CefBrowser> browser, Cef
     RECT rc = {};
     GetClientRect(browser->GetHost()->GetWindowHandle(), &rc);
 
+    bool bIsZoom = m_pWindow->GetDeviceScaleFactor() != 1.f;
+
     rect.x = rect.y = 0;
-    rect.width = DeviceToLogical(rc.right,
-        m_pWindow->GetDeviceScaleFactor());
+    if (bIsZoom)
+    {
+        //用于减少窗口因创建之时已经舍弃小数点之后转换导致的偏移过大
+        auto v1 = DeviceToLogical(rc.right + 1, m_pWindow->GetDeviceScaleFactor());
+        auto v2 = DeviceToLogical(rc.right, m_pWindow->GetDeviceScaleFactor());
+        rect.width = (v1 + v2) / 2;
+    }
+    else
+    {
+        rect.width = rc.right;
+    }
+
     if (rect.width == 0)
         rect.width = 1;
-    rect.height = DeviceToLogical(rc.bottom,
-        m_pWindow->GetDeviceScaleFactor());
+
+    if (bIsZoom)
+    {
+        auto v1 = DeviceToLogical(rc.bottom + 1, m_pWindow->GetDeviceScaleFactor());
+        auto v2 = DeviceToLogical(rc.bottom, m_pWindow->GetDeviceScaleFactor());
+        rect.height = (v1 + v2) / 2;
+    }
+    else
+    {
+        rect.height = rc.bottom;
+    }
+
     if (rect.height == 0)
         rect.height = 1;
 
@@ -620,16 +639,28 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
             //由于画面已经开始发生改变，此时的画面大小是旧的，画面无效，为了减少闪烁，这边丢弃画面等待更新
             return;
         }
-        else if (dirtyRects.size() == 1 && dirtyRects[0] == CefRect(0, 0, width, height))
+
+        bool bNoStretch = m_pWindow->GetDeviceScaleFactor() == 1.f;
+        bool IsFullView = dirtyRects.size() == 1 && dirtyRects[0] == CefRect(0, 0, width, height);
+        if (IsFullView)
         {
-           
-            m_pWindow->SetBitmapData(buffer, width, height);
+            if (bNoStretch)
+            {
+                if (!m_pWindow->SetBitmapData(buffer, width, height))
+                    return;
+            }
+            else
+            {
+                if (!m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), 0, 0, width, height, false, width))
+                    return;
+            }
         }
         else
         {
+
             for (auto& it : dirtyRects)
             {
-                m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), it.x, it.y, it.width, it.height, true);
+                m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), it.x, it.y, it.width, it.height, bNoStretch, width);
             }
         }
 
@@ -641,7 +672,7 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
     }
     else //PET_POPUP
     {
-        m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), m_pWindow->GetPopupRect().x, m_pWindow->GetPopupRect().y, width, height, false);
+        m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), m_pWindow->GetPopupRect().x, m_pWindow->GetPopupRect().y, width, height, false, width);
 
     }
 

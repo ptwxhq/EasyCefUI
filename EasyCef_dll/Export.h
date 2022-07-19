@@ -20,6 +20,15 @@
 #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
 
+#ifndef _In_reads_bytes_
+#define _In_reads_bytes_(size) 
+#endif // !_In_reads_bytes_
+
+#ifndef _Inout_updates_to_opt_
+#define _Inout_updates_to_opt_(size,count)
+#endif
+
+
 
 #ifdef STU_WEBVIEWEXTATTR
 
