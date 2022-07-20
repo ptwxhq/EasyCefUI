@@ -759,7 +759,7 @@ LRESULT EasyLayeredWindow::OnWinIniChange(UINT, WPARAM wp, LPARAM lp, BOOL& hand
 {
 	handle = FALSE;
 	auto str = (LPCWSTR)lp;
-	if (!wcscmp(str, L"ImmersiveColorSet"))
+	if (str && !wcscmp(str, L"ImmersiveColorSet"))
 	{
 		if (::IsWindow(m_hToolTip))
 		{
