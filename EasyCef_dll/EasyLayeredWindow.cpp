@@ -213,6 +213,11 @@ bool EasyLayeredWindow::CheckViewSizeChanged(int width, int height)
 
 void EasyLayeredWindow::DpiChangeWork()
 {
+	if (!g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi)
+	{
+		return;
+	}
+
 	if (m_browser)
 	{
 		m_browser->GetHost()->NotifyScreenInfoChanged();
@@ -755,7 +760,7 @@ LRESULT EasyLayeredWindow::OnIMECancelCompositionEvent(UINT, WPARAM, LPARAM, BOO
 	return 0;
 }
 
-LRESULT EasyLayeredWindow::OnWinIniChange(UINT, WPARAM wp, LPARAM lp, BOOL& handle)
+LRESULT EasyLayeredWindow::OnSettingChange(UINT, WPARAM wp, LPARAM lp, BOOL& handle)
 {
 	handle = FALSE;
 	auto str = (LPCWSTR)lp;

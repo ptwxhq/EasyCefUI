@@ -164,7 +164,7 @@ public:
         MESSAGE_HANDLER(WM_IME_COMPOSITION, OnIMEComposition)
         MESSAGE_HANDLER(WM_IME_ENDCOMPOSITION, OnIMECancelCompositionEvent)
 
-        MESSAGE_HANDLER(WM_WININICHANGE, OnWinIniChange)
+        MESSAGE_HANDLER(WM_SETTINGCHANGE, OnSettingChange)
         CHAIN_MSG_MAP(EasyUIWindowBase)
     END_MSG_MAP()
 
@@ -183,7 +183,7 @@ public:
     LRESULT OnIMEComposition(UINT, WPARAM, LPARAM lp, BOOL&);
     LRESULT OnIMECancelCompositionEvent(UINT, WPARAM, LPARAM, BOOL&);
 
-    LRESULT OnWinIniChange(UINT, WPARAM, LPARAM, BOOL& handle);
+    LRESULT OnSettingChange(UINT, WPARAM, LPARAM, BOOL& handle);
 
     LRESULT OnPaint(UINT, WPARAM, LPARAM, BOOL& handle);
 

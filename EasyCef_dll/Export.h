@@ -59,9 +59,10 @@ struct WebViewExtraAttr
 
 struct EasyCefFunctionFlag
 {
-	bool bUIImeFollow;//输入法跟随光标，目前在UI界面上使用可能有bug
+	bool bUIImeFollow;
+	bool bEnableHignDpi; //禁用后GetWindowScaleFactor总是1.0f
 
-	EasyCefFunctionFlag() :bUIImeFollow(false)
+	EasyCefFunctionFlag() :bUIImeFollow(false), bEnableHignDpi(true)
 	{}
 };
 

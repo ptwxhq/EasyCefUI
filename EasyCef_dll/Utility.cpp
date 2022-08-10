@@ -232,6 +232,12 @@ bool IsProcessPerMonitorDpiAware() {
 
 
 float GetWindowScaleFactor(HWND hwnd) {
+
+    if (!g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi)
+    {
+        return 1.f;
+    }
+
     if (hwnd && IsProcessPerMonitorDpiAware()) {
         typedef UINT(WINAPI* GetDpiForWindowPtr)(HWND);
         static GetDpiForWindowPtr func_ptr = reinterpret_cast<GetDpiForWindowPtr>(

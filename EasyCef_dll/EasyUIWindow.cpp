@@ -255,6 +255,11 @@ void EasyUIWindowBase::Cls_OnGetMinMaxInfo(HWND hWnd, LPMINMAXINFO lpMinMaxInfo)
 
 LRESULT EasyUIWindowBase::Cls_OnDpiChanged(HWND hwnd, WPARAM wParam, LPARAM lParam)
 {
+	if (!g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi)
+	{
+		return 0;
+	}
+
 	if (LOWORD(wParam) != HIWORD(wParam)) {
 		NOTIMPLEMENTED() << "Received non-square scaling factors";
 		return 0;
@@ -287,15 +292,6 @@ void EasyUIWindowBase::Cls_OnMove(HWND hwnd, int x, int y)
 BOOL EasyUIWindowBase::Cls_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
 {
 	device_scale_factor_ = GetWindowScaleFactor(hwnd);
-
-	//int nAddWidth = lpCreateStruct->cx * (device_scale_factor_ - 1);
-	//int nAddHeight = lpCreateStruct->cy * (device_scale_factor_ - 1);
-
-	////lpCreateStruct->x -= nAddWidth / 2;
-	////lpCreateStruct->y -= nAddHeight / 2;
-
-	//lpCreateStruct->cx += nAddWidth;
-	//lpCreateStruct->cy += nAddHeight;
 
 	if (!called_enable_non_client_dpi_scaling_ && IsProcessPerMonitorDpiAware()) {
 		// This call gets Windows to scale the non-client area when WM_DPICHANGED

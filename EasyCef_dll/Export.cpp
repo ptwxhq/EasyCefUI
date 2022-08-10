@@ -111,7 +111,8 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 
 	GetLocalPaths();
 
-	CefEnableHighDPISupport();
+	if (g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi)
+		CefEnableHighDPISupport();
 
 	auto strDebugConfigPath = g_BrowserGlobalVar.FileDir + L"debug.dbg";
 	g_BrowserGlobalVar.Debug = GetPrivateProfileIntW(L"Debug", L"Debug", 0, strDebugConfigPath.c_str()) == 1;

@@ -4,6 +4,7 @@
 struct EasyCefFunctionFlag
 {
 	bool bUIImeFollow = false;//输入法跟随光标，目前在UI界面上使用可能有bug
+	bool bEnableHignDpi = true;
 	char cLog = 0;
 
 };
