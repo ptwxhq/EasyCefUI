@@ -232,7 +232,7 @@ namespace wrapQweb {
 
 	typedef void(__stdcall* call_WebkitDownFileUrl)(int id, LPCWSTR url, LPCWSTR suggestFileName);
 
-	typedef void(__stdcall* call_WebkitAsyncCallMethod)(int id, LPCWSTR modulename, LPCWSTR methodname, LPCWSTR parm, unsigned long extra);
+	typedef LPCWSTR(__stdcall* call_WebkitAsyncCallMethod)(int id, LPCWSTR modulename, LPCWSTR methodname, LPCWSTR parm, unsigned long extra);
 
 	typedef void(__stdcall* call_WebkitPluginCrash)(int id, LPCWSTR path);
 

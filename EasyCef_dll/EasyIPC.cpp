@@ -518,13 +518,7 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 
 const std::string EasyIPCBase::GetShareMemName(IPCHandle hFrom, IPCHandle hTo, size_t id)
 {
-#if HAVE_CPP_FORMAT
 	return std::format("_EasyIPC_v1_{:X}_{:X}_{:X}", (size_t)hFrom, (size_t)hTo, id);
-#else
-	std::ostringstream ss;
-	ss << "_EasyIPC_v1_" << std::hex << hFrom << "_" << hTo << "_" << id;
-	return ss.str();
-#endif
 }
 
 LRESULT EasyIPCBase::WORKPROC(HWND h, UINT msg, WPARAM wp, LPARAM lp)

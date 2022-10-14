@@ -79,7 +79,7 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 
 	std::string strDisableFeatures;
 
-	for (auto it : vecDisableFeatures)
+	for (auto& it : vecDisableFeatures)
 	{
 		strDisableFeatures += it;
 		strDisableFeatures += ",";
@@ -87,10 +87,7 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 
 	if (!strDisableFeatures.empty())
 	{
-		if (*strDisableFeatures.rbegin() == ',')
-		{
-			strDisableFeatures.erase(strDisableFeatures.size()-1);
-		}
+		strDisableFeatures.pop_back();
 
 		command_line->AppendSwitchWithValue("disable-features", strDisableFeatures);
 	}

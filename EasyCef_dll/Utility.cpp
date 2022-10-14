@@ -383,13 +383,13 @@ std::string GetRandomString(size_t length)
 
     std::random_device random_device;
     std::mt19937 generator(random_device());
-    const std::uniform_int_distribution<> distribution(0, _countof(CHARACTERS) - 2);
+    std::uniform_int_distribution<> distribution(0, _countof(CHARACTERS) - 2);
 
-    std::string random_string;
+    std::string random_string(length, 0);
 
-    for (size_t i = 0; i < length; ++i)
+    for (auto& ch : random_string)
     {
-        random_string += CHARACTERS[distribution(generator)];
+        ch = CHARACTERS[distribution(generator)];
     }
 
     return random_string;
@@ -775,6 +775,30 @@ bool ReplaceAllSubString(bool bCaseinsensitive, const std::string& input, const 
     }
 }
 
+std::string ArrangeJsonString(std::string strParam)
+{
+    const auto trim = [](const std::string& s)
+    {
+        const auto check = [](int c) {
+            return !(c < -1 || c > 255 || std::isprint(c));
+        };
+
+        auto wsfront = std::find_if_not(s.begin(), s.end(), check);
+        auto wsback = std::find_if_not(s.rbegin(), s.rend(), check).base();
+        return (wsback <= wsfront ? std::string() : std::string(wsfront, wsback));
+    };
+
+    strParam = trim(strParam);
+
+    auto JsonParm = CefValue::Create();
+    JsonParm->SetString(strParam);
+    strParam = CefWriteJSON(JsonParm, JSON_WRITER_DEFAULT);
+
+    return strParam;
+}
+
+
+
 // Returns |url| without the query or fragment components, if any.
 std::wstring GetUrlWithoutQueryOrFragment(const std::wstring& url) {
     // Find the first instance of '?' or '#'.
@@ -800,14 +824,24 @@ std::string GetTimeString(const CefTime& value) {
     else
         month = "Invalid";
 
-#if HAVE_CPP_FORMAT
+
     return std::format("{} {}, {} {:02}:{:02}:{:02}", month, value.day_of_month, value.year, value.hour, value.minute, value.second);
-#else
-    std::ostringstream ss;
-    ss << month << " " << value.day_of_month << ", " << value.year << " " << std::setfill('0') << std::setw(2) << value.hour << ":" << value.minute << ":" << value.second;
-    return ss.str();
-#endif
+
 }
+
+#if CEF_VERSION_MAJOR > 104
+
+std::string GetTimeString(const CefBaseTime& value) {
+    CefTime time;
+    if (cef_time_from_basetime(value, &time)) {
+        return GetTimeString(time);
+    }
+    else {
+        return "Invalid";
+    }
+}
+
+#endif
 
 std::string GetBinaryString(CefRefPtr<CefBinaryValue> value) {
     if (!value.get())

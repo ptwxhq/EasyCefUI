@@ -424,19 +424,36 @@ namespace BrowserAsyncWorkFunctions {
 		std::wstring parm = args->GetString(2).ToWString();
 		int extra = args->GetInt(3);
 
+		std::string cb_module;
+		std::string cb_method;
+		CefString cb_parm;
+
+		if (args->GetSize() > 5)
+		{
+			cb_module = args->GetString(4).ToString();
+			cb_method = args->GetString(5).ToString();
+		}
+
 		if (item->IsUIControl())
 		{
 			if (WebkitEcho::getUIFunMap()->invokeMethod)
 			{
-				WebkitEcho::getUIFunMap()->invokeMethod(hWnd, module.c_str(), method.c_str(), parm.c_str(), extra);
+				cb_parm = WebkitEcho::getUIFunMap()->invokeMethod(hWnd, module.c_str(), method.c_str(), parm.c_str(), extra);
 			}
 		}
 		else
 		{
 			if (WebkitEcho::getFunMap()->webkitAsyncCallMethod)
 			{
-				WebkitEcho::getFunMap()->webkitAsyncCallMethod(browser->GetIdentifier(), module.c_str(), method.c_str(), parm.c_str(), extra);
+				cb_parm = WebkitEcho::getFunMap()->webkitAsyncCallMethod(browser->GetIdentifier(), module.c_str(), method.c_str(), parm.c_str(), extra);
 			}
+		}
+
+		if (!cb_module.empty() && !cb_method.empty())
+		{
+			auto strParam = ArrangeJsonString(cb_parm.ToString());
+			auto fmt = std::format("window.invokeMethod('{}', '{}', {}, {})", cb_module, cb_method, strParam, "true");
+			frame->ExecuteJavaScript(fmt, "", 0);
 		}
 	}
 

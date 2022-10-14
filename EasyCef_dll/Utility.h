@@ -71,6 +71,8 @@ bool ReplaceSubstrCaseinsensitive(const std::string& input, std::string search, 
 
 bool ReplaceAllSubString(bool bCaseinsensitive, const std::string& input, const std::string search, const std::string& replace, std::string& output);
 
+std::string ArrangeJsonString(std::string strParam);
+
 std::wstring GetUrlWithoutQueryOrFragment(const std::wstring& url);
 
 namespace webinfo {

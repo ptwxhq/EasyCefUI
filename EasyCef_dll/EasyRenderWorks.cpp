@@ -88,25 +88,13 @@ namespace RenderSyncWorkFunctions
 		//auto dwTimeTest1 = GetTimeNow();
 
 		std::string strJS;
-		
-#if HAVE_CPP_FORMAT
-		constexpr auto js = R"((function (x,y) {{
+
+		strJS = std::format(R"((function (x,y) {{
 var e=document.elementFromPoint(x,y);
 if(e===null)return null;
 else return e.getAttribute("{}");
-}})({},{}))";
+}})({},{}))", args->GetString(0).ToString(), pt.x, pt.y);
 
-		strJS = std::format(js, args->GetString(0).ToString(), pt.x, pt.y);
-#else
-		std::ostringstream ss;
-		ss << R"(function (x,y) {
-var e=document.elementFromPoint(x,y);
-if(e===null)return null;
-else return e.getAttribute("{}");
-})()" << pt.x << "," << pt.y << ")";
-
-		strJS = ss.str();
-#endif
 
 		bool bOpr = v8Context->Eval(strJS, CefString(), 0, jsRetval, exception);
 			

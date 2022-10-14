@@ -160,38 +160,9 @@ namespace wrapQweb {
 			}
 
 			std::string strParam = utf8_parm ? utf8_parm : "";
-			if (strParam.size())
-			{
-				const auto trim = [](const std::string& s)
-				{
-					const auto check = [](int c) {
-						return !(c < -1 || c > 255 || std::isprint(c));
-					};
-
-					auto wsfront = std::find_if_not(s.begin(), s.end(), check);
-					auto wsback = std::find_if_not(s.rbegin(), s.rend(), check).base();
-					return (wsback <= wsfront ? std::string() : std::string(wsfront, wsback));
-				};
-
-				strParam = trim(strParam);
-
-				auto JsonParm = CefValue::Create();
-				JsonParm->SetString(strParam);
-				strParam = CefWriteJSON(JsonParm, JSON_WRITER_DEFAULT);
-			}
-			else
-			{
-				strParam = "''";
-			}
-
-#if HAVE_CPP_FORMAT
+			strParam = ArrangeJsonString(strParam);
+			
 			auto fmt = std::format("window.invokeMethod('{}', '{}', {}, {})", utf8_module, utf8_method, strParam, bNoticeJSTrans2JSON ? "true" : "false");
-#else
-			std::ostringstream ss;
-			ss << "window.invokeMethod('" << utf8_module << "', '" << utf8_method << "', " << strParam << ", " << (bNoticeJSTrans2JSON ? "true" : "false") << ")";
-			auto fmt = ss.str();
-
-#endif
 
 			frame->ExecuteJavaScript(fmt, "", 0);
 

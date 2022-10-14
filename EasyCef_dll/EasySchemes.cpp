@@ -103,7 +103,7 @@ private:
 			{
 				auto type = element->GetType();
 
-				if (element->GetType() == PDE_TYPE_BYTES) {
+				if (type == PDE_TYPE_BYTES) {
 
 					auto write = CefStreamWriter::CreateForFile(localpath);
 					if (write)

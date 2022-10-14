@@ -5,7 +5,7 @@
 #include "EasyCef.h"
 
 #define MIN_BUILDED_CEF 87
-#define MAX_BUILDED_CEF 100
+#define MAX_BUILDED_CEF 107
 
 #if (CEF_VERSION_MAJOR < MIN_BUILDED_CEF) || (CEF_VERSION_MAJOR > MAX_BUILDED_CEF) || !(\
 (CEF_VERSION_MAJOR == MIN_BUILDED_CEF) || \
@@ -13,6 +13,7 @@
 (CEF_VERSION_MAJOR == 94) || \
 (CEF_VERSION_MAJOR == 96) || \
 (CEF_VERSION_MAJOR == 98) || \
+(CEF_VERSION_MAJOR == 100) || \
 (CEF_VERSION_MAJOR == MAX_BUILDED_CEF))
 
 #define EASY_CEF_BUILD_WARN_MSG "!!!!WARNNING:This project is not tested on this Cef version (" MAKE_STRING(CEF_VERSION_MAJOR) "), maybe fail to build.!!!!"

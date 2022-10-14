@@ -72,9 +72,8 @@ void UnSubclassWindow(HWND hWnd) {
 	LONG_PTR hParentWndProc =
 		reinterpret_cast<LONG_PTR>(::GetPropW(hWnd, kParentWndProc));
 	if (hParentWndProc) {
-		LONG_PTR hPreviousWndProc =
+		[[maybe_unused]] LONG_PTR hPreviousWndProc =
 			SetWindowLongPtr(hWnd, GWLP_WNDPROC, hParentWndProc);
-		ALLOW_UNUSED_LOCAL(hPreviousWndProc);
 		DCHECK_EQ(hPreviousWndProc,
 			reinterpret_cast<LONG_PTR>(SubclassedWindowProc));
 	}
