@@ -53,9 +53,19 @@ static void FowardRender2Browser(bool bSync, const CefString& name, const CefV8V
 		{
 			toargs->SetDouble(index, item->GetDoubleValue());
 		}
-		else if (item->IsString() || item->IsDate())
+		else if (item->IsString())
 		{
 			toargs->SetString(index, item->GetStringValue());
+		}
+		else if (item->IsDate())
+		{
+			auto date = item->GetDateValue();
+
+			toargs->SetString(index, std::format("{}-{:02}-{:02} {:02}:{:02}:{:02}", date.year, date.month, date.day_of_month, date.hour, date.minute, date.second));
+		}
+		else if (item->IsObject() || item->IsArray())
+		{
+			toargs->SetString(index, CefV8ValueToString(item));
 		}
 	};
 

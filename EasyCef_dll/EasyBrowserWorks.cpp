@@ -10,8 +10,32 @@ inline void WriteJSON(CefRefPtr<CefValue>& node, CefString& retval)
 	retval = CefWriteJSON(node, JSON_WRITER_DEFAULT);
 }
 
+static std::wstring CefParamValToString(CefRefPtr<CefValue> value)
+{
+	switch (value->GetType())
+	{
+	case VTYPE_STRING:
+		return value->GetString().ToWString();
+
+	case VTYPE_BOOL:
+	case VTYPE_INT:
+	case VTYPE_DOUBLE:
+	//case VTYPE_DICTIONARY:	目前的设计这两个在render那边已经转为字符串了，不会有这个类型出现
+	//case VTYPE_LIST:
+		return CefWriteJSON(value, JSON_WRITER_DEFAULT).ToWString();
+
+	case VTYPE_NULL:
+	default:
+		break;
+	}
+
+	return L"";
+}
 
 namespace BrowserSyncWorkFunctions {
+
+
+
 
 	bool crossInvokeWebMethod(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 	{
@@ -25,7 +49,7 @@ namespace BrowserSyncWorkFunctions {
 			int sign = args->GetInt(0);
 			std::wstring module = args->GetString(1).ToWString();
 			std::wstring method = args->GetString(2).ToWString();
-			std::wstring parm = args->GetType(3) != VTYPE_NULL ? CefWriteJSON(args->GetValue(3), JSON_WRITER_DEFAULT).ToWString() : L"";
+			std::wstring parm = CefParamValToString(args->GetValue(3));
 			bool tojson = args->GetBool(4);
 
 			retval = WebkitEcho::getUIFunMap()->crossInvokeWebMethod(hWnd, sign, module.c_str(), method.c_str(), parm.c_str(), tojson);
@@ -50,7 +74,7 @@ namespace BrowserSyncWorkFunctions {
 			std::wstring frame = args->GetString(2).ToWString();
 			std::wstring module = args->GetString(3).ToWString();
 			std::wstring method = args->GetString(4).ToWString();
-			std::wstring parm = args->GetType(5) != VTYPE_NULL ? CefWriteJSON(args->GetValue(5), JSON_WRITER_DEFAULT).ToWString() : L"";
+			std::wstring parm = CefParamValToString(args->GetValue(5));
 			bool tojson = args->GetBool(6);
 
 			retval = WebkitEcho::getUIFunMap()->crossInvokeWebMethod2((HWND)randstr.c_str(), sign, frame.c_str(), module.c_str(), method.c_str(), parm.c_str(), tojson);
@@ -77,7 +101,7 @@ namespace BrowserSyncWorkFunctions {
 		std::wstring module = args->GetString(0).ToWString();
 		std::wstring method = args->GetString(1).ToWString();
 		
-		std::wstring parm = args->GetType(2) != VTYPE_NULL ? CefWriteJSON(args->GetValue(2), JSON_WRITER_DEFAULT).ToWString() : L"";
+		std::wstring parm = CefParamValToString(args->GetValue(2));
 		int extra = args->GetInt(3);
 
 		//LOG(INFO) << GetCurrentProcessId() << "] invokeMethod:" << module << "|" << method;
@@ -382,7 +406,7 @@ namespace BrowserAsyncWorkFunctions {
 			int sign = args->GetInt(0);
 			std::wstring module = args->GetString(1).ToWString();
 			std::wstring method = args->GetString(2).ToWString();
-			std::wstring parm = args->GetType(3) != VTYPE_NULL ? CefWriteJSON(args->GetValue(3), JSON_WRITER_DEFAULT).ToWString() : L"";
+			std::wstring parm = CefParamValToString(args->GetValue(3));
 			bool tojson = args->GetBool(4);
 
 			WebkitEcho::getUIFunMap()->asyncCrossInvokeWebMethod(hWnd, sign, module.c_str(), method.c_str(), parm.c_str(), tojson);
@@ -402,7 +426,7 @@ namespace BrowserAsyncWorkFunctions {
 			std::wstring frame = args->GetString(1).ToWString();
 			std::wstring module = args->GetString(2).ToWString();
 			std::wstring method = args->GetString(3).ToWString();
-			std::wstring parm = args->GetType(4) != VTYPE_NULL ? CefWriteJSON(args->GetValue(4), JSON_WRITER_DEFAULT).ToWString() : L"";
+			std::wstring parm = CefParamValToString(args->GetValue(4));
 			bool tojson = args->GetBool(5);
 
 			WebkitEcho::getUIFunMap()->asyncCrossInvokeWebMethod2(hWnd, sign, frame.c_str(), module.c_str(), method.c_str(), parm.c_str(), tojson);
@@ -423,7 +447,7 @@ namespace BrowserAsyncWorkFunctions {
 		std::wstring module = args->GetString(0).ToWString();
 		std::wstring method = args->GetString(1).ToWString();
 
-		std::wstring parm = args->GetType(2) != VTYPE_NULL ? CefWriteJSON(args->GetValue(2), JSON_WRITER_DEFAULT).ToWString() : L"";
+		std::wstring parm = CefParamValToString(args->GetValue(2));
 		int extra = args->GetInt(3);
 
 		std::string cb_module;

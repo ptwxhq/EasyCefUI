@@ -1,4 +1,4 @@
-#define GIT_VER_NUM 57 
+#define GIT_VER_NUM 58 
 #define GIT_VER_YEAR 2022 
 #define GIT_VER_MONTH 11 
 #define GIT_VER_DAY  10 
