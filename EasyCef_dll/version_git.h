@@ -1,5 +1,5 @@
-#define GIT_VER_NUM 56 
+#define GIT_VER_NUM 57 
 #define GIT_VER_YEAR 2022 
-#define GIT_VER_MONTH 10 
-#define GIT_VER_DAY  14 
-#define GIT_VER_MONANDDAY  1014 
+#define GIT_VER_MONTH 11 
+#define GIT_VER_DAY  10 
+#define GIT_VER_MONANDDAY  1110 

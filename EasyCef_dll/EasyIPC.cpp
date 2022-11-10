@@ -8,6 +8,7 @@
 const char* IpcBrowserServerKeyName = "browser_server";
 
 constexpr int g_IpcMaxMemorySize = 1024 * 1024 * 4;
+constexpr int g_IpcMaxDataSize = g_IpcMaxMemorySize - sizeof(int) - sizeof(size_t);
 
 class CEasyFileMap
 {
@@ -300,9 +301,9 @@ void EasyIPCBase::Run()
 					std::string strOut;
 					m_workCall(strIn, strOut);
 
-					if (strOut.length() > g_IpcMaxMemorySize - 8)
+					if (strOut.length() > g_IpcMaxDataSize)
 					{
-						LOG(INFO) << GetCurrentProcessId() << "] IPC return too large:(" << strOut.length() << ") max:[" << g_IpcMaxMemorySize;
+						LOG(INFO) << GetCurrentProcessId() << "] IPC return too large:(" << strOut.length() << ") max:[" << g_IpcMaxDataSize;
 
 						throw "return length too large";
 					}
@@ -364,7 +365,7 @@ void EasyIPCBase::Run()
 bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::string& ret)
 {
 	const auto srcLen = send.length();
-	if (srcLen > g_IpcMaxMemorySize - 8)
+	if (srcLen > g_IpcMaxDataSize)
 		return false;
 
 	const auto nNowR = ++m_SendRound;
@@ -399,8 +400,8 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 		{
 			CEasyFileMap::MAP  region(mem_result, FILE_MAP_READ | FILE_MAP_WRITE, srcLen + sizeof(size_t) + sizeof(int));
 			memset(region, 0, sizeof(int));
-			memcpy(region + sizeof(size_t), &srcLen, sizeof(size_t));
-			memcpy(region + sizeof(size_t) + sizeof(size_t), send.c_str(), srcLen);
+			memcpy(region + sizeof(int), &srcLen, sizeof(size_t));
+			memcpy(region + sizeof(int) + sizeof(size_t), send.c_str(), srcLen);
 		}
 
 		const int sendOK = SendMessage(handle, UM_IPC_SEND_WORK_INFO, nNowR, (LPARAM)m_hAsServerHandle);
