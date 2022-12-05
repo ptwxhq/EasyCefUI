@@ -868,3 +868,33 @@ CefRefPtr<CefResourceHandler> EasyClientHandler::GetResourceHandler(CefRefPtr<Ce
     return nullptr;
 }
 
+bool EasyClientHandler::OnKeyEvent(CefRefPtr<CefBrowser> browser, const CefKeyEvent& event, CefEventHandle os_event)
+{
+    if (event.type == KEYEVENT_KEYUP && g_BrowserGlobalVar.Debug)
+    {
+        if (event.windows_key_code ==
+#ifdef _DEBUG
+            VK_F9
+#else
+            VK_F12
+#endif // _DEBUG
+            )
+        {
+            constexpr int nTestValue = EVENTFLAG_SHIFT_DOWN | EVENTFLAG_CONTROL_DOWN | EVENTFLAG_ALT_DOWN;
+
+            if (!(event.modifiers & nTestValue))
+            {
+                if (m_browser && !m_browser->GetHost()->HasDevTools())
+                {
+                    CefWindowInfo windowInfo;
+                    windowInfo.SetAsPopup(nullptr, L"dev");
+                    m_browser->GetHost()->ShowDevTools(windowInfo, nullptr, CefBrowserSettings(), CefPoint());
+                }
+            }
+        }
+    }
+
+
+    return false;
+}
+

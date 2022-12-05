@@ -17,7 +17,8 @@ class EasyClientHandler :
     public CefDragHandler,
     public CefDownloadHandler,
     public CefRenderHandler,
-    public CefResourceRequestHandler
+    public CefResourceRequestHandler,
+    public CefKeyboardHandler
 {
 public:
 
@@ -214,6 +215,12 @@ public:
         CefRefPtr<CefBrowser> browser,
         CefRefPtr<CefFrame> frame,
         CefRefPtr<CefRequest> request) override;
+
+    CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() { return this; }
+
+    bool OnKeyEvent(CefRefPtr<CefBrowser> browser,
+        const CefKeyEvent& event,
+        CefEventHandle os_event) override;
 
 protected:
     bool m_bIsUIControl = false;
