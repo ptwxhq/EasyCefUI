@@ -15,20 +15,20 @@ void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 	registrar->AddCustomScheme(EASYCEFSCHEME, CEF_SCHEME_OPTION_DISPLAY_ISOLATED);
 }
 
-void RegEasyCefSchemes()
+void RegEasyCefSchemes(CefRefPtr<CefRequestContext> requestContext)
 {
-	CefRefPtr<EasySchemesHandlerFactory> factory = new EasySchemesHandlerFactory;
-	CefRegisterSchemeHandlerFactory(PACKSCHEME, "", factory);
-	CefRegisterSchemeHandlerFactory("http", "ui.pack", factory);
+	CefRefPtr<EasySchemesHandlerFactory> factory = new EasySchemesHandlerFactory;	
+	requestContext->RegisterSchemeHandlerFactory(PACKSCHEME, "", factory);
+	requestContext->RegisterSchemeHandlerFactory("http", "ui.pack", factory);
 
 	//为了让xpack可以读取file协议，只能自己重写实现读取并注册了
-	CefRegisterSchemeHandlerFactory("file", "", factory);
-	CefRegisterSchemeHandlerFactory("disk", "", factory);
-	CefRegisterSchemeHandlerFactory("memory", "", factory);
+	requestContext->RegisterSchemeHandlerFactory("file", "", factory);
+	requestContext->RegisterSchemeHandlerFactory("disk", "", factory);
+	requestContext->RegisterSchemeHandlerFactory("memory", "", factory);
 
-	CefRegisterSchemeHandlerFactory("http", "todisk", factory);
+	requestContext->RegisterSchemeHandlerFactory("http", "todisk", factory);
 
-	CefRegisterSchemeHandlerFactory(EASYCEFSCHEME, "", factory);
+	requestContext->RegisterSchemeHandlerFactory(EASYCEFSCHEME, "", factory);
 
 }
 

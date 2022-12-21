@@ -5,6 +5,7 @@
 #include "EasyClientHandler.h"
 #include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
+#include "EasySchemes.h"
 
 
 bool WebViewControl::SetBrowser(CefRefPtr<CefBrowser> browser)
@@ -286,6 +287,8 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
             request_context = CefRequestContext::CreateContext(req_settings, nullptr);
 
             SetRequestDefaultSettings(request_context);
+
+            RegEasyCefSchemes(request_context);
         }
         else
         {
@@ -410,6 +413,8 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
         request_context = CefRequestContext::CreateContext(req_settings, nullptr);
 
         SetRequestDefaultSettings(request_context);
+
+        RegEasyCefSchemes(request_context);
     }
     else
     {

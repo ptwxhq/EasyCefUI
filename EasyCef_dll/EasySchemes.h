@@ -83,4 +83,4 @@ private:
 
 void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar);
 
-void RegEasyCefSchemes();
+void RegEasyCefSchemes(CefRefPtr<CefRequestContext> requestContext);

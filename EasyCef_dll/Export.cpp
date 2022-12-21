@@ -265,7 +265,7 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 
 	CefInitialize(main_args, settings, app.get(), g_BrowserGlobalVar.sandbox_info);
 
-	RegEasyCefSchemes();
+	RegEasyCefSchemes(CefRequestContext::GetGlobalContext());
 
 	SetCloseHandler(QuitMsgLoop);
 

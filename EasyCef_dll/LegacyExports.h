@@ -20,6 +20,8 @@
 
 ·WIDGET_NORMAL_SIZE和ENABLE_DRAG_DROP定义值变更
 
+· call_WebkitLoadError/call_LoadError 返回值改为bool，为false时可同时用于显示默认错误信息
+
 callJSMethod,SendMouseClickEvent没用到，直接废弃
 QueryRenderProcessID
 QueryPluginsProcessID也废弃
@@ -112,7 +114,7 @@ namespace wrapQweb {
 
 	typedef void(__stdcall* call_InertMenu)(HWND, LPCWSTR attribName, WRAP_CEF_MENU_COMMAND[]);
 
-	typedef void(__stdcall* call_LoadError)(HWND, int errcode, LPCWSTR frameName, LPCWSTR url);
+	typedef bool(__stdcall* call_LoadError)(HWND, int errcode, LPCWSTR frameName, LPCWSTR url);
 
 	typedef struct _FunMap {
 		call_closeWindow closeWindow;
@@ -244,7 +246,7 @@ namespace wrapQweb {
 
 	typedef bool(__stdcall* call_WebkitNewTab)(int id, LPCWSTR main_url, HWND* parent);
 
-	typedef void(__stdcall* call_WebkitLoadError)(int id, int errcode, bool isMain, LPCWSTR frameName, LPCWSTR url);
+	typedef bool(__stdcall* call_WebkitLoadError)(int id, int errcode, bool isMain, LPCWSTR frameName, LPCWSTR url);
 
 	typedef struct _EchoMap {
 		call_WebkitAfterCreate webkitAfterCreate;

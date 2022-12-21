@@ -478,8 +478,8 @@ void EasyClientHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
             if (item)
             {
                 HWND hWnd = item->GetHWND();
-                WebkitEcho::getUIFunMap()->loadError(hWnd, errorCode, frame->GetName().ToWString().c_str(), failedUrl.ToWString().c_str());
-                return;
+                if (WebkitEcho::getUIFunMap()->loadError(hWnd, errorCode, frame->GetName().ToWString().c_str(), failedUrl.ToWString().c_str()))
+                    return;
             }
         }
     }
@@ -487,9 +487,9 @@ void EasyClientHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
     {
         if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitLoadError)
         {
-            WebkitEcho::getFunMap()->webkitLoadError(browser->GetIdentifier(), errorCode, frame->IsMain(),
-                frame->GetName().ToWString().c_str(), failedUrl.ToWString().c_str());
-            return;
+            if (WebkitEcho::getFunMap()->webkitLoadError(browser->GetIdentifier(), errorCode, frame->IsMain(),
+                frame->GetName().ToWString().c_str(), failedUrl.ToWString().c_str()))
+                return;
         }
     }
 

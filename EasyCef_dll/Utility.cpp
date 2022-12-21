@@ -379,7 +379,7 @@ bool GetParentProcessInfo(DWORD *pdwId, std::wstring* pstrPathOut)
 
 std::string GetRandomString(size_t length)
 {
-    const char CHARACTERS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    static const char CHARACTERS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
     std::random_device random_device;
     std::mt19937 generator(random_device());
@@ -1086,7 +1086,21 @@ margin:10px 20px;
 // Load a data: URI containing the error message.
 void LoadErrorPage(CefRefPtr<CefFrame> frame, const std::string& failed_url, cef_errorcode_t error_code, const std::string& other_info)
 {
-    frame->LoadURL(GetInternalPage(GetErrorPage(failed_url, other_info, error_code)));
+    if (failed_url.substr(0, strlen(EASYCEFSCHEME)) == EASYCEFSCHEME && error_code == ERR_UNKNOWN_URL_SCHEME)
+    {
+        std::ostringstream ss;
+        ss << "data:text/html, Error " << error_code << "\n"
+            << "Failed to load " << failed_url << "\n"
+            << other_info;
+        frame->LoadURL(ss.str());
+    }
+    else
+    {
+
+        frame->LoadURL(GetInternalPage(GetErrorPage(failed_url, other_info, error_code)));
+    }
+
+
 }
 
 }
