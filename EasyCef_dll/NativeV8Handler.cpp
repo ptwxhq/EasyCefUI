@@ -59,7 +59,12 @@ static void FowardRender2Browser(bool bSync, const CefString& name, const CefV8V
 		}
 		else if (item->IsDate())
 		{
+#if CEF_VERSION_MAJOR > 108
+			CefTime date;
+			cef_time_from_basetime(item->GetDateValue(), &date);
+#else
 			auto date = item->GetDateValue();
+#endif
 
 			toargs->SetString(index, std::format("{}-{:02}-{:02} {:02}:{:02}:{:02}", date.year, date.month, date.day_of_month, date.hour, date.minute, date.second));
 		}

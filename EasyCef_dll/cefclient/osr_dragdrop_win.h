@@ -38,7 +38,9 @@ namespace client {
     return S_OK;                                                    \
   }
 #define IUNKNOWN_IMPLEMENTATION                     \
-  ULONG __stdcall AddRef() { return ++ref_count_; } \
+  ULONG __stdcall AddRef() {    \
+    return ++ref_count_;        \
+  }                             \
   ULONG __stdcall Release() {                       \
     if (--ref_count_ == 0) {                        \
       delete this;                                  \
