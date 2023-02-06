@@ -174,15 +174,6 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 
 	DomainPackInfo::Uri url_parts(request->GetURL());
 
-#ifdef _DEBUG
-
-	if (url_parts.Path_.empty())
-	{
-		url_parts.Path_ = L" ";
-	}
-
-#endif
-
 	enum class STATUSCODE : int {
 		E_UNSET,
 		E200 = 200,
@@ -198,9 +189,9 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 
 	CefResponse::HeaderMap header;
 
-	const std::wstring strDecodedPath = CefURIDecode(url_parts.Path_, false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
+	const std::wstring strDecodedPath = CefURIDecode(url_parts.Path(), false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
 
-	std::string ansipath = CefString(url_parts.Path_);
+	std::string ansipath = CefString(url_parts.Path());
 	const size_t sep = ansipath.find_last_of(".");
 	auto mime_type_ = CefGetMimeType(ansipath.substr(sep + 1)).ToString();
 	if (mime_type_.empty())
@@ -217,7 +208,7 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 	case RESTYPE::FAKEHTTP:
 		{
 			//检查域名是否已注册，无效返回400
-			auto strPackFilePath = DomainPackInfo::GetInstance().GetDomainPath(url_parts.Host_.c_str());
+			auto strPackFilePath = DomainPackInfo::GetInstance().GetDomainPath(url_parts.Host().c_str());
 			if (!g_BrowserGlobalVar.funcXpackExtract || strPackFilePath.empty())
 			{
 				sCurrent = STATUSCODE::E400;
@@ -277,7 +268,7 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 		break;
 	case RESTYPE::INTERNALUI:
 	{
-		if (url_parts.Host_ == L"info")
+		if (url_parts.Host() == L"info")
 		{
 			std::wstring strData = strDecodedPath;
 			if (strData[0] == '/')
@@ -304,7 +295,7 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 	break;
 	case RESTYPE::MEMORY:
 	{
-		std::wstring strUrl = url_parts.Protocol_ + L"://" + url_parts.Host_ + GetUrlWithoutQueryOrFragment(strDecodedPath);
+		std::wstring strUrl = url_parts.Protocol() + L"://" + url_parts.Host() + GetUrlWithoutQueryOrFragment(strDecodedPath);
 		std::string data;
 		if (g_MemFileMgr.GetDataByUrl(strUrl, data))
 		{
@@ -360,7 +351,7 @@ CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBro
 		break;
 	case STATUSCODE::E404:
 		strStatusText = "NOT FOUND";
-		ErrorInfo = "404 file " + CefString(url_parts.Path_).ToString() + " not exist";
+		ErrorInfo = "404 file " + CefString(url_parts.Path()).ToString() + " not exist";
 
 		break;
 	default:
@@ -448,7 +439,7 @@ std::wstring DomainPackInfo::GetFormatedDomain(LPCWSTR lpszDomain)
 
 	Uri url(lpszDomain);
 
-	return std::move(url.Host_);
+	return std::move(url.Host());
 }
 
 void DomainPackInfo::Uri::Parse(const std::wstring& uri)
@@ -504,10 +495,43 @@ void DomainPackInfo::Uri::Parse(const std::wstring& uri)
 	if (pathStart != uriEnd)
 		Path_.assign(pathStart, queryStart);
 
+	if (Path_.empty())
+	{
+		Path_ = L'/';
+	}
+
 	// query
 	if (queryStart != uriEnd)
 		QueryString_.assign(queryStart, uri.end());
 
+}
+
+std::wstring DomainPackInfo::Uri::Formated()
+{
+	std::wstring strFormated;
+
+	if (Protocol_.empty())
+	{
+		strFormated = L"http://";
+	}
+	else
+	{
+		strFormated = Protocol_;
+	}
+
+	strFormated += Host_;
+
+	if (!Port_.empty())
+	{
+		strFormated += L':';
+		strFormated += Port_;
+	}
+
+	strFormated += Path_;
+
+	strFormated += QueryString_;
+	
+	return strFormated;
 }
 
 bool EasyMemoryFileMgr::AddMemoryFile(const void* pData, unsigned int nDataLen, size_t& id, LPCWSTR lpszDomain, LPCWSTR lpszExtName)
@@ -521,7 +545,7 @@ bool EasyMemoryFileMgr::AddMemoryFile(const void* pData, unsigned int nDataLen, 
 	if (lpszDomain && lpszDomain[0])
 	{
 		DomainPackInfo::Uri url_parts(lpszDomain);
-		strUrl += url_parts.Host_;
+		strUrl += url_parts.Host();
 	}
 	else
 	{
@@ -529,7 +553,7 @@ bool EasyMemoryFileMgr::AddMemoryFile(const void* pData, unsigned int nDataLen, 
 	}
 
 	strUrl += L"/";
-	strUrl += CefString(GetRandomString(32));
+	strUrl += CefString(GetRandomString(32) + std::to_string(GetTimeNow()));
 
 	std::wstring strExt;
 	if (lpszExtName && lpszExtName[0])
@@ -581,6 +605,20 @@ bool EasyMemoryFileMgr::GetDataByUrl(const CefString& strUrl, std::string& data)
 	std::hash<std::wstring> hash;
 	auto id = hash(strUrl.ToWString());
 
+	std::lock_guard lock(m_mutex);
+
+	auto it = mapUserData.find(id);
+	if (it != mapUserData.end())
+	{
+		data = it->second.data;
+		return true;
+	}
+
+	return false;
+}
+
+bool EasyMemoryFileMgr::GetData(size_t id, std::string& data)
+{
 	std::lock_guard lock(m_mutex);
 
 	auto it = mapUserData.find(id);

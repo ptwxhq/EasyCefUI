@@ -454,6 +454,55 @@ bool GetMemoryFileUrl(size_t id, LPWSTR lpszUrl, unsigned int nInLen, unsigned i
 	return false;
 }
 
+bool GetMemoryFile(size_t id, void* pData, unsigned int* nLen)
+{
+	if (!nLen)
+		return false;
+
+	bool bSucc = false;
+	std::string sData;
+	if (g_MemFileMgr.GetData(id, sData))
+	{
+		if (pData)
+		{
+			if (*nLen >= sData.size())
+			{
+				memcpy(pData, sData.data(), sData.size());
+				bSucc = true;
+			}
+		}
+	}
+
+	*nLen = sData.size();
+
+	return bSucc;
+}
+
+bool GetMemoryByUrl(LPWSTR lpszUrl, void* pData, unsigned int* nLen)
+{
+	if (!nLen)
+		return false;
+
+	DomainPackInfo::Uri url_parts(lpszUrl);
+	std::string data;
+	if (g_MemFileMgr.GetDataByUrl(url_parts.Formated(), data))
+	{
+		
+		if (*nLen < data.size())
+		{
+			return false;
+		}
+
+		*nLen = data.size();
+
+		memcpy(pData, data.data(), data.size());
+
+		return true;
+	}
+
+	return false;
+}
+
 /*
 
 

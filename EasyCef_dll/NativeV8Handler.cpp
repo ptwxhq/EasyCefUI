@@ -458,7 +458,7 @@ namespace JSCallFunctions
 		if (frame->IsMain())
 		{
 			DomainPackInfo::Uri url(frame->GetURL());
-			if (url.Protocol_ == EASYCEFSCHEMEW)
+			if (url.Protocol() == EASYCEFSCHEMEW)
 			{
 				FowardRender2Browser(false, __func__, arguments, retval, exception);
 				return;

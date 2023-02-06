@@ -20,15 +20,6 @@
 #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #endif
 
-#ifndef _In_reads_bytes_
-#define _In_reads_bytes_(size) 
-#endif // !_In_reads_bytes_
-
-#ifndef _Inout_updates_to_opt_
-#define _Inout_updates_to_opt_(size,count)
-#endif
-
-
 
 #ifdef STU_WEBVIEWEXTATTR
 
@@ -182,8 +173,10 @@ EASYCEF_EXP_API bool SetXPackWorkCall(XPackExtractWork funWork, XPackFreeData fu
 EASYCEF_EXP_API float GetWindowScaleFactor(HWND hwnd);
 
 //默认lpszExtName为bin
-EASYCEF_EXP_API bool AddMemoryFile(_In_reads_bytes_(nDataLen) const void* pData, _In_  unsigned int nDataLen, _Out_  size_t* id, _In_opt_ LPCWSTR lpszDomain = nullptr, _In_opt_ LPCWSTR lpszExtName = nullptr);
-EASYCEF_EXP_API void DelMemoryFile(_In_ size_t id);
-EASYCEF_EXP_API bool GetMemoryFileUrl(_In_ size_t id, _Inout_updates_to_opt_(nInLen, *nOutLen) LPWSTR lpszUrl, _In_ unsigned int nInLen, _Out_opt_  unsigned int* nOutLen);
+EASYCEF_EXP_API bool AddMemoryFile(const void* pData, unsigned int nDataLen, size_t* id, LPCWSTR lpszDomain = nullptr, LPCWSTR lpszExtName = nullptr);
+EASYCEF_EXP_API void DelMemoryFile(size_t id);
+EASYCEF_EXP_API bool GetMemoryFileUrl(size_t id, LPWSTR lpszUrl, unsigned int nInLen, unsigned int* nOutLen);
+EASYCEF_EXP_API bool GetMemoryFile(size_t id, void* pData, unsigned int* nLen);
+EASYCEF_EXP_API bool GetMemoryByUrl(LPWSTR lpszUrl, void* pData, unsigned int* nLen);
 
 };

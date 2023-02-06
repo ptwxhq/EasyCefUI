@@ -24,6 +24,7 @@ public:
 	void DelMemoryFile(size_t id);
 	bool GetMemoryFileUrl(size_t id, CefString& lpszUrl);
 	bool GetDataByUrl(const CefString& strUrl, std::string& data);
+	bool GetData(size_t id, std::string& data);
 };
 
 class EasySchemesHandlerFactory : public CefSchemeHandlerFactory
@@ -55,15 +56,29 @@ private:
 
 class DomainPackInfo {
 public:
-	struct Uri
+	class Uri
 	{
-	public:
 		std::wstring QueryString_, Path_, Protocol_, Host_, Port_;
+	public:
 
 		Uri() = default;
 		Uri(const std::wstring& uri) { Parse(uri); }
 
 		void Parse(const std::wstring& uri);
+
+		std::wstring Formated();
+
+		const std::wstring& Path() const {
+			return Path_;
+		}
+
+		const std::wstring& Host() const {
+			return Host_;
+		}
+
+		const std::wstring& Protocol() const {
+			return Protocol_;
+		}
 	};
 
 
