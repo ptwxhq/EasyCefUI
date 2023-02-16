@@ -782,7 +782,7 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 	return true;
 }
 
-bool EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize, int src_width)
+bool EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize, int src_x, int src_y, int src_width)
 {
 	//ASSERT(x + width <= m_bitmap->GetWidth());
 	//ASSERT(y + height <= m_bitmap->GetHeight());
@@ -833,12 +833,21 @@ bool EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width
 	{
 		for (int iLine = 0; iLine < height; iLine++)
 		{
-			memcpy(m_bitmap->GetBits() + ((y + iLine) * m_bitmap->GetWidth() + x) * 4, pData + ((y + iLine) * src_width + x) * 4, width * 4);
+			const int nSrcPos = ((src_y + iLine) * src_width + src_x) * 4;
+			const int nDstPos = ((y + iLine) * m_bitmap->GetWidth() + x) * 4;
+			memcpy(m_bitmap->GetBits() + nDstPos, pData + nSrcPos, width * 4);
 		}
 
-
-		RECT rc = { x,y, x + width,y + height };
-		m_info.SetDirtyRect(&rc);
+		if (src_x == 0 && src_y == 0 && src_width == width)
+		{
+			//弹出的时候清除信息，以免页面内容不刷新
+			m_info.SetDirtyRect(nullptr);
+		}
+		else
+		{
+			RECT rc = { x, y, x + width, y + height };
+			m_info.SetDirtyRect(&rc);
+		}
 	}
 
 	return true;

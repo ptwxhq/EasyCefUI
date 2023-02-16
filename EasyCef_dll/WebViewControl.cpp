@@ -656,7 +656,7 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
             }
             else
             {
-                if (!m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), 0, 0, width, height, false, width))
+                if (!m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), 0, 0, width, height, false, 0, 0, width))
                     return;
             }
         }
@@ -665,7 +665,7 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
 
             for (auto& it : dirtyRects)
             {
-                m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), it.x, it.y, it.width, it.height, bNoStretch, width);
+                m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), it.x, it.y, it.width, it.height, bNoStretch, it.x, it.y, width);
             }
         }
 
@@ -677,8 +677,7 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
     }
     else //PET_POPUP
     {
-        m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), m_pWindow->GetPopupRect().x, m_pWindow->GetPopupRect().y, width, height, false, width);
-
+        m_pWindow->SetBitmapData(static_cast<const BYTE*>(buffer), m_pWindow->GetPopupRect().x, m_pWindow->GetPopupRect().y, width, height, false, 0, 0, width);
     }
 
     m_pWindow->Render();

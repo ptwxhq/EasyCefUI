@@ -478,7 +478,7 @@ bool GetMemoryFile(size_t id, void* pData, unsigned int* nLen)
 	return bSucc;
 }
 
-bool GetMemoryByUrl(LPWSTR lpszUrl, void* pData, unsigned int* nLen)
+bool GetMemoryByUrl(LPCWSTR lpszUrl, void* pData, unsigned int* nLen)
 {
 	if (!nLen)
 		return false;

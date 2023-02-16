@@ -190,7 +190,7 @@ public:
     LRESULT OnIgnore(UINT, WPARAM, LPARAM, BOOL&) { return 0; }
 
     bool SetBitmapData(const void* pData, int width, int height);
-    bool SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize, int src_width);
+    bool SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize, int src_x, int src_y, int src_width);
     void Render();
 
 

@@ -177,6 +177,6 @@ EASYCEF_EXP_API bool AddMemoryFile(const void* pData, unsigned int nDataLen, siz
 EASYCEF_EXP_API void DelMemoryFile(size_t id);
 EASYCEF_EXP_API bool GetMemoryFileUrl(size_t id, LPWSTR lpszUrl, unsigned int nInLen, unsigned int* nOutLen);
 EASYCEF_EXP_API bool GetMemoryFile(size_t id, void* pData, unsigned int* nLen);
-EASYCEF_EXP_API bool GetMemoryByUrl(LPWSTR lpszUrl, void* pData, unsigned int* nLen);
+EASYCEF_EXP_API bool GetMemoryByUrl(LPCWSTR lpszUrl, void* pData, unsigned int* nLen);
 
 };
