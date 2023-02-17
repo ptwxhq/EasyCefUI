@@ -308,7 +308,7 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
         auto valKeyName = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
         extra_info->SetBinary(IpcBrowserServerKeyName, valKeyName);
         extra_info->SetBool(ExtraKeyNameIsUIBrowser, IsUIControl());
-        //extra_info
+        extra_info->SetBool(ExtraKeyNameEnableHighDpi, g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi);
 
         if (pParams->bSyncCreate)
         {
@@ -505,6 +505,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
     }
 
     extra_info->SetBool(ExtraKeyNameIsUIBrowser, IsUIControl());
+    extra_info->SetBool(ExtraKeyNameEnableHighDpi, g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi);
 
  
 

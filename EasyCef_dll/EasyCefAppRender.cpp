@@ -47,14 +47,17 @@ void EasyCefAppRender::OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr
 
 	bool bCheck = extra_info->GetBool(ExtraKeyNameIsManagedPopup);
 
-	g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi = extra_info->GetBool(ExtraKeyNameEnableHighDpi);
-
 	//LOG(INFO) << GetCurrentProcessId() << "] EasyCefAppRender::OnBrowserCreated:" << browser << " is pop " << bIsPopup << " pass:" << bCheck;
 
 	if (bIsPopup && !bCheck)
 	{
 		//可能是控制台，不处理
 		return;
+	}
+
+	if (extra_info->HasKey(ExtraKeyNameEnableHighDpi))
+	{
+		g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi = extra_info->GetBool(ExtraKeyNameEnableHighDpi);
 	}
 
 	if (!EasyIPCClient::GetInstance().IsServerSet())
