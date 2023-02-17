@@ -105,6 +105,7 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
     auto valKeyName = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
     extra_info->SetBinary(IpcBrowserServerKeyName, valKeyName);
     extra_info->SetBool(ExtraKeyNameIsManagedPopup, true);
+    extra_info->SetBool(ExtraKeyNameEnableHighDpi, g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi);
 
 
     //UI弹出的窗口要作为普通窗口还是UI的？当作UI的吧

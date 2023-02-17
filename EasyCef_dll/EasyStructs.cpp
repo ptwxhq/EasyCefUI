@@ -6,6 +6,7 @@ BrowserGlobalVar g_BrowserGlobalVar;
 const char* ExtraKeyNameIsUIBrowser = "IsUIRender";
 const char* ExtraKeyNameIsManagedPopup = "IsManagedPopup";
 const char* ExtraKeyNameUIWndHwnd = "UIWndHwnd";
+const char* ExtraKeyNameEnableHighDpi = "EnableHighDpi";
 
 
 void GetLocalPaths()

@@ -123,6 +123,7 @@ extern BrowserGlobalVar g_BrowserGlobalVar;
 extern const char* ExtraKeyNameIsManagedPopup;
 extern const char* ExtraKeyNameIsUIBrowser;
 extern const char* ExtraKeyNameUIWndHwnd;
+extern const char* ExtraKeyNameEnableHighDpi;
 
 
 #define WIDE_STR(x) WIDE_STR2(x)
