@@ -503,6 +503,37 @@ bool GetMemoryByUrl(LPCWSTR lpszUrl, void* pData, unsigned int* nLen)
 	return false;
 }
 
+void ForceWebUIPaint(HWND hWnd)
+{
+	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
+	if (item)
+	{
+		auto browser = item->GetBrowser();
+		if (browser)
+		{
+			auto host = browser->GetHost();
+			if (host)
+			{
+				if (item->IsTransparentUI())
+				{
+					host->WasResized();
+					//host->Invalidate(PET_VIEW);
+				}
+				else
+				{
+					RECT rcSize;
+					if (GetClientRect(GetParent(item->GetHWND()), &rcSize))
+					{
+						SetWindowPos(item->GetHWND(), nullptr, 0, 0, rcSize.right, rcSize.bottom, SWP_NOZORDER | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
+					}
+				}
+			}
+			
+		
+		}
+	}
+}
+
 /*
 
 

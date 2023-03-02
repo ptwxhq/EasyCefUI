@@ -643,6 +643,7 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
         if (m_pWindow->CheckViewSizeChanged(width, height))
         {
             //由于画面已经开始发生改变，此时的画面大小是旧的，画面无效，为了减少闪烁，这边丢弃画面等待更新
+            m_browser->GetHost()->Invalidate(PET_VIEW);
             return;
         }
 

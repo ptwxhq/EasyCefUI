@@ -179,4 +179,7 @@ EASYCEF_EXP_API bool GetMemoryFileUrl(size_t id, LPWSTR lpszUrl, unsigned int nI
 EASYCEF_EXP_API bool GetMemoryFile(size_t id, void* pData, unsigned int* nLen);
 EASYCEF_EXP_API bool GetMemoryByUrl(LPCWSTR lpszUrl, void* pData, unsigned int* nLen);
 
+//强制页面重绘
+EASYCEF_EXP_API void ForceWebUIPaint(HWND hWnd);
+
 };

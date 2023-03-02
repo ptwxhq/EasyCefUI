@@ -55,7 +55,7 @@ protected:
     UINT Cls_OnNCHitTest(HWND hwnd, int x, int y);
     void Cls_OnGetMinMaxInfo(HWND hwnd, LPMINMAXINFO lpMinMaxInfo);
     LRESULT Cls_OnDpiChanged(HWND hwnd, WPARAM wParam, LPARAM lParam);
-    void Cls_OnMove(HWND hwnd, int x, int y);
+    void Cls_OnMove();
     BOOL Cls_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct);
     BOOL Cls_OnNCCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct);
 
