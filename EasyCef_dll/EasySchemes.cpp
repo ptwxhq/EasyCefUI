@@ -439,7 +439,7 @@ std::wstring DomainPackInfo::GetFormatedDomain(LPCWSTR lpszDomain)
 
 	Uri url(lpszDomain);
 
-	return std::move(url.Host());
+	return url.Host();
 }
 
 void DomainPackInfo::Uri::Parse(const std::wstring& uri)

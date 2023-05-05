@@ -513,14 +513,6 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 	view_width_ = LOWORD(lp);
 	view_height_ = HIWORD(lp);
 
-	if (!m_bitmap)
-	{
-		m_bitmap = std::make_unique<GdiBitmap>(view_width_, view_height_);
-	}
-
-
-	//LOG(INFO) << GetCurrentProcessId() << "] OnSize new:" << view_width_ << " " << view_height_ << " old:" << view_width_old_ << " " << view_height_old_ << "\n";
-
 	if (view_width_old_ != view_width_ || view_height_old_ != view_height_)
 	{
 		window_size_changed_ = true;
@@ -782,63 +774,60 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 	return true;
 }
 
-bool EasyLayeredWindow::SetBitmapData(const BYTE* pData, int x, int y, int width, int height, bool SameSize, int src_x, int src_y, int src_width)
+bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width, int height, bool SameSize, int src_x, int src_y, int origin_width, int origin_height)
 {
-	//ASSERT(x + width <= m_bitmap->GetWidth());
-	//ASSERT(y + height <= m_bitmap->GetHeight());
-	bool bIsTL = false;
-	bool bImageNeedReset = false;
-	if (x == 0 && y == 0)
+	if (x < 0 || y < 0)
 	{
-		bIsTL = true;
+		return false;
 	}
 
-	if (x + width > m_bitmap->GetWidth())
-	{
-		if (!bIsTL)
-		{
-			return false;
-		}
 
-		bImageNeedReset = true;
-	}
-
-	if (y + height > m_bitmap->GetHeight())
-	{
-		if (!bIsTL)
-		{
-			return false;
-		}
-
-		bImageNeedReset = true;
-	}
-
-	if (bImageNeedReset)
+	if (x + width > m_bitmap->GetWidth() || y + height > m_bitmap->GetHeight())
 	{
 		m_bitmap = std::make_unique<GdiBitmap>(view_width_, view_height_);
+		m_browser->GetHost()->WasResized();
+		return false;
 	}
 
+	const int nCopySize = width * 4;
+	BYTE* pDest = m_bitmap->GetBits();
+	auto pSrc = static_cast<const BYTE*>(pData);
 
 	if (SameSize)
 	{
-		for (int iLine = 0; iLine < height; iLine++)
+		if (m_bitmap->GetWidth() != origin_width || m_bitmap->GetHeight() != origin_height)
 		{
-			int iPos = ((y + iLine) * m_bitmap->GetWidth() + x) * 4;
-			memcpy(m_bitmap->GetBits() + iPos, pData + iPos, width * 4);
+			LOG(WARNING) << GetCurrentProcessId() << "] SetBitmapData: check failed! ";
+			m_browser->GetHost()->WasResized();
+			return false;
 		}
+
+		for (int nLine = 0; nLine < height; nLine++)
+		{
+			const int nDstPos = ((y + nLine) * m_bitmap->GetWidth() + x) * 4;
+			memcpy(pDest + nDstPos, pSrc + nDstPos, nCopySize);
+		}
+
 
 		m_info.SetDirtyRect(nullptr);
 	}
 	else
 	{
-		for (int iLine = 0; iLine < height; iLine++)
+		if (src_x > origin_width || (src_y + height > origin_height) || x > m_bitmap->GetWidth() || (y + height > m_bitmap->GetHeight()))
 		{
-			const int nSrcPos = ((src_y + iLine) * src_width + src_x) * 4;
-			const int nDstPos = ((y + iLine) * m_bitmap->GetWidth() + x) * 4;
-			memcpy(m_bitmap->GetBits() + nDstPos, pData + nSrcPos, width * 4);
+			LOG(WARNING) << GetCurrentProcessId() << "] SetBitmapData s: check failed! ";
+			m_browser->GetHost()->WasResized();
+			return false;
 		}
 
-		if (src_x == 0 && src_y == 0 && src_width == width)
+		for (int nLine = 0; nLine < height; nLine++)
+		{
+			const int nSrcPos = ((src_y + nLine) * origin_width + src_x) * 4;
+			const int nDstPos = ((y + nLine) * m_bitmap->GetWidth() + x) * 4;
+			memcpy(pDest + nSrcPos, pSrc + nDstPos, nCopySize);
+		}
+
+		if (src_x == 0 && src_y == 0 && origin_width == width)
 		{
 			//弹出的时候清除信息，以免页面内容不刷新
 			m_info.SetDirtyRect(nullptr);
