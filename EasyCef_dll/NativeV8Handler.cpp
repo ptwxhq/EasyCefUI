@@ -404,12 +404,20 @@ namespace JSCallFunctions
 		HWND hWnd = JsGetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
-			int x = arguments[0]->GetIntValue();
-			int y = arguments[1]->GetIntValue();
-			int width = arguments[2]->GetIntValue();
-			int height = arguments[3]->GetIntValue();
+			const int x = arguments[0]->GetIntValue();
+			const int y = arguments[1]->GetIntValue();
+			const int width = arguments[2]->GetIntValue();
+			const int height = arguments[3]->GetIntValue();
 
-			SetWindowPos(hWnd, nullptr, x, y, width, height, SWP_NOZORDER | SWP_ASYNCWINDOWPOS);
+			const auto fixPos = LogicalToDevice({ x, y, width, height }, GetWindowScaleFactor(hWnd));
+
+			//LOG(INFO) << "setWindowSize " << " x:" << x << " y:" << y << " w:" << width << " h:" << height 
+			//	<< " fIX-> x:" << fixPos.x << " y:" << fixPos.y << " w:" << fixPos.width << " h:" << fixPos.height;
+
+			if (SetWindowPos(hWnd, nullptr, fixPos.x, fixPos.y, fixPos.width, fixPos.height, SWP_NOZORDER | SWP_ASYNCWINDOWPOS))
+			{
+				retval = CefV8Value::CreateBool(true);
+			}
 		}
 	}
 
@@ -419,6 +427,7 @@ namespace JSCallFunctions
 		if (IsWindow(hWnd))
 		{
 			PostMessage(hWnd, WM_SYSCOMMAND, SC_MINIMIZE, NULL);
+			retval = CefV8Value::CreateBool(true);
 		}
 	}
 
@@ -428,6 +437,7 @@ namespace JSCallFunctions
 		if (IsWindow(hWnd))
 		{
 			PostMessage(hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, NULL);
+			retval = CefV8Value::CreateBool(true);
 		}
 	}
 
@@ -437,6 +447,7 @@ namespace JSCallFunctions
 		if (IsWindow(hWnd))
 		{
 			PostMessage(hWnd, WM_SYSCOMMAND, SC_RESTORE, NULL);
+			retval = CefV8Value::CreateBool(true);
 		}
 	}
 
@@ -445,7 +456,10 @@ namespace JSCallFunctions
 		HWND hWnd = JsGetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
-			SetWindowTextW(hWnd, arguments[0]->GetStringValue().ToWString().c_str());
+			if (SetWindowTextW(hWnd, arguments[0]->GetStringValue().ToWString().c_str()))
+			{
+				retval = CefV8Value::CreateBool(true);
+			}
 		}
 	}
 
@@ -562,7 +576,7 @@ void NativeV8Handler::RegisterFunctions(CefRefPtr<CefV8Value> obj, int BrowserTy
 
 	REG_ASYNCJS_FUN(asyncCallMethod, 3); 
 
-
+	REG_ASYNCJS_FUN(dbgmode, 1);
 
 	REG_JS_FUN(addFrameStateChanged, 1);
 	REG_JS_FUN(removeFrameStateChanged, 1);

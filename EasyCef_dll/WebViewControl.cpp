@@ -658,6 +658,7 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
             }
             else
             {
+                //为了防止窗口大小转换时与自己计算的值不一致导致失败
                 if (!m_pWindow->SetBitmapData(buffer, 0, 0, width, height, false, 0, 0, width, height))
                     return;
             }

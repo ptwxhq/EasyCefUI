@@ -786,6 +786,7 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 	{
 		m_bitmap = std::make_unique<GdiBitmap>(view_width_, view_height_);
 		m_browser->GetHost()->WasResized();
+		m_browser->GetHost()->Invalidate(PET_VIEW);
 		return false;
 	}
 
@@ -845,7 +846,9 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 void EasyLayeredWindow::Render()
 {
  	if (m_hWnd)
+	{
 		m_info.Update(m_hWnd, m_bitmap->GetDC());
+	}
 }
 
 

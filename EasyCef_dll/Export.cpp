@@ -517,7 +517,7 @@ void ForceWebUIPaint(HWND hWnd)
 				if (item->IsTransparentUI())
 				{
 					host->WasResized();
-					//host->Invalidate(PET_VIEW);
+					host->Invalidate(PET_VIEW);
 				}
 				else
 				{

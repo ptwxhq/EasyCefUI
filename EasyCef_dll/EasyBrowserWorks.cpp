@@ -483,6 +483,18 @@ namespace BrowserAsyncWorkFunctions {
 		}
 	}
 
+
+
+	void dbgmode(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
+	{
+		if (g_BrowserGlobalVar.Debug)
+		{
+#if 1
+			
+#endif
+		}
+	}
+
 	void __V8AccessorSetAttribKeys__(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
 		EasyBrowserWorks::GetInstance().DoJSKeyAsyncWork(args->GetString(0).ToString(), browser, frame, args);
@@ -657,6 +669,8 @@ EasyBrowserWorks::EasyBrowserWorks()
 
 	REG_ASYNCWORK_FUNCTION(__V8AccessorSetAttribKeys__);
 
+	REG_ASYNCWORK_FUNCTION(dbgmode);
+	
 
 
 	REG_ASYNCWORK_JSKEY(nc_setalledge);

@@ -50,6 +50,11 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 		command_line->AppendSwitch("use-fake-ui-for-media-stream");
 	}
 
+	//保证js后台正确运行
+	//保持后台优先级
+	command_line->AppendSwitch("disable-renderer-backgrounding");
+	//禁用计时器节流
+	command_line->AppendSwitch("disable-background-timer-throttling");
 
 	auto bUseGpu = GetPrivateProfileIntW(L"Settings", L"GPU", 1, g_BrowserGlobalVar.BrowserSettingsPath.c_str());
 	if (bUseGpu == 0)
