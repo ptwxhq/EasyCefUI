@@ -517,6 +517,7 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 	{
 		window_size_changed_ = true;
 		m_info.SetWindowSize({ view_width_, view_height_ });
+		m_bitmap.reset();	//防止非标dpi下窗口变小时画面大小判断错误导致花屏
 
 		if (m_browser)
 		{
@@ -781,8 +782,7 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 		return false;
 	}
 
-
-	if (x + width > m_bitmap->GetWidth() || y + height > m_bitmap->GetHeight())
+	if (!m_bitmap || x + width > m_bitmap->GetWidth() || y + height > m_bitmap->GetHeight())
 	{
 		m_bitmap = std::make_unique<GdiBitmap>(view_width_, view_height_);
 		m_browser->GetHost()->WasResized();
@@ -845,10 +845,12 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 
 void EasyLayeredWindow::Render()
 {
- 	if (m_hWnd)
+ 	if (m_hWnd && m_bitmap)
 	{
 		m_info.Update(m_hWnd, m_bitmap->GetDC());
 	}
+
+	LOG(INFO) << "Render it";
 }
 
 
