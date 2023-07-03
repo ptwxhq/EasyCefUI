@@ -248,8 +248,8 @@ void EasyUIWindowBase::Cls_OnGetMinMaxInfo(HWND hWnd, LPMINMAXINFO lpMinMaxInfo)
 	lpMinMaxInfo->ptMaxSize.x = rcScr.right - rcScr.left;
 	lpMinMaxInfo->ptMaxSize.y = rcScr.bottom - rcScr.top;
 	//以下值是基于主显示器的，不能用虚拟坐标
-	lpMinMaxInfo->ptMaxPosition.x = MoInfo.rcWork.left;
-	lpMinMaxInfo->ptMaxPosition.y = MoInfo.rcWork.top;
+	lpMinMaxInfo->ptMaxPosition.x = MoInfo.rcWork.left - MoInfo.rcMonitor.left;
+	lpMinMaxInfo->ptMaxPosition.y = MoInfo.rcMonitor.top - MoInfo.rcWork.top;
 }
 
 LRESULT EasyUIWindowBase::Cls_OnDpiChanged(HWND hwnd, WPARAM wParam, LPARAM lParam)

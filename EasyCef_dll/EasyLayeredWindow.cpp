@@ -196,21 +196,6 @@ void EasyLayeredWindow::ClearPopupRects()
 	original_popup_rect_.Set(0, 0, 0, 0);
 }
 
-bool EasyLayeredWindow::CheckViewSizeChanged(int width, int height)
-{
-	if (window_size_changed_)
-	{
-		if (paint_width_old_ != width || paint_height_old_ != height)
-		{
-			paint_width_old_ = width;
-			paint_height_old_ = height;
-			window_size_changed_ = false;
-		}
-	}
-
-	return window_size_changed_;
-}
-
 void EasyLayeredWindow::DpiChangeWork()
 {
 	if (!g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi)
@@ -513,19 +498,11 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 	view_width_ = LOWORD(lp);
 	view_height_ = HIWORD(lp);
 
-	if (view_width_old_ != view_width_ || view_height_old_ != view_height_)
+	m_info.SetWindowSize({ view_width_, view_height_ });
+
+	if (m_browser)
 	{
-		window_size_changed_ = true;
-		m_info.SetWindowSize({ view_width_, view_height_ });
-		m_bitmap.reset();	//防止非标dpi下窗口变小时画面大小判断错误导致花屏
-
-		if (m_browser)
-		{
-			m_browser->GetHost()->WasResized();
-		}
-
-		view_width_old_ = view_width_;
-		view_height_old_ = view_height_;
+		m_browser->GetHost()->WasResized();
 	}
 
 	return 0;
@@ -753,26 +730,24 @@ LRESULT EasyLayeredWindow::OnPaint(UINT, WPARAM, LPARAM, BOOL& handle)
 	return 0;
 }
 
-bool EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
+void EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 {
 	if (!m_bitmap || m_bitmap->GetWidth() != width || m_bitmap->GetHeight() != height)
 	{
 		m_bitmap = std::make_unique<GdiBitmap>(width, height);
 	}
 
-	if (view_width_ != width || view_height_ != height)
-	{
-		//可能是从非标准dpi转为标准dpi
-		return false;
-	}
-
-	ASSERT(view_width_ == width && view_height_ == height);
-
 	memcpy(m_bitmap->GetBits(), pData, width * height * 4);
 
-	m_info.SetDirtyRect(nullptr);
+	if (view_width_ != width || view_height_ != height)
+	{
+		auto tempBmp = std::make_unique<GdiBitmap>(view_width_, view_height_);
+		SetStretchBltMode(tempBmp->GetDC(), COLORONCOLOR);
+		StretchBlt(tempBmp->GetDC(), 0, 0, view_width_, view_height_, m_bitmap->GetDC(), 0, 0, width, height, SRCCOPY);
+		m_bitmap = std::move(tempBmp);
+	}
 
-	return true;
+	m_info.SetDirtyRect(nullptr);
 }
 
 bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width, int height, bool SameSize, int src_x, int src_y, int origin_width, int origin_height)
@@ -849,8 +824,6 @@ void EasyLayeredWindow::Render()
 	{
 		m_info.Update(m_hWnd, m_bitmap->GetDC());
 	}
-
-	LOG(INFO) << "Render it";
 }
 
 
@@ -957,7 +930,7 @@ void EasyMiniLayeredWindow::SetBitmapData(const void* pData, int width, int heig
 
 void EasyMiniLayeredWindow::Render()
 {
-	if (m_hWnd)
+	if (m_hWnd && m_bitmap)
 		m_info.Update(m_hWnd, m_bitmap->GetDC());
 }
 

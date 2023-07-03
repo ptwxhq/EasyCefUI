@@ -640,34 +640,17 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
 {
     if (type == PET_VIEW)
     {
-        if (m_pWindow->CheckViewSizeChanged(width, height))
-        {
-            //由于画面已经开始发生改变，此时的画面大小是旧的，画面无效，为了减少闪烁，这边丢弃画面等待更新
-            m_browser->GetHost()->Invalidate(PET_VIEW);
-            return;
-        }
-
         bool bNoStretch = m_pWindow->GetDeviceScaleFactor() == 1.f;
         bool IsFullView = dirtyRects.size() == 1 && dirtyRects[0] == CefRect(0, 0, width, height);
-        if (IsFullView)
+        if (IsFullView || !bNoStretch)
         {
-            if (bNoStretch)
-            {
-                if (!m_pWindow->SetBitmapData(buffer, width, height))
-                    return;
-            }
-            else
-            {
-                //为了防止窗口大小转换时与自己计算的值不一致导致失败
-                if (!m_pWindow->SetBitmapData(buffer, 0, 0, width, height, false, 0, 0, width, height))
-                    return;
-            }
+            m_pWindow->SetBitmapData(buffer, width, height);
         }
         else
         {
             for (auto& it : dirtyRects)
             {
-                m_pWindow->SetBitmapData(buffer, it.x, it.y, it.width, it.height, bNoStretch, it.x, it.y, width, height);
+                m_pWindow->SetBitmapData(buffer, it.x, it.y, it.width, it.height, true, it.x, it.y, width, height);
             }
         }
 

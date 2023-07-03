@@ -12,6 +12,7 @@ namespace client {
 
 
 class LayeredWindowInfo {
+public:
     const POINT m_sourcePosition;
     POINT m_windowPosition;
     SIZE m_size;
@@ -188,7 +189,7 @@ public:
 
     LRESULT OnIgnore(UINT, WPARAM, LPARAM, BOOL&) { return 0; }
 
-    bool SetBitmapData(const void* pData, int width, int height);
+    void SetBitmapData(const void* pData, int width, int height);
     bool SetBitmapData(const void* pData, int x, int y, int width, int height, bool SameSize, int src_x, int src_y, int origin_width, int origin_height);
     void Render();
 
@@ -216,8 +217,6 @@ public:
         return popup_rect_;
     };
 
-    bool CheckViewSizeChanged(int width, int height);
-
     bool IsTransparentUI() override { return true; }
 
     void DpiChangeWork() override;
@@ -241,11 +240,6 @@ private:
     void ApplyPopupOffset(int& x, int& y) const;
     int GetPopupXOffset() const;
     int GetPopupYOffset() const;
-
-
-    bool window_size_changed_ = true;
-    int paint_width_old_ = 0;
-    int paint_height_old_ = 0;
 
     int view_width_old_ = 0;
     int view_height_old_ = 0;
