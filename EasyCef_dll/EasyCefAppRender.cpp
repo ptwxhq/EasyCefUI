@@ -25,7 +25,7 @@ void EasyCefAppRender::OnWebKitInitialized()
 	//LOG(INFO) << GetCurrentProcessId() << "]ClientAppRenderer::OnWebKitInitialized";
 
 
-	std::string app_code = R"(
+	const std::string app_code = R"(
 var __easycef_app;
 if (!__easycef_app)
 __easycef_app = {};
@@ -45,7 +45,7 @@ void EasyCefAppRender::OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr
 
 	bool bIsPopup = browser->IsPopup();
 
-	bool bCheck = extra_info->GetBool(ExtraKeyNameIsManagedPopup);
+	bool bCheck = extra_info->GetBool(ExtraKeyNames[IsManagedPop]);
 
 	//LOG(INFO) << GetCurrentProcessId() << "] EasyCefAppRender::OnBrowserCreated:" << browser << " is pop " << bIsPopup << " pass:" << bCheck;
 
@@ -55,15 +55,15 @@ void EasyCefAppRender::OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr
 		return;
 	}
 
-	if (extra_info->HasKey(ExtraKeyNameEnableHighDpi))
+	if (extra_info->HasKey(ExtraKeyNames[EnableHighDpi]))
 	{
-		g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi = extra_info->GetBool(ExtraKeyNameEnableHighDpi);
+		g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi = extra_info->GetBool(ExtraKeyNames[EnableHighDpi]);
 	}
 
 	if (!EasyIPCClient::GetInstance().IsServerSet())
 	{
 		EasyIPCBase::IPCHandle ServerHandle = nullptr;
-		auto valKeyName = extra_info->GetBinary(IpcBrowserServerKeyName);
+		auto valKeyName = extra_info->GetBinary(ExtraKeyNames[IpcBrowserServer]);
 		valKeyName->GetData(&ServerHandle, valKeyName->GetSize(), 0);
 
 		EasyIPCClient::GetInstance().SetServer(ServerHandle);
@@ -73,25 +73,29 @@ void EasyCefAppRender::OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr
 		//LOG(INFO) << GetCurrentProcessId() << "] OnBrowserCreated::SetServer:" << ServerHandle;
 	}
 
-	if (extra_info->HasKey(ExtraKeyNameIsUIBrowser))
+	if (extra_info->HasKey(ExtraKeyNames[UIWndHwnd]))
 	{
 		HWND hUIWnd = nullptr;
 
-		auto IsUIBrowser = extra_info->GetBool(ExtraKeyNameIsUIBrowser);
-
-		if (IsUIBrowser)
-		{
-			auto binHwnd = extra_info->GetBinary(ExtraKeyNameUIWndHwnd);
-			binHwnd->GetData(&hUIWnd, binHwnd->GetSize(), 0);
-		}
+		auto binHwnd = extra_info->GetBinary(ExtraKeyNames[UIWndHwnd]);
+		binHwnd->GetData(&hUIWnd, std::min(binHwnd->GetSize(), sizeof(binHwnd)), 0);
 
 		EasyRenderBrowserInfo::GetInstance().AddBrowser(browser->GetIdentifier(), browser,
-			IsUIBrowser ? EasyRenderBrowserInfo::BrsData::BROWSER_UI : EasyRenderBrowserInfo::BrsData::BROWSER_WEB, hUIWnd);
+			hUIWnd ? EasyRenderBrowserInfo::BrsData::BROWSER_UI : EasyRenderBrowserInfo::BrsData::BROWSER_WEB, hUIWnd);
 
 		//通知设置
 		EasyIPCClient::GetInstance().NotifyConnect(browser->GetIdentifier());
 	}
 
+	if (extra_info->HasKey(ExtraKeyNames[RegSyncJSFunctions]))
+	{
+		m_dictUserSyncFunc = extra_info->GetDictionary(ExtraKeyNames[RegSyncJSFunctions])->Copy(false);
+	}
+
+	if (extra_info->HasKey(ExtraKeyNames[RegAsyncJSFunctions]))
+	{
+		m_dictUserAsyncFunc = extra_info->GetDictionary(ExtraKeyNames[RegAsyncJSFunctions])->Copy(false);
+	}
 }
 
 void EasyCefAppRender::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser)
@@ -104,16 +108,15 @@ void EasyCefAppRender::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser)
 }
 
 
-void call_FrameStateChanged(CefRefPtr<CefFrame>& frame, const char* frameName, const char* url, const int& code, bool didComit)
+void call_FrameStateChanged(CefRefPtr<CefFrame>& frame, const char* frameName, const char* url, const int& code, bool resloaded)
 {
 	CefRefPtr<CefValue> json = CefValue::Create();
 	
 	auto jDict = CefDictionaryValue::Create();
 	jDict->SetString("frameid", frameName);
-
 	jDict->SetString("src",  url);
 	jDict->SetInt("state", code);
-	jDict->SetBool("resloaded", didComit);
+	jDict->SetBool("resloaded", resloaded);
 
 	json->SetDictionary(jDict);
 
@@ -243,14 +246,15 @@ void EasyCefAppRender::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr
 
 	v8Handler->RegisterFunctions(objapp, BrowserType);
 
+	v8Handler->RegisterUserFunctions(objapp, m_dictUserSyncFunc, true, BrowserType);
+	v8Handler->RegisterUserFunctions(objapp, m_dictUserAsyncFunc, false, BrowserType);
+
 	if (BrowserType == EasyRenderBrowserInfo::BrsData::BROWSER_UI)
 	{
 		v8Accessor->RegisterKeys(objapp);
 	}
 
-	auto testJS = R"(document.addEventListener('DOMContentLoaded', (event) => {
-	__easycef_app.__NotifyDomLoaded();
-});)";
+	const auto testJS = R"(document.addEventListener('DOMContentLoaded', (event) => { __easycef_app.__NotifyDomLoaded();});)";
 
 	frame->ExecuteJavaScript(testJS, "", 0);
 

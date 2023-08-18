@@ -1,5 +1,5 @@
 ﻿#include "pch.h"
-#include "Export.h"
+#include "EasyExport.h"
 #include "EasyCefAppBrowser.h"
 #include "EasyCefAppRender.h"
 #include "EasySchemes.h"
@@ -8,6 +8,7 @@
 #include "WebViewControl.h"
 #include "EasyReqRespModify.h"
 #include "EasySchemes.h"
+#include "EasyBrowserWorks.h"
 
 
 
@@ -43,16 +44,6 @@ void UnregisterPackDomain(LPCWSTR lpszDomain)
 {
 	DomainPackInfo::GetInstance().UnregisterPackDomain(lpszDomain);
 }
-
-//bool AddCrossOriginWhitelistEntry(LPCWSTR source_origin, LPCWSTR target_protocol, LPCWSTR target_domain, bool allow_target_subdomains)
-//{
-//	return CefAddCrossOriginWhitelistEntry(source_origin, target_protocol, target_domain, allow_target_subdomains);
-//}
-//
-//bool RemoveCrossOriginWhitelistEntry(LPCWSTR source_origin, LPCWSTR target_protocol, LPCWSTR target_domain, bool allow_target_subdomains)
-//{
-//	return CefRemoveCrossOriginWhitelistEntry(source_origin, target_protocol, target_domain, allow_target_subdomains);
-//}
 
 void SetSpeedUpWork(SpeedUpWork func)
 {
@@ -136,21 +127,13 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 
 	if (ProcessType == 0)
 	{
-		if (!command_line->HasSwitch("type"))
+		if (command_line->HasSwitch("type"))
 		{
-			ProcessType = 1;
+			ProcessType = 2;
 		}
 		else
 		{
-			const std::string& processType = command_line->GetSwitchValue("type");
-			if (processType == "renderer")
-			{
-				ProcessType = 2;
-			}
-			else
-			{
-				ProcessType = 3;
-			}
+			ProcessType = 1;
 		}
 	}
 
@@ -325,6 +308,12 @@ void SetFlashPluginPath(LPCWSTR lpszPath)
 	{
 		g_BrowserGlobalVar.FlashPluginPath = lpszPath;
 	}
+}
+
+void SetCachePath(LPCWSTR lpszPath)
+{
+	if (lpszPath && lpszPath[0])
+		g_BrowserGlobalVar.CachePath = lpszPath;
 }
 
 unsigned AddReqRspRule(const EasyReqRspRule* pRule)
@@ -533,6 +522,406 @@ void ForceWebUIPaint(HWND hWnd)
 		}
 	}
 }
+
+bool RegisterJSFunction(bool bSync, LPCSTR lpszFunctionName, jscall_UserFunction func, void* context, int RegType)
+{
+	if (func && lpszFunctionName && lpszFunctionName[0])
+	{
+		return EasyBrowserWorks::GetInstance().RegisterUserJSFunction(lpszFunctionName, func, bSync, context, RegType);
+	}
+
+	return false;
+}
+
+char* CreateEasyString(size_t nLen)
+{
+	if (nLen)
+	{
+		return new char[nLen];
+	}
+
+	return nullptr;
+}
+
+void FreeEasyString(const char* str)
+{
+	if (str)
+	{
+		delete[] str;
+	}
+}
+
+bool SetAddContextMenuCall(CallBeforeContextMenu func, CallDoMenuCommand fundo)
+{
+	if (func && fundo)
+	{
+		g_BrowserGlobalVar.funcBeforeContextMenu = func;
+		g_BrowserGlobalVar.funcDoMenuCommand = fundo;
+		return true;
+	}
+
+	return false;
+}
+
+void SetDOMCompleteStatusCallback(CallDOMCompleteStatus func)
+{
+	g_BrowserGlobalVar.funcCallDOMCompleteStatus = func;
+}
+
+void SetNativeCompleteStatusCallback(CallNativeCompleteStatus func)
+{
+	g_BrowserGlobalVar.funcCallNativeCompleteStatus = func;
+}
+
+void SetPopNewUrlCallback(CallPopNewUrl func)
+{
+	g_BrowserGlobalVar.funcPopNewUrlCallback = func;
+}
+
+void SetLoadErrorHandler(LoadErrorHandler func)
+{
+	g_BrowserGlobalVar.funcLoadErrorCallback = func;
+}
+
+void SetDownloadHandler(BeforeDownloadHandler func, DownloadStatusHandler funcStatus)
+{
+	g_BrowserGlobalVar.funcBeforeDownloadCallback = func;
+	g_BrowserGlobalVar.funcDownloadStatusCallback = funcStatus;
+}
+
+void ExecuteJavaScript(HWND hWnd, LPCWSTR lpszFrameName, LPCWSTR lpszJSCode)
+{
+	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
+	if (!item || !item->GetBrowser())
+		return;
+
+	auto browser = item->GetBrowser();
+
+	std::vector<int64> ids;
+
+	if (lpszFrameName && lpszFrameName[0])
+	{
+		auto frame = item->GetBrowser()->GetFrame(lpszFrameName);
+		ids.push_back(frame->GetIdentifier());
+	}
+	else
+	{
+		browser->GetFrameIdentifiers(ids);
+	}
+
+
+	for (auto it : ids)
+	{
+		auto frame = browser->GetFrame(it);
+		if (frame)
+		{
+			frame->ExecuteJavaScript(lpszJSCode, "", 0);
+		}
+	}
+}
+
+static bool InvokeJSFunction(HWND hWnd, bool bSync, LPCSTR lpszJSFunctionName, LPCSTR lpszFrameName, std::string* pstrRet, DWORD dwTimeout, LPCSTR parmfmt, va_list args)
+{
+	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
+	if (!item || !item->GetBrowser())
+		return false;
+
+	const char* pCur = parmfmt;
+
+	auto list = CefListValue::Create();
+	list->SetString(0, lpszJSFunctionName);
+
+	int nCount = 1;
+	bool bCheckOk = true;
+	while (*pCur && bCheckOk)
+	{
+		switch (*pCur)
+		{
+		case 's':
+			{
+				auto s = va_arg(args, const char*);
+				if (!s)s = "";
+				list->SetString(nCount, s);
+			}
+			break;
+		case 'w':
+			{
+				auto s = va_arg(args, const wchar_t*);
+				if (!s)s = L"";
+				list->SetString(nCount, s);
+			}
+			break;
+		case 'i':
+			list->SetInt(nCount, va_arg(args, int));
+			break;
+		case 'f':
+			list->SetDouble(nCount, va_arg(args, double));
+			break;
+		case 'b':
+			list->SetBool(nCount, va_arg(args, int));
+			break;
+		case 'u':
+			{
+				va_arg(args, int);
+				list->SetNull(nCount);
+			}
+			break;
+		default:
+			bCheckOk = false;
+			break;
+		}
+
+		++pCur;
+		++nCount;
+	}
+
+	va_end(args);
+
+	if (!bCheckOk)
+		return false;
+
+
+	CefRefPtr<CefFrame> frame;
+
+	int64 frameid = -1;
+	if (lpszFrameName && lpszFrameName[0])
+	{
+		frame = item->GetBrowser()->GetFrame(lpszFrameName);
+		frameid = frame->GetIdentifier();
+	}
+	else
+	{
+		frame = item->GetBrowser()->GetMainFrame();
+	}
+
+	if (bSync)
+	{
+		auto& ipcSvr = EasyIPCServer::GetInstance();
+		auto hipcli = ipcSvr.GetClientHandle(item->GetBrowser()->GetIdentifier());
+		if (!hipcli)
+			return false;
+
+		auto send = QuickMakeIpcParms(item->GetBrowser()->GetIdentifier(), frameid, dwTimeout ? GetTimeNowMS(dwTimeout) : 0, "__InvokedJSMethod__", list);
+		std::string ret;
+		if (ipcSvr.SendData(hipcli, send, ret, dwTimeout))
+		{
+			if (pstrRet)
+			{
+				*pstrRet = std::move(ret);
+			}
+			return true;
+		}
+	}
+	else
+	{
+
+		std::string jsRun = lpszJSFunctionName;
+		jsRun += '(';
+		for (size_t i = 1; i < list->GetSize(); i++)
+		{
+			auto val = list->GetValue(i);
+			switch (val->GetType())
+			{
+
+			case VTYPE_NULL:
+				jsRun += "null";
+				break;
+			case VTYPE_BOOL:
+				jsRun += val->GetBool() ? "true" : "false";
+				break;
+			case VTYPE_INT:
+				jsRun += std::to_string(val->GetInt());
+				break;
+			case VTYPE_DOUBLE:
+				jsRun += std::to_string(val->GetDouble());
+				break;
+			case VTYPE_STRING:
+				//需要转义一下
+				jsRun += ArrangeJsonString(val->GetString());
+				break;
+			default:
+				assert(0);
+				break;
+			}
+
+			jsRun += ',';
+		}
+
+		if (jsRun.back() == ',')
+		{
+			jsRun.back() = ')';
+		}
+		else
+		{
+			jsRun += ')';
+		}
+
+		frame->ExecuteJavaScript(jsRun, "", 0);
+		return true;
+	}
+
+
+
+
+	return false;
+}
+
+bool InvokeJSFunction(HWND hWnd, LPCSTR lpszJSFunctionName, LPCSTR lpszFrameName, const char** ppStrRet, DWORD dwTimeout, LPCSTR parmfmt, ...)
+{
+	thread_local std::string strRet;
+	va_list args;
+	va_start(args, parmfmt);
+	bool bRet = InvokeJSFunction(hWnd, true, lpszJSFunctionName, lpszFrameName, &strRet, dwTimeout, parmfmt, args);
+
+	if (ppStrRet)
+	{
+		*ppStrRet = strRet.c_str();
+	}
+
+	return bRet;
+}
+
+bool InvokeJSFunctionAsync(HWND hWnd, LPCSTR lpszJSFunctionName, LPCSTR lpszFrameName, LPCSTR parmfmt, ...)
+{
+	va_list args;
+	va_start(args, parmfmt);
+	return InvokeJSFunction(hWnd, false, lpszJSFunctionName, lpszFrameName, nullptr, /*0*/15000, parmfmt, args);
+}
+
+void AdjustRenderProcessSpeed(HWND hWnd, double dbSpeed)
+{
+	//目前这个就简单异步传个信息给render，让render自己去设置，省得一些处理
+	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
+	if (!item || !item->GetBrowser())
+		return;
+
+	CefRefPtr<CefProcessMessage> msg = CefProcessMessage::Create("__AdjustRenderSpeed__");
+	auto agrs = msg->GetArgumentList();
+	agrs->SetSize(1);
+	agrs->SetDouble(0, dbSpeed);
+	item->GetBrowser()->GetMainFrame()->SendProcessMessage(PID_RENDERER, msg);
+}
+
+void CleanCookies()
+{
+	class RemoveAllCookie : public CefCookieVisitor
+	{
+		IMPLEMENT_REFCOUNTING(RemoveAllCookie);
+	public:
+		bool Visit(const CefCookie& cookie,
+			int count,
+			int total,
+			bool& deleteCookie) override
+		{
+			deleteCookie = true;
+			return true;
+		};
+	};
+
+	CefCookieManager::GetGlobalManager(nullptr)->VisitAllCookies(new RemoveAllCookie);
+}
+
+bool EasyLoadUrl(HWND hWnd, LPCWSTR lpszUrl)
+{
+	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
+	if (item)
+	{
+		return item->LoadUrl(lpszUrl);
+	}
+
+	return false;
+}
+
+void EasyCloseAllWeb()
+{
+	EasyWebViewMgr::GetInstance().RemoveAllItems();
+}
+
+void SetWindowAlpha(HWND hWnd, unsigned char val)
+{
+	CefRefPtr<WebViewUIControl> item = dynamic_cast<WebViewUIControl*>(EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd).get());
+	if (!item)
+		return;
+
+	item->SetAlpha(val);
+}
+
+bool WebControlDoWork(HWND hWnd, WEBCONTROLWORK dowork)
+{
+	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
+	if (item)
+	{
+		switch (dowork)
+		{
+		case EASYCEF::WC_GOBACK:
+			item->GoBack();
+			break;
+		case EASYCEF::WC_GOFOWARD:
+			item->GoForward();
+			break;
+		case EASYCEF::WC_RELOAD:
+			item->Reload();
+			break;
+		case EASYCEF::WC_RELOADIGNORECACHE:
+			item->ReloadIgnoreCache();
+			break;
+		case EASYCEF::WC_STOP:
+			item->StopLoad();
+			break;
+		case EASYCEF::WC_MUTEAUDIO:
+			item->MuteAudio(true);
+			break;
+		case EASYCEF::WC_UNMUTEAUDIO:
+			item->MuteAudio(false);
+			break;
+		default:
+			return false;
+		}
+
+		return true;
+	}
+
+
+	return false;
+}
+
+bool GetViewZoomLevel(HWND hWnd, double& level)
+{
+	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
+	if (item)
+	{
+		level = item->GetZoomLevel();
+		return true;
+	}
+
+	return false;
+}
+
+bool SetViewZoomLevel(HWND hWnd, double level)
+{
+	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
+	if (item)
+	{
+		item->SetZoomLevel(level);
+		return true;
+	}
+
+	return false;
+}
+
+void SetWebControlCallbacks(WebControlCallbacks *callbacks)
+{
+	g_BrowserGlobalVar.funcWebControlCreated = callbacks->WebCreated;
+	g_BrowserGlobalVar.funcWebControLoadingState = callbacks->WebLoadingState;
+	g_BrowserGlobalVar.funcWebControlUrlChange = callbacks->WebUrlChange;
+	g_BrowserGlobalVar.funcWebControlTitleChange = callbacks->WebTitleChange;
+	g_BrowserGlobalVar.funcWebControlLoadBegin = callbacks->WebLoadBegin;
+	g_BrowserGlobalVar.funcWebControlLoadEnd = callbacks->WebLoadEnd;
+	g_BrowserGlobalVar.funcWebControlFavIconChange = callbacks->WebFavIconChange;
+	g_BrowserGlobalVar.funcWebControlBeforeClose = callbacks->WebBeforeClose;
+	g_BrowserGlobalVar.funcWebControlBeforePopup = callbacks->WebBeforePopup;
+}
+
 
 /*
 

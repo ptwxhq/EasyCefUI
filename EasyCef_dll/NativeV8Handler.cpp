@@ -85,12 +85,14 @@ static void FowardRender2Browser(bool bSync, const CefString& name, const CefV8V
 
 	if (bSync)
 	{
-		auto strData = QuickMakeIpcParms(frame->GetBrowser()->GetIdentifier(), frame->GetIdentifier(), name, valueList);
+		constexpr int dwTimeOut = 0;
+		
+		auto strData = QuickMakeIpcParms(frame->GetBrowser()->GetIdentifier(), frame->GetIdentifier(), dwTimeOut ? GetTimeNowMS(dwTimeOut) : 0, name, valueList);
 
 		//LOG(INFO) << GetCurrentProcessId() << "] FowardRender2Browser tosend:" << strData;
 
 		std::string strOut;
-		if (EasyIPCClient::GetInstance().SendDataToServer(strData, strOut))
+		if (EasyIPCClient::GetInstance().SendDataToServer(strData, strOut, dwTimeOut))
 		{
 			if (!strOut.empty())
 			{
@@ -122,7 +124,7 @@ static void FowardRender2Browser(bool bSync, const CefString& name, const CefV8V
 	}
 }
 
-void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
+static void ParseDOMGetAttr(CefRefPtr<CefFrame> frame)
 {
 
 	static std::string strParseDomJS;
@@ -180,7 +182,7 @@ notify_nc_alledge[attr] = new Array();
 notify_nc_alledge[attr].push({ left: Math.floor(drect.left), top: Math.floor(drect.top), right: Math.floor(drect.right), bottom: Math.floor(drect.bottom) });
 });
 
-nativeapp.nc_setalledge = notify_nc_alledge;
+nativeapp.__nc_setalledge__ = notify_nc_alledge;
 return notify_nc_alledge;
 }
 
@@ -391,7 +393,6 @@ namespace JSCallFunctions
 
 		}
 
-		//接下来注入js
 		CefV8ValueList args;
 		FowardRender2Browser(false, __func__, args, retval, exception);
 	
@@ -463,7 +464,9 @@ namespace JSCallFunctions
 		}
 	}
 
-	void ContinueUnsecure(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
+
+
+	void __ContinueUnsecure__(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
 	{
 		//需要是主框架
 		auto context = CefV8Context::GetCurrentContext();
@@ -546,37 +549,12 @@ void NativeV8Handler::RegisterFunctions(CefRefPtr<CefV8Value> obj, int BrowserTy
 		obj->SetValue(#fnName, CefV8Value::CreateFunction(#fnName, this), attributes);\
 	} while(0)
 
-	//引入原有的同步接口
-
-	REG_SYNCJS_FUN(crossInvokeWebMethod, 1);
-	REG_SYNCJS_FUN(crossInvokeWebMethod2, 1);
-
-	REG_SYNCJS_FUN(invokeMethod, 3);
-
-	REG_SYNCJS_FUN(winProty, 1);
-	REG_SYNCJS_FUN(setProfile, 3);
-	REG_SYNCJS_FUN(getProfile, 3);
-	REG_SYNCJS_FUN(getSoftwareAttribute, 1);
 
 
-	//不需要返回值，改异步处理
-
-	REG_ASYNCJS_FUN(setWindowPos, 1);
-	//REG_ASYNCJS_FUN(fullScreen, 1);
-	REG_ASYNCJS_FUN(createWindow, 1);
-	REG_ASYNCJS_FUN(createModalWindow, 1);
-	REG_ASYNCJS_FUN(createModalWindow2, 1);
-	REG_ASYNCJS_FUN(setAlpha, 1);
 
 
-	REG_ASYNCJS_FUN(closeWindow, 1);
-
-	REG_ASYNCJS_FUN(asyncCrossInvokeWebMethod, 1);
-	REG_ASYNCJS_FUN(asyncCrossInvokeWebMethod2, 1);
-
-	REG_ASYNCJS_FUN(asyncCallMethod, 3); 
-
-	REG_ASYNCJS_FUN(dbgmode, 1);
+	//不需要返回值异步处理
+	REG_ASYNCJS_FUN(__dbgmode__, 1);
 
 	REG_JS_FUN(addFrameStateChanged, 1);
 	REG_JS_FUN(removeFrameStateChanged, 1);
@@ -595,8 +573,26 @@ void NativeV8Handler::RegisterFunctions(CefRefPtr<CefV8Value> obj, int BrowserTy
 
 
 
-	REG_JS_FUN(ContinueUnsecure, 3);
+	REG_JS_FUN(__ContinueUnsecure__, 3);
 
+}
+
+void NativeV8Handler::RegisterUserFunctions(CefRefPtr<CefV8Value> obj, CefRefPtr<CefDictionaryValue> list, bool bSync, int BrowserType)
+{
+	if (!list)
+		return;
+
+	CefDictionaryValue::KeyList keyList;
+	list->GetKeys(keyList);
+
+	for (const auto& name : keyList)
+	{
+		if (list->GetInt(name) & BrowserType)
+		{
+			m_mapFuncs.insert(std::make_pair(name, std::make_pair(nullptr, bSync)));
+			obj->SetValue(name, CefV8Value::CreateFunction(name, this), V8_PROPERTY_ATTRIBUTE_READONLY);
+		}
+	}
 }
 
 bool GobalNativeV8Handler::Execute(const CefString& name, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)

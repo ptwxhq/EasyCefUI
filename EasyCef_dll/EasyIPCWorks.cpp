@@ -28,9 +28,9 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 {
 	auto pData = std::make_shared< EasyIPCWorks::BRDataPack>();
 
-	if (!QuickGetIpcParms(input, pData->BrowserId, pData->FrameId, pData->Name, pData->Args))
+	if (!QuickGetIpcParms(input, pData->BrowserId, pData->FrameId, pData->WaitEndTime, pData->Name, pData->Args))
 	{
-		LOG(WARNING) << GetCurrentProcessId() << "] QuickGetIpcParms failed" << input;
+		LOG(WARNING) << GetCurrentProcessId() << "] QuickGetIpcParms failed:" << input;
 
 		return;
 	}
@@ -46,9 +46,8 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 	{
 		if (IsBrowser())
 		{
-			//只放几个必须得同步的。看了下mirage里面browser只有invokeMethod有必要
-			//这个的主要原有是因为存量旧代码可能会在内部创建窗口之类的
-			bNeedUI = pData->Name == "invokeMethod";
+			bNeedUI = CheckNeedUI(pData->Name);
+
 		}
 		else
 		{
@@ -61,15 +60,29 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 
 	if (bNeedUI)
 	{
-		auto waitres = pData->Signal.get_future().wait_for(std::chrono::milliseconds(14000));
-		if (std::future_status::ready == waitres)
+		int64 nNeedWaitMS = 0;
+		if (pData->WaitEndTime)
 		{
-			output = std::move(pData->ReturnVal);
+			nNeedWaitMS = (GetTimeNowMS() - pData->WaitEndTime);
 		}
-		else if (std::future_status::timeout == waitres)
+	
+		if (nNeedWaitMS > 0)
 		{
-			pData->DataInvalid = true;
-			LOG(WARNING) << GetCurrentProcessId() << "] EasyIPCWorks::UIWork timeout " << pData->Name << " data:" << input;
+			auto waitres = pData->Signal.get_future().wait_for(std::chrono::milliseconds(nNeedWaitMS));
+
+			if (std::future_status::ready == waitres)
+			{
+				output = std::move(pData->ReturnVal);
+			}
+			else if (std::future_status::timeout == waitres)
+			{
+				pData->DataInvalid = true;
+				LOG(WARNING) << GetCurrentProcessId() << "] EasyIPCWorks::UIWork timeout " << pData->Name << " data:" << input;
+			}
+		}
+		else
+		{
+			pData->Signal.get_future().wait();
 		}
 	}
 	else
@@ -101,7 +114,20 @@ void EasyIPCWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool 
 
 			if (pIPC->TriggerBlockingWorkEvent())
 			{
-				pWait->get_future().wait_for(std::chrono::milliseconds(15000));
+				int64 nNeedWaitMS = 0;
+				if (pData->WaitEndTime)
+				{
+					nNeedWaitMS = (GetTimeNowMS() - pData->WaitEndTime);
+				}
+
+				if (nNeedWaitMS > 0)
+				{
+					pWait->get_future().wait_for(std::chrono::milliseconds(nNeedWaitMS));
+				}
+				else
+				{
+					pWait->get_future().wait();
+				}
 			}
 
 			//LOG(INFO) << GetCurrentProcessId() << "] EasyIPCwork specia end:(" << pData->ReturnVal;

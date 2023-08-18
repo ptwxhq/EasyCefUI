@@ -80,6 +80,8 @@ void WebViewControl::StopLoad()
 
 bool WebViewControl::IsMuteAudio()
 {
+    CEF_REQUIRE_UI_THREAD();
+
     if (m_browser && m_browser->GetHost())
     {
         return m_browser->GetHost()->IsAudioMuted();
@@ -97,6 +99,8 @@ void WebViewControl::MuteAudio(bool mute)
 
 double WebViewControl::GetZoomLevel()
 {
+    CEF_REQUIRE_UI_THREAD();
+
     if (m_browser && m_browser->GetHost())
     {
         double d = m_browser->GetHost()->GetZoomLevel();
@@ -230,7 +234,7 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
             };
 
   
-            VERIFY(SetWindowSubclass(pParams->hParent, SubWndProc, m_itemHandle, (DWORD_PTR)new std::tuple<WebViewBrowserControl*, SUBCLASSPROC>{ this, SubWndProc }));
+            VERIFY(SetWindowSubclass(pParams->hParent, SubWndProc, m_itemHandle, (DWORD_PTR)new SubProcContext{ this, SubWndProc }));
 
         }
         else
@@ -302,13 +306,7 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
 
         //   m_clientHandler->m_webcontrol = this;
 
-        auto extra_info = CefDictionaryValue::Create();
-
-        const auto tmpVal = EasyIPCServer::GetInstance().GetHandle();
-        auto valKeyName = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
-        extra_info->SetBinary(IpcBrowserServerKeyName, valKeyName);
-        extra_info->SetBool(ExtraKeyNameIsUIBrowser, IsUIControl());
-        extra_info->SetBool(ExtraKeyNameEnableHighDpi, g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi);
+        auto extra_info = CreateExtraInfo(false, nullptr);
 
         if (pParams->bSyncCreate)
         {
@@ -491,23 +489,7 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 
     VERIFY(hUIWnd = pWindow->Create(pParams->hParent, (LPRECT)&pParams->rc, g_BrowserGlobalVar.UILoadingWindowTitle.c_str(), dwStyle, dwExStyle));
 
-    auto extra_info = CefDictionaryValue::Create();
-
-    {
-        auto tmpVal = EasyIPCServer::GetInstance().GetHandle();
-        auto valKey = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
-        extra_info->SetBinary(IpcBrowserServerKeyName, valKey);
-    }
-
-    {
-        auto valKey = CefBinaryValue::Create(&hUIWnd, sizeof(hUIWnd));
-        extra_info->SetBinary(ExtraKeyNameUIWndHwnd, valKey);
-    }
-
-    extra_info->SetBool(ExtraKeyNameIsUIBrowser, IsUIControl());
-    extra_info->SetBool(ExtraKeyNameEnableHighDpi, g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi);
-
- 
+    auto extra_info = CreateExtraInfo(false, hUIWnd);
 
     //win11早期版本下自动圆角了，恢复下
     //pWindow->SetWindowRgn(NULL);
@@ -597,43 +579,8 @@ void WebViewTransparentUIControl::SetToolTip(const CefString& str)
 void WebViewTransparentUIControl::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect)
 {
     CEF_REQUIRE_UI_THREAD();
-    DCHECK_GT(m_pWindow->GetDeviceScaleFactor(), 0);
 
-    RECT rc = {};
-    GetClientRect(browser->GetHost()->GetWindowHandle(), &rc);
-
-    bool bIsZoom = m_pWindow->GetDeviceScaleFactor() != 1.f;
-
-    rect.x = rect.y = 0;
-    if (bIsZoom)
-    {
-        //用于减少窗口因创建之时已经舍弃小数点之后转换导致的偏移过大
-        auto v1 = DeviceToLogical(rc.right + 1, m_pWindow->GetDeviceScaleFactor());
-        auto v2 = DeviceToLogical(rc.right, m_pWindow->GetDeviceScaleFactor());
-        rect.width = (v1 + v2) / 2;
-    }
-    else
-    {
-        rect.width = rc.right;
-    }
-
-    if (rect.width == 0)
-        rect.width = 1;
-
-    if (bIsZoom)
-    {
-        auto v1 = DeviceToLogical(rc.bottom + 1, m_pWindow->GetDeviceScaleFactor());
-        auto v2 = DeviceToLogical(rc.bottom, m_pWindow->GetDeviceScaleFactor());
-        rect.height = (v1 + v2) / 2;
-    }
-    else
-    {
-        rect.height = rc.bottom;
-    }
-
-    if (rect.height == 0)
-        rect.height = 1;
-
+    rect = m_pWindow->CalcViewRect(0, 0);
 }
 
 void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType type, const RectList& dirtyRects, const void* buffer, int width, int height)
@@ -644,13 +591,19 @@ void WebViewTransparentUIControl::OnPaint(CefRefPtr<CefBrowser> browser, PaintEl
         bool IsFullView = dirtyRects.size() == 1 && dirtyRects[0] == CefRect(0, 0, width, height);
         if (IsFullView || !bNoStretch)
         {
-            m_pWindow->SetBitmapData(buffer, width, height);
+            if (!m_pWindow->SetBitmapData(buffer, width, height))
+            {
+                return;
+            }
         }
         else
         {
             for (auto& it : dirtyRects)
             {
-                m_pWindow->SetBitmapData(buffer, it.x, it.y, it.width, it.height, true, it.x, it.y, width, height);
+                if (!m_pWindow->SetBitmapData(buffer, it.x, it.y, it.width, it.height, true, it.x, it.y, width, height))
+                {
+                    return;
+                }
             }
         }
 

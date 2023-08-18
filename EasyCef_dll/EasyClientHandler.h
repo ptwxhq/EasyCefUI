@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include <list>
-#include <unordered_set>
 #include "WebViewControl.h"
 
 //主进程
@@ -139,11 +138,6 @@ public:
     // Return the handler for browser request events.
     CefRefPtr<CefRequestHandler> GetRequestHandler() override { return this; }
 
-#if CEF_VERSION_MAJOR < 100
-    void OnPluginCrashed(CefRefPtr<CefBrowser> browser,
-        const CefString& plugin_path) override;
-#endif
-
     void OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
         TerminationStatus status) override;
 
@@ -189,6 +183,10 @@ public:
         const CefString& suggested_name,
         CefRefPtr<CefBeforeDownloadCallback> callback) override;
 
+    void OnDownloadUpdated(CefRefPtr<CefBrowser> browser,
+        CefRefPtr<CefDownloadItem> download_item,
+        CefRefPtr<CefDownloadItemCallback> callback) override;
+
     void SetManualHandle(wvhandle handle) {
         m_hManualCreateHandle = handle;
     }
@@ -216,7 +214,7 @@ public:
         CefRefPtr<CefFrame> frame,
         CefRefPtr<CefRequest> request) override;
 
-    CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() { return this; }
+    CefRefPtr<CefKeyboardHandler> GetKeyboardHandler() override { return this; }
 
     bool OnKeyEvent(CefRefPtr<CefBrowser> browser,
         const CefKeyEvent& event,
@@ -237,8 +235,6 @@ protected:
     CefRefPtr<WebViewUIControl> m_webuicontrol;
 
     IMPLEMENT_REFCOUNTING(EasyClientHandler);
-
-    static inline std::unordered_set<std::wstring> s_listAllowUnsecure;
 
     //Cefclient 自己的
     bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,

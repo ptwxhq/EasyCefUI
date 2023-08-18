@@ -5,10 +5,17 @@
 
 
 
-const char* IpcBrowserServerKeyName = "browser_server";
+constexpr int g_IpcNormalMaxMemorySize = 1024 * 4;	 //4K大小通常已经够用了，目前更大数据的会额外自动处理，且最大可达到size_t
+constexpr int g_IpcNormalMaxDataSize = g_IpcNormalMaxMemorySize - sizeof(int) - sizeof(size_t);
 
-constexpr int g_IpcMaxMemorySize = 1024 * 1024 * 4;
-constexpr int g_IpcMaxDataSize = g_IpcMaxMemorySize - sizeof(int) - sizeof(size_t);
+enum MEMFLAG
+{
+	E_UNSET        = 0x00000000,
+	E_SEND         = 0x0000f000,
+	E_SEND_LARGE   = 0x0000f001,
+	E_RETURN       = 0xffff0000,
+	E_RETURN_LARGE = 0xffff00f0,
+};
 
 class CEasyFileMap
 {
@@ -25,24 +32,37 @@ public:
 		MAP() {
 		}
 
-		MAP(CEasyFileMap* h, int rw, size_t mapsize) {
-			MapSize(h, rw, mapsize);
+		explicit MAP(CEasyFileMap* h, bool write, size_t mapsize) {
+			MapSize(h, write, mapsize);
 		}
 
 		~MAP() {
+			Unmap();
+		}
+
+		//由于offset需要1024倍数，废弃
+		void* MapSize(CEasyFileMap* h, bool write, size_t mapsize) {
+			Unmap();
+
+			DWORD access = FILE_MAP_READ;
+
+			if (write)
+			{
+				access |= FILE_MAP_WRITE;
+			}
+
+			m_pFileMapView = MapViewOfFile(h->m_hFileMap, access, 0, 0, mapsize);
+			//if (!m_pFileMapView)
+			//	throw "map failed";
+			return m_pFileMapView;
+		}
+
+		void Unmap() {
 			if (m_pFileMapView)
 			{
 				UnmapViewOfFile(m_pFileMapView);
 				m_pFileMapView = nullptr;
 			}
-		}
-
-		//由于offset需要1024倍数，废弃
-		void* MapSize(CEasyFileMap* h, int rw, size_t mapsize) {
-			m_pFileMapView = MapViewOfFile(h->m_hFileMap, rw, 0, 0, mapsize);
-			//if (!m_pFileMapView)
-			//	throw "map failed";
-			return m_pFileMapView;
 		}
 
 
@@ -53,9 +73,9 @@ public:
 	{
 	}
 
-	CEasyFileMap(DWORD size, LPCSTR name, int rw)
+	explicit CEasyFileMap(DWORD size, LPCSTR name, bool write)
 	{
-		Init(size, name, rw);
+		Init(size, name, write);
 	}
 
 	~CEasyFileMap()
@@ -68,7 +88,7 @@ public:
 	}
 	
 	//size = 0 表示打开
-	bool Init(DWORD size, LPCSTR name , int rw)
+	bool Init(size_t size, LPCSTR name , bool write)
 	{
 		if (!m_hFileMap)
 		{
@@ -76,12 +96,24 @@ public:
 			strNew += name;
 			if (size == 0)
 			{
-				m_hFileMap = OpenFileMappingA(rw, FALSE, strNew.c_str());//FILE_MAP_READ | FILE_MAP_WRITE
+				DWORD dwRw = FILE_MAP_READ;
+				if (write)
+				{
+					dwRw |= FILE_MAP_WRITE;
+				}
+
+
+				m_hFileMap = OpenFileMappingA(dwRw, FALSE, strNew.c_str());
 			}
 			else
 			{
-				//PAGE_READONLY		PAGE_READWRITE
-				m_hFileMap = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, rw, 0, size, strNew.c_str());
+				DWORD dwLow = size;
+				DWORD dwHigh = 0;
+#ifdef _WIN64
+				dwHigh = size >> 32;
+#endif // _WIN64
+				
+				m_hFileMap = CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, dwHigh, dwLow, strNew.c_str());
 			}
 		
 		}
@@ -231,7 +263,7 @@ void EasyIPCBase::Run()
 	SetUserDataPtr(m_hAsServerHandle, this);
 
 	std::vector<std::thread> vecEasyThreadPool;
-	const int nEasyThreadPoolCount = 5;
+	const int nEasyThreadPoolCount = IsServer() ? 6 : 4;
 	for (int i = 0; i < nEasyThreadPoolCount; i++)
 
 		vecEasyThreadPool.push_back(std::thread([this]() {
@@ -265,6 +297,8 @@ void EasyIPCBase::Run()
 			std::string strContName = *pOnceWork;
 			{
 				auto hEvent = OpenEventA(EVENT_MODIFY_STATE, FALSE, strContName.c_str());
+				HANDLE hLargeEvent = nullptr;
+				std::unique_ptr<CEasyFileMap> pMem_large;
 
 				if (!hEvent)
 				{
@@ -276,43 +310,45 @@ void EasyIPCBase::Run()
 					if (!m_workCall)
 						throw "No work callback";
 
-					size_t srcLen = 0;
 					std::string strIn;
 
 					CEasyFileMap shm_obj;
 
-					if (!shm_obj.Init
-					(0                    //only open
-						, strContName.c_str()              //name
-						, FILE_MAP_READ | FILE_MAP_WRITE
-					))throw "file map err";
+					if (!shm_obj.Init(0, strContName.c_str(), true))
+						throw "file map err";
 
+					int iCheck = E_UNSET;
+
+					if (!GetMemData(strIn, iCheck, strContName, &shm_obj))
 					{
-						CEasyFileMap::MAP region(shm_obj, FILE_MAP_READ, sizeof(int) + sizeof(size_t));
-						memcpy(&srcLen, region + sizeof(int), sizeof(size_t));
+						throw "get data err";
 					}
 
-					if (srcLen > 0)
+					if (iCheck == E_SEND || iCheck == E_SEND_LARGE)
 					{
-						CEasyFileMap::MAP region(shm_obj, FILE_MAP_READ, sizeof(int) + sizeof(size_t) + srcLen);
-						strIn.assign(region + sizeof(int) + sizeof(size_t), srcLen);
 					}
+					else
+					{
+						throw "invalid mmdata";
+					}
+					
 
 					std::string strOut;
 					m_workCall(strIn, strOut);
 
-					if (strOut.length() > g_IpcMaxDataSize)
-					{
-						LOG(INFO) << GetCurrentProcessId() << "] IPC return too large:(" << strOut.length() << ") max:[" << g_IpcMaxDataSize;
+					const MEMFLAG setflag = strOut.length() > g_IpcNormalMaxDataSize ? E_RETURN_LARGE : E_RETURN;
 
-						throw "return length too large";
+					const auto strLarReturnContName = "RT" + strContName;
+
+					SetMemData(strOut, strLarReturnContName, &shm_obj, pMem_large, setflag);
+
+					if (pMem_large)
+					{
+						hLargeEvent = CreateEventA(nullptr, TRUE, FALSE, strLarReturnContName.c_str());
+
+						assert(hLargeEvent);
 					}
 
-					const auto outLen = strOut.length();
-					CEasyFileMap::MAP region(shm_obj, FILE_MAP_READ | FILE_MAP_WRITE, outLen + sizeof(size_t) + sizeof(int));
-					memset(region, -1, sizeof(int));
-					memcpy(region + sizeof(int), &outLen, sizeof(size_t));
-					memcpy(region + sizeof(int) + sizeof(size_t), strOut.c_str(), outLen);
 
 				}
 				catch (const std::exception& e)
@@ -326,6 +362,16 @@ void EasyIPCBase::Run()
 
 				SetEvent(hEvent);
 				CloseHandle(hEvent);
+
+				if (hLargeEvent)
+				{
+					if (WAIT_TIMEOUT == WaitForSingleObject(hLargeEvent, 30000))
+					{
+						LOG(WARNING) << GetCurrentProcessId() << "] Large return timeout";
+					}
+					CloseHandle(hLargeEvent);
+				}
+
 			}
 			//LOG(INFO) << GetCurrentProcessId() << "] thread work end" << br;
 
@@ -362,12 +408,8 @@ void EasyIPCBase::Run()
 
 }
 
-bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::string& ret)
+bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::string& ret, DWORD timeout)
 {
-	const auto srcLen = send.length();
-	if (srcLen > g_IpcMaxDataSize)
-		return false;
-
 	const auto nNowR = ++m_SendRound;
 
 	const bool bIsMainThread = GetCurrentThreadId() == GetMainThreadId();
@@ -389,19 +431,21 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 		if(!hEvent)
 			throw "create event failed";
 
-
 		CEasyFileMap mem_result;
-		if (!mem_result.Init(g_IpcMaxMemorySize, strContName.c_str(), PAGE_READWRITE))
+		if (!mem_result.Init(g_IpcNormalMaxMemorySize, strContName.c_str(), true))
 		{
 			throw "file map failed";
 		}
 
+		std::unique_ptr<CEasyFileMap> pMem_large;
 
+		const auto srcLen = send.length();
+
+		MEMFLAG flag = srcLen > g_IpcNormalMaxDataSize ? E_SEND_LARGE : E_SEND;
+
+		if (!SetMemData(send, strContName, &mem_result, pMem_large, flag))
 		{
-			CEasyFileMap::MAP  region(mem_result, FILE_MAP_READ | FILE_MAP_WRITE, srcLen + sizeof(size_t) + sizeof(int));
-			memset(region, 0, sizeof(int));
-			memcpy(region + sizeof(int), &srcLen, sizeof(size_t));
-			memcpy(region + sizeof(int) + sizeof(size_t), send.c_str(), srcLen);
+			throw "file map set failed";
 		}
 
 		const int sendOK = SendMessage(handle, UM_IPC_SEND_WORK_INFO, nNowR, (LPARAM)m_hAsServerHandle);
@@ -418,7 +462,7 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 
 			do
 			{
-				const DWORD dwWait = WaitForMultipleObjects(dwWaitCount, hEvents, FALSE, 15000);
+				const DWORD dwWait = WaitForMultipleObjects(dwWaitCount, hEvents, FALSE, timeout == 0 ? INFINITE : timeout);
 				if (dwWait == WAIT_OBJECT_0)
 				{
 					if (bIsMainThread)
@@ -426,25 +470,15 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 						m_bIsMainThreadBlocking = false;
 					}
 
-					int iCheck = 0;
-					size_t OutLen = 0;
-
+					int iCheck = E_UNSET;
+					if (GetMemData(ret, iCheck, strContName, &mem_result))
 					{
-						CEasyFileMap::MAP  region(mem_result, FILE_MAP_READ, sizeof(size_t) + sizeof(int));
-						memcpy(&iCheck, region, sizeof(int));
-						if (iCheck == -1)
+						if (iCheck == E_RETURN || iCheck == E_RETURN_LARGE)
 						{
 							bSucc = true;
-							memcpy(&OutLen, region + sizeof(int), sizeof(size_t));
 						}
 					}
 
-					if (OutLen > 0)
-					{
-						CEasyFileMap::MAP  region(mem_result, FILE_MAP_READ, sizeof(size_t) + sizeof(int) + OutLen);
-						ret.assign(region + sizeof(size_t) + sizeof(int), OutLen);
-
-					}
 
 					break;
 				}
@@ -520,6 +554,142 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 const std::string EasyIPCBase::GetShareMemName(IPCHandle hFrom, IPCHandle hTo, size_t id)
 {
 	return std::format("_EasyIPC_v1_{:X}_{:X}_{:X}", (size_t)hFrom, (size_t)hTo, id);
+}
+
+bool EasyIPCBase::SetMemData(const std::string& strSend, const std::string& strMemName, CEasyFileMap* pMem, std::unique_ptr<CEasyFileMap>& pMemLarge, int iFlag)
+{
+	const auto srcLen = strSend.length();
+	const bool bIsLargeData = srcLen > g_IpcNormalMaxDataSize;
+	bool bSucc = false;
+	std::string strLargeMemName;
+
+	try
+	{
+
+		size_t nNeedSize = 0;
+		if (bIsLargeData)
+		{
+			pMemLarge = std::make_unique<CEasyFileMap>();
+
+			if (iFlag != E_RETURN_LARGE)
+			{
+				strLargeMemName = "LAR" + strMemName;
+			}
+			else
+			{
+				strLargeMemName = strMemName;
+			}
+
+			if (!pMemLarge->Init(srcLen, strLargeMemName.c_str(), true))
+			{
+				throw "lar file map failed";
+			}
+		}
+		else
+		{
+			nNeedSize += srcLen;
+		}
+
+		MEMFLAG flag = (MEMFLAG)iFlag;
+
+		
+		CEasyFileMap::MAP region(pMem, true, nNeedSize);
+
+		size_t nCurWritePos = 0;
+		memcpy(region, &flag, sizeof(MEMFLAG));
+		nCurWritePos += sizeof(MEMFLAG);
+		memcpy(region + nCurWritePos, &srcLen, sizeof(srcLen));
+		nCurWritePos += sizeof(srcLen);
+
+		if (bIsLargeData)
+		{
+			const auto nLMN = strLargeMemName.size();
+			memcpy(region + nCurWritePos, &nLMN, sizeof(nLMN));
+			nCurWritePos += sizeof(MEMFLAG);
+			memcpy(region + nCurWritePos, strLargeMemName.c_str(), nLMN);
+
+			CEasyFileMap::MAP regionLar(pMemLarge.get(), true, srcLen);
+			memcpy(regionLar, strSend.data(), srcLen);
+		}
+		else
+		{
+			memcpy(region + nCurWritePos, strSend.data(), srcLen);
+		}
+
+		bSucc = true;
+	}
+	catch (const char* c)
+	{
+		LOG(INFO) << GetCurrentProcessId() << "] Err c:" << c;
+	}
+
+
+
+	return bSucc;
+}
+
+bool EasyIPCBase::GetMemData(std::string& strReturn, int& iFlag, const std::string& strMemName, CEasyFileMap* pMem)
+{
+	bool bSucc = false;
+	MEMFLAG iCheck = E_UNSET;
+	size_t OutLen = 0;
+
+	CEasyFileMap::MAP region(pMem, false, 0);
+
+	memcpy(&iCheck, region, sizeof(MEMFLAG));
+	size_t nCurReadPos = sizeof(MEMFLAG);
+	memcpy(&OutLen, region + nCurReadPos, sizeof(OutLen));
+	nCurReadPos += sizeof(OutLen);
+
+	iFlag = iCheck;
+
+	switch (iCheck)
+	{
+	case E_UNSET:
+		break;
+	case E_SEND:
+	case E_RETURN:
+
+		bSucc = true;
+		if (OutLen > 0)
+		{
+			strReturn.assign(region + nCurReadPos, OutLen);
+		}
+
+		break;
+	case E_SEND_LARGE:
+	case E_RETURN_LARGE:
+	{
+		bSucc = true;
+		size_t nLMN = 0;
+
+		memcpy(&nLMN, region + nCurReadPos, sizeof(nLMN));
+		nCurReadPos += sizeof(nLMN);
+
+		std::string strContName;
+		strContName.assign(region + nCurReadPos, nLMN);
+
+
+		CEasyFileMap memLarge(0, strContName.c_str(), false);
+		CEasyFileMap::MAP regionLar(memLarge, false , OutLen);
+		
+		strReturn.assign(regionLar, OutLen);
+
+		if (E_RETURN_LARGE == iCheck)
+		{
+			auto hEvt = OpenEventA(EVENT_MODIFY_STATE, FALSE, strContName.c_str());
+			if (hEvt) {
+				SetEvent(hEvt);
+				CloseHandle(hEvt);
+			}
+		}
+	}
+	break;
+	default:
+		break;
+	}
+
+	return bSucc;
 }
 
 LRESULT EasyIPCBase::WORKPROC(HWND h, UINT msg, WPARAM wp, LPARAM lp)
@@ -617,10 +787,10 @@ bool EasyIPCClient::NotifyConnect(int id)
 	return false;
 }
 
-bool EasyIPCClient::SendDataToServer(const std::string& send, std::string& ret)
+bool EasyIPCClient::SendDataToServer(const std::string& send, std::string& ret, DWORD timeout)
 {
 	if (m_hServerHandle)
-		return SendData(m_hServerHandle, send, ret);
+		return SendData(m_hServerHandle, send, ret, timeout);
 	return false;
 }
 

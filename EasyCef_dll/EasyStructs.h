@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include <functional>
+#include <unordered_set>
 
 struct EasyCefFunctionFlag
 {
@@ -22,8 +24,6 @@ enum class PreferredAppMode
 //全局变量
 struct BrowserGlobalVar
 {
-	typedef void(*_fun_allvoid)();
-
 	bool Debug = false;
 	bool BrowserExist = false;
 	bool SupportLayerWindow = false;
@@ -39,17 +39,43 @@ struct BrowserGlobalVar
 
 	void* sandbox_info = nullptr;
 
-	using CloseCallback = void(*)();
-	CloseCallback funcCloseCallback;
+	std::function<void()> funcCloseCallback;
 
-	using SpeedupCallback = void(*)(float);
-	SpeedupCallback funcSpeedupCallback;
+	std::function<void(float)> funcSpeedupCallback;
 
-	using XpackExtract = bool(*)(LPCWSTR lpszPackFile, LPCWSTR lpszFileItem, BYTE** ppOut, DWORD* pLen);
-	XpackExtract funcXpackExtract;
+	std::function<bool(LPCWSTR, LPCWSTR, BYTE**, DWORD*)> funcXpackExtract;
 
-	using XpackFreeData = void(*)(BYTE* pOut);
-	XpackFreeData funcXpackFreeData;
+	std::function<void(BYTE*)> funcXpackFreeData;
+
+	using FuncAddContextMenu = void(*)(void* ,int, LPCWSTR, bool, bool);
+	std::function<void(HWND hWnd, int x, int y, bool bIsEdit, FuncAddContextMenu call, void* ext)> funcBeforeContextMenu;
+
+	std::function<bool(HWND, int)> funcDoMenuCommand;
+
+	std::function<bool(HWND, int, LPCWSTR, LPCWSTR, bool)> funcLoadErrorCallback;
+
+	std::function<void(HWND, LPCWSTR, LPCWSTR, bool)> funcCallNativeCompleteStatus;
+
+	std::function<void(HWND, LPCWSTR, LPCWSTR, LPCWSTR)> funcCallDOMCompleteStatus;
+
+	std::function<void(HWND, LPCWSTR, LPCWSTR)> funcPopNewUrlCallback;
+
+	std::function<bool(HWND, unsigned int, LPCWSTR, LPCWSTR)> funcBeforeDownloadCallback;
+
+	std::function<bool(unsigned int, long long, long long)> funcDownloadStatusCallback;
+
+
+	//控件常用回调
+	std::function<void(int, HWND)> funcWebControlCreated;
+	std::function<void(int, bool, bool, bool)> funcWebControLoadingState;
+	std::function<void(int, LPCWSTR)> funcWebControlUrlChange;
+	std::function<void(int, LPCWSTR)> funcWebControlTitleChange;
+	std::function<void(int, LPCWSTR, bool*)> funcWebControlLoadBegin;
+	std::function<void(int)> funcWebControlLoadEnd;
+	std::function<void(int, LPCWSTR)> funcWebControlFavIconChange;
+	std::function<void(int)> funcWebControlBeforeClose;
+	std::function<bool(int, LPCWSTR, HWND*)> funcWebControlBeforePopup;
+
 
 	PreferredAppMode DarkModeType = PreferredAppMode::Default;
 
@@ -73,6 +99,9 @@ struct BrowserGlobalVar
 
 
 	EasyCefFunctionFlag FunctionFlag;
+
+
+	std::unordered_set<std::wstring> listAllowUnsecureDomains;
 
 } ;
 
@@ -120,10 +149,19 @@ public:
 
 extern BrowserGlobalVar g_BrowserGlobalVar;
 
-extern const char* ExtraKeyNameIsManagedPopup;
-extern const char* ExtraKeyNameIsUIBrowser;
-extern const char* ExtraKeyNameUIWndHwnd;
-extern const char* ExtraKeyNameEnableHighDpi;
+
+enum EXTRAKEYNAMES
+{
+	IpcBrowserServer,
+	IsManagedPop,
+	UIWndHwnd,
+	EnableHighDpi,
+	RegSyncJSFunctions,
+	RegAsyncJSFunctions
+};
+
+extern const char* const ExtraKeyNames[];
+
 
 
 #define WIDE_STR(x) WIDE_STR2(x)

@@ -5,6 +5,7 @@
 #include "include/internal/cef_types_wrappers.h"
 
 uint64_t GetTimeNow();
+uint64_t GetTimeNowMS(int Offset = 0);
 
 // Set the window's user data pointer.
 void SetUserDataPtr(HWND hWnd, void* ptr);
@@ -38,9 +39,9 @@ CefRect LogicalToDevice(const CefRect& value, float device_scale_factor);
 int DeviceToLogical(int value, float device_scale_factor);
 void DeviceToLogical(CefMouseEvent& value, float device_scale_factor);
 
-std::string QuickMakeIpcParms(int BrowserId, int64 FrameId, const std::string& name, const CefRefPtr<CefListValue>& valueList);
+std::string QuickMakeIpcParms(int BrowserId, int64 FrameId, uint64 timeout, const std::string& name, const CefRefPtr<CefListValue>& valueList);
 
-bool QuickGetIpcParms(const std::string& strData, int& BrowserId, int64& FrameId, std::string& name, CefRefPtr<CefListValue>& valueList);
+bool QuickGetIpcParms(const std::string& strData, int& BrowserId, int64& FrameId, uint64& timeout, std::string& name, CefRefPtr<CefListValue>& valueList);
 
 bool GetParentProcessInfo(DWORD* pdwId, std::wstring* pstrPathOut);
 
@@ -50,7 +51,6 @@ std::string GetDataURI(const std::string& data, const std::string& mime_type);
 
 std::string GetInternalPage(const std::string& data);
 
-//不要在render进程内调用
 std::wstring GetDefAppDataFolder();
 
 CefRefPtr<CefV8Value> CefValueToCefV8Value(CefRefPtr<CefValue> value);
@@ -58,6 +58,8 @@ CefRefPtr<CefV8Value> CefValueToCefV8Value(CefRefPtr<CefValue> value);
 CefRefPtr<CefValue> CefV8ValueToCefValue(CefRefPtr<CefV8Value> value);
 
 CefString CefV8ValueToString(CefRefPtr<CefV8Value> value);
+
+CefRefPtr<CefDictionaryValue> CreateExtraInfo(bool bIsManaged, HWND hUIHwnd);
 
 void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context);
 

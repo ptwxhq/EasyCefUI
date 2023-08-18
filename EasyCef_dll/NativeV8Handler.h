@@ -7,12 +7,8 @@
 class NativeV8Handler :
     public CefV8Handler
 {
-
-    //typedef std::function<void(const CefV8ValueList&, CefRefPtr<CefV8Value>&, CefString&)> HandleCallback;
-    typedef void(*HandleCallback)(const CefV8ValueList&, CefRefPtr<CefV8Value>&, CefString&);
-
     //bool true:同步
-    typedef std::unordered_map<std::string, std::pair<HandleCallback, bool>> FunctionMap;
+    using FunctionMap = std::unordered_map<std::string, std::pair<void(*)(const CefV8ValueList&, CefRefPtr<CefV8Value>&, CefString&), bool>> ;
 
 
 public:
@@ -28,6 +24,8 @@ public:
     //BrowserType限1和2
     void RegisterFunctions(CefRefPtr<CefV8Value> obj, int BrowserType);
 
+    void RegisterUserFunctions(CefRefPtr<CefV8Value> obj, CefRefPtr<CefDictionaryValue> list, bool bSync, int BrowserType);
+
 
     IMPLEMENT_REFCOUNTING(NativeV8Handler);
 
@@ -41,8 +39,7 @@ private:
 class GobalNativeV8Handler :
     public CefV8Handler
 {
-    typedef void(*HandleCallback)(const CefV8ValueList&, CefRefPtr<CefV8Value>&, CefString&);
-    typedef std::unordered_map<std::string, HandleCallback> FunctionMap;
+    using FunctionMap = std::unordered_map<std::string, void(*)(const CefV8ValueList&, CefRefPtr<CefV8Value>&, CefString&)> ;
 public:
     bool Execute(const CefString& name,
         CefRefPtr<CefV8Value> object,

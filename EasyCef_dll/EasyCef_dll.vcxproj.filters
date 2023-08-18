@@ -72,7 +72,7 @@
     <ClInclude Include="LegacyImplement.h">
       <Filter>LegacyCodes</Filter>
     </ClInclude>
-    <ClInclude Include="Export.h">
+    <ClInclude Include="EasyExport.h">
       <Filter>Exports</Filter>
     </ClInclude>
     <ClInclude Include="EasyRenderBrowserInfo.h">
@@ -86,9 +86,6 @@
     </ClInclude>
     <ClInclude Include="EasyIPCWorks.h">
       <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="LegacyExports.h">
-      <Filter>Exports</Filter>
     </ClInclude>
     <ClInclude Include="EasyUIWindow.h">
       <Filter>头文件</Filter>
@@ -164,10 +161,7 @@
     <ClCompile Include="LegacyImplement.cpp">
       <Filter>LegacyCodes</Filter>
     </ClCompile>
-    <ClCompile Include="Export.cpp">
-      <Filter>Exports</Filter>
-    </ClCompile>
-    <ClCompile Include="LegacyExports.cpp">
+    <ClCompile Include="EasyExport.cpp">
       <Filter>Exports</Filter>
     </ClCompile>
     <ClCompile Include="EasyRenderBrowserInfo.cpp">

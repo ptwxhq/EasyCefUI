@@ -427,8 +427,8 @@ CefBrowserHost::DragOperationsMask DropTargetWin::StartDragging(
 
                 ASSERT(bin->GetSize() == pixel_width * pixel_height * 4);
 
-                pPreviewWnd->m_info.SetWindowSize({ pixel_width, pixel_height });
-                pPreviewWnd->m_info.SetAlpha(255 * 0.75);
+                pPreviewWnd->m_info.SetSize({ pixel_width, pixel_height });
+                pPreviewWnd->m_info.SetAlpha(192); //255 * 0.75
                 pPreviewWnd->SetBitmapData(pData.get(), pixel_width, pixel_height);
                 pPreviewWnd->Render();
 

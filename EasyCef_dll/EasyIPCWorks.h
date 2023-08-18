@@ -13,6 +13,7 @@ public:
 		bool DataInvalid = false;
 		int BrowserId = -1;
 		int64 FrameId = -1;
+		uint64 WaitEndTime = 0;	  //ms
 		std::string Name;
 		std::string ReturnVal;
 		CefRefPtr<CefListValue> Args;
@@ -29,12 +30,14 @@ public:
 
 	virtual bool IsBrowser() = 0;
 
-protected:
-	typedef bool(*HandleSyncCallback)(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, const CefRefPtr<CefListValue>&, CefString&);
-	typedef std::unordered_map<std::string, HandleSyncCallback> SyncFunctionMap;
+	virtual bool CheckNeedUI(const std::string& name) {
+		return false;
+	}
 
-	typedef void(*HandleAsyncCallback)(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, const CefRefPtr<CefListValue>&);
-	typedef std::unordered_map<std::string, HandleAsyncCallback> AsyncFunctionMap;
+protected:
+	using SyncFunctionMap = std::unordered_map<std::string, std::function<bool(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, const CefRefPtr<CefListValue>&, CefString&)>>;
+
+	using AsyncFunctionMap = std::unordered_map<std::string, std::function<void(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, const CefRefPtr<CefListValue>&)>>;
 
 	void UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread);
 	virtual void DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) = 0;

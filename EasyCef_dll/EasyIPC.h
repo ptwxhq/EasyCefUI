@@ -4,10 +4,9 @@
 #include <unordered_map>
 #include <future>
 
-extern const char* IpcBrowserServerKeyName /*= "browser_server"*/;
-
 //用于简单处理同步内容
 
+class CEasyFileMap;
 
 class EasyIPCBase
 {
@@ -15,8 +14,8 @@ public:
 
 	using IPCHandle = HWND;
 
-	typedef std::function<void(const std::string&, std::string&)> WorkCall;
-	typedef std::function<void()> OnceBlockingWorkCall;
+	using WorkCall = std::function<void(const std::string&, std::string&)>;
+	using OnceBlockingWorkCall = std::function<void()>;
 
 	void SetWorkCall(WorkCall call);
 
@@ -28,7 +27,7 @@ public:
 
 	static const std::string GetShareMemName(IPCHandle hFrom, IPCHandle hTo, size_t id);
 
-	bool SendData(IPCHandle handle, const std::string& send, std::string& ret);
+	bool SendData(IPCHandle handle, const std::string& send, std::string& ret, DWORD timeout);
 
 	virtual ~EasyIPCBase();
 
@@ -47,6 +46,9 @@ public:
 
 
 protected:
+
+	static bool SetMemData(const std::string& strSend, const std::string& strMemName, CEasyFileMap* pMem, std::unique_ptr<CEasyFileMap>& pMemLarge, int iFlag);
+	static bool GetMemData(std::string& strReturn, int& iFlag, const std::string& strMemName, CEasyFileMap* pMem);
 
 	static LRESULT CALLBACK WORKPROC(HWND, UINT msg, WPARAM wp, LPARAM lp);
 
@@ -116,7 +118,7 @@ public:
 
 	bool NotifyConnect(int id);
 
-	bool SendDataToServer(const std::string& send, std::string &ret);
+	bool SendDataToServer(const std::string& send, std::string &ret, DWORD timeout);
 
 	bool IsServer() final {
 		return false;

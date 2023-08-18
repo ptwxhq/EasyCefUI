@@ -24,8 +24,6 @@ inline bool IsMouseEventFromTouch(UINT message) {
 LayeredWindowInfo::LayeredWindowInfo(
 	__in LONG width,
 	__in LONG height) :
-	m_sourcePosition(),
-	m_windowPosition(),
 	m_size({ width, height }),
 	m_dirty({ -1,-1,-1,-1 }),
 	m_blend(),
@@ -34,7 +32,6 @@ LayeredWindowInfo::LayeredWindowInfo(
 
 	m_info.cbSize = sizeof(UPDATELAYEREDWINDOWINFO);
 	m_info.pptSrc = &m_sourcePosition;
-	m_info.pptDst = nullptr/*&m_windowPosition*/;
 	m_info.psize = &m_size;
 	m_info.pblend = &m_blend;
 	m_info.dwFlags = ULW_ALPHA;
@@ -213,6 +210,52 @@ void EasyLayeredWindow::DpiChangeWork()
 		::PostMessage(m_hToolTip, WM_CLOSE, 0, 0);
 		m_hToolTip = nullptr;
 	}
+}
+
+CefRect EasyLayeredWindow::CalcViewRect(int width, int height) const
+{
+	DCHECK_GT(GetDeviceScaleFactor(), 0);
+
+	CefRect rect;
+	bool bIsZoom = GetDeviceScaleFactor() != 1.f;
+
+	if (width < 1 && height < 1)
+	{
+		width = view_width_;
+		height = view_height_;
+	}
+
+
+	rect.x = rect.y = 0;
+	if (bIsZoom)
+	{
+		//用于减少窗口因创建之时已经舍弃小数点之后转换导致的偏移过大
+		auto v1 = DeviceToLogical(width + 1, GetDeviceScaleFactor());
+		auto v2 = DeviceToLogical(width, GetDeviceScaleFactor());
+		rect.width = (v1 + v2) / 2;
+	}
+	else
+	{
+		rect.width = width;
+	}
+
+	if (rect.width == 0)
+		rect.width = 1;
+
+	if (bIsZoom)
+	{
+		auto v1 = DeviceToLogical(height + 1, GetDeviceScaleFactor());
+		auto v2 = DeviceToLogical(height, GetDeviceScaleFactor());
+		rect.height = (v1 + v2) / 2;
+	}
+	else
+	{
+		rect.height = height;
+	}
+
+	if (rect.height == 0)
+		rect.height = 1;
+	return rect;
 }
 
 CefBrowserHost::DragOperationsMask EasyLayeredWindow::OnDragEnter(CefRefPtr<CefDragData> drag_data, CefMouseEvent ev, CefBrowserHost::DragOperationsMask effect)
@@ -490,19 +533,22 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 		return 0;
 	}
 
-
 	if (lp == 0)
 		return 0;
 
-
-	view_width_ = LOWORD(lp);
-	view_height_ = HIWORD(lp);
-
-	m_info.SetWindowSize({ view_width_, view_height_ });
-
-	if (m_browser)
+	const int wi = LOWORD(lp);
+	const int hi = HIWORD(lp);
+	if (wi != view_width_ && hi != view_height_)
 	{
-		m_browser->GetHost()->WasResized();
+		view_width_ = wi;
+		view_height_ = hi;
+
+		m_info.SetSize({ view_width_, view_height_ });
+
+		if (m_browser)
+		{
+			m_browser->GetHost()->WasResized();
+		}
 	}
 
 	return 0;
@@ -584,8 +630,7 @@ LRESULT EasyLayeredWindow::OnCreate(UINT, WPARAM, LPARAM lp, BOOL& handle)
 
 
 
-	m_info.SetWindowPos({ pCREATESTRUCT->x, pCREATESTRUCT->y });
-	m_info.SetWindowSize({ pCREATESTRUCT->cx, pCREATESTRUCT->cy });
+	m_info.SetSize({ pCREATESTRUCT->cx, pCREATESTRUCT->cy });
 	m_bitmap = std::make_unique<GdiBitmap>(pCREATESTRUCT->cx, pCREATESTRUCT->cy);
 
 	//LOG(INFO) << GetCurrentProcessId() << "] OnCreate new:" << pCREATESTRUCT->x << pCREATESTRUCT->y << pCREATESTRUCT->cx << pCREATESTRUCT->cy << "\n";
@@ -730,8 +775,15 @@ LRESULT EasyLayeredWindow::OnPaint(UINT, WPARAM, LPARAM, BOOL& handle)
 	return 0;
 }
 
-void EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
+bool EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 {
+	if (CalcViewRect(width, height) != CalcViewRect(0, 0))
+	{
+		m_browser->GetHost()->WasResized();
+		m_browser->GetHost()->Invalidate(PET_VIEW);
+		return false;
+	}
+
 	if (!m_bitmap || m_bitmap->GetWidth() != width || m_bitmap->GetHeight() != height)
 	{
 		m_bitmap = std::make_unique<GdiBitmap>(width, height);
@@ -739,15 +791,8 @@ void EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 
 	memcpy(m_bitmap->GetBits(), pData, width * height * 4);
 
-	if (view_width_ != width || view_height_ != height)
-	{
-		auto tempBmp = std::make_unique<GdiBitmap>(view_width_, view_height_);
-		SetStretchBltMode(tempBmp->GetDC(), COLORONCOLOR);
-		StretchBlt(tempBmp->GetDC(), 0, 0, view_width_, view_height_, m_bitmap->GetDC(), 0, 0, width, height, SRCCOPY);
-		m_bitmap = std::move(tempBmp);
-	}
-
 	m_info.SetDirtyRect(nullptr);
+	return true;
 }
 
 bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width, int height, bool SameSize, int src_x, int src_y, int origin_width, int origin_height)
@@ -760,7 +805,7 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 	if (!m_bitmap || x + width > m_bitmap->GetWidth() || y + height > m_bitmap->GetHeight())
 	{
 		m_bitmap = std::make_unique<GdiBitmap>(view_width_, view_height_);
-		m_browser->GetHost()->WasResized();
+	//	m_browser->GetHost()->WasResized();
 		m_browser->GetHost()->Invalidate(PET_VIEW);
 		return false;
 	}
@@ -774,7 +819,7 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 		if (m_bitmap->GetWidth() != origin_width || m_bitmap->GetHeight() != origin_height)
 		{
 			LOG(WARNING) << GetCurrentProcessId() << "] SetBitmapData: check failed! ";
-			m_browser->GetHost()->WasResized();
+			m_browser->GetHost()->Invalidate(PET_VIEW);
 			return false;
 		}
 
@@ -792,7 +837,7 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 		if (src_x > origin_width || (src_y + height > origin_height) || x > m_bitmap->GetWidth() || (y + height > m_bitmap->GetHeight()))
 		{
 			LOG(WARNING) << GetCurrentProcessId() << "] SetBitmapData s: check failed! ";
-			m_browser->GetHost()->WasResized();
+			m_browser->GetHost()->Invalidate(PET_VIEW);
 			return false;
 		}
 

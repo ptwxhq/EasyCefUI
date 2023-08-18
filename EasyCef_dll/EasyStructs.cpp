@@ -3,10 +3,14 @@
 
 BrowserGlobalVar g_BrowserGlobalVar;
 
-const char* ExtraKeyNameIsUIBrowser = "IsUIRender";
-const char* ExtraKeyNameIsManagedPopup = "IsManagedPopup";
-const char* ExtraKeyNameUIWndHwnd = "UIWndHwnd";
-const char* ExtraKeyNameEnableHighDpi = "EnableHighDpi";
+const char* const ExtraKeyNames[] = {
+	"browser_server",
+	"IsManagedPop",
+	"UIWndHwnd",
+	"EnableHighDpi",
+	"RegSyncJSFuntions",
+	"RegAsyncJSFuntions"
+};
 
 
 void GetLocalPaths()

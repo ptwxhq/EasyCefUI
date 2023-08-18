@@ -19,10 +19,10 @@ namespace JSKeysGet
 		valueList->SetSize(1);
 		valueList->SetString(0, name);
 
-		auto strData = QuickMakeIpcParms(frame->GetBrowser()->GetIdentifier(), frame->GetIdentifier(), "__V8AccessorAttribKeys__", valueList);
+		auto strData = QuickMakeIpcParms(frame->GetBrowser()->GetIdentifier(), frame->GetIdentifier(), GetTimeNowMS(15000), "__V8AccessorAttribKeys__", valueList);
 
 		std::string strOut;
-		if (EasyIPCClient::GetInstance().SendDataToServer(strData, strOut))
+		if (EasyIPCClient::GetInstance().SendDataToServer(strData, strOut, 15000))
 		{
 			if (!strOut.empty())
 			{
@@ -41,16 +41,6 @@ namespace JSKeysGet
 
 		return false;
 	}
-
-	HWND GetWindowHwnd()
-	{
-		auto context = CefV8Context::GetCurrentContext();
-		auto frame = context->GetFrame();
-		auto bid = frame->GetBrowser()->GetIdentifier();
-		auto hWnd = EasyRenderBrowserInfo::GetInstance().GetHwnd(bid);
-		return hWnd;
-	}
-
 
 	bool appname(CefRefPtr<CefV8Value>& retval)
 	{
@@ -91,7 +81,7 @@ namespace JSKeysGet
 	bool screen_w(CefRefPtr<CefV8Value>& retval)
 	{
 		int val = 0;
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
 		MONITORINFO MoInfo = { sizeof(MoInfo) };
@@ -114,7 +104,7 @@ namespace JSKeysGet
 	bool screen_h(CefRefPtr<CefV8Value>& retval)
 	{
 		int val = 0;
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
 		MONITORINFO MoInfo = { sizeof(MoInfo) };
@@ -138,7 +128,7 @@ namespace JSKeysGet
 	{
 		RECT rcScr;
 
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
 		MONITORINFO MoInfo = { sizeof(MoInfo) };
@@ -162,7 +152,7 @@ namespace JSKeysGet
 	{
 		RECT rcScr;
 
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
 
 		MONITORINFO MoInfo = { sizeof(MoInfo) };
@@ -184,7 +174,7 @@ namespace JSKeysGet
 
 	bool window_x(CefRefPtr<CefV8Value>& retval)
 	{
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
 			auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
@@ -206,7 +196,7 @@ namespace JSKeysGet
 
 	bool window_y(CefRefPtr<CefV8Value>& retval)
 	{
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
 			auto hMoni = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
@@ -229,7 +219,7 @@ namespace JSKeysGet
 
 	bool window_w(CefRefPtr<CefV8Value>& retval)
 	{
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
 			RECT rc = {};
@@ -246,7 +236,7 @@ namespace JSKeysGet
 
 	bool window_h(CefRefPtr<CefV8Value>& retval)
 	{
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
 			RECT rc = {};
@@ -263,7 +253,7 @@ namespace JSKeysGet
 
 	bool is_zoomed(CefRefPtr<CefV8Value>& retval)
 	{
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
 			retval = CefV8Value::CreateInt(IsZoomed(hWnd) & 1);
@@ -275,7 +265,7 @@ namespace JSKeysGet
 
 	bool is_iconic(CefRefPtr<CefV8Value>& retval)
 	{
-		HWND hWnd = GetWindowHwnd();
+		HWND hWnd = JsGetWindowHwnd();
 		if (IsWindow(hWnd))
 		{
 			retval = CefV8Value::CreateInt(IsIconic(hWnd) & 1);
@@ -298,7 +288,7 @@ namespace JSKeysGet
 namespace JSKeysSet
 {
 
-	bool nc_setalledge(const CefRefPtr<CefV8Value> value)
+	bool __nc_setalledge__(const CefRefPtr<CefV8Value> value)
 	{
 		auto context = CefV8Context::GetCurrentContext();
 		auto frame = context->GetFrame();
@@ -387,5 +377,5 @@ void NativeV8Accessor::RegisterKeys(CefRefPtr<CefV8Value> obj)
 	REG_JS_KEY_R(is_iconic);
 	REG_JS_KEY_R(ver);
 
-	REG_JS_KEY_W(nc_setalledge);
+	REG_JS_KEY_W(__nc_setalledge__);
 }

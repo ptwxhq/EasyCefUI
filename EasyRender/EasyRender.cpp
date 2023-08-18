@@ -8,7 +8,7 @@
 
 #include "SpeedBox.h"
 
-#include "../EasyCef_dll/Export.h"
+#include "../EasyCef_dll/EasyExport.h"
 
 //本进程需要sysver.manifest
 #ifdef _WIN64
@@ -85,7 +85,4 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     config.ProcessType = 2;
 
     return InitEasyCef(hInstance, nullptr, &config);
-
-
-   // return testwinMain(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
 }

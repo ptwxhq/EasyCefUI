@@ -13,8 +13,7 @@ namespace client {
 
 class LayeredWindowInfo {
 public:
-    const POINT m_sourcePosition;
-    POINT m_windowPosition;
+    static constexpr POINT m_sourcePosition = { 0, 0};
     SIZE m_size;
     RECT m_dirty;
     BLENDFUNCTION m_blend;
@@ -34,12 +33,8 @@ public:
 
     UINT GetHeight() const { return m_size.cy; }
 
-    void SetWindowSize(SIZE size) {
+    void SetSize(SIZE size) {
         m_size = size;
-    }
-
-    void SetWindowPos(POINT pt) {
-        m_windowPosition = pt;
     }
 
     void SetAlpha(BYTE alpha) {
@@ -189,7 +184,7 @@ public:
 
     LRESULT OnIgnore(UINT, WPARAM, LPARAM, BOOL&) { return 0; }
 
-    void SetBitmapData(const void* pData, int width, int height);
+    bool SetBitmapData(const void* pData, int width, int height);
     bool SetBitmapData(const void* pData, int x, int y, int width, int height, bool SameSize, int src_x, int src_y, int origin_width, int origin_height);
     void Render();
 
@@ -221,6 +216,8 @@ public:
 
     void DpiChangeWork() override;
 
+    CefRect CalcViewRect(int width, int height) const;
+
 private:
 
 
@@ -241,8 +238,6 @@ private:
     int GetPopupXOffset() const;
     int GetPopupYOffset() const;
 
-    int view_width_old_ = 0;
-    int view_height_old_ = 0;
     int view_width_ = 0;
     int view_height_ = 0;
     CefRect popup_rect_;

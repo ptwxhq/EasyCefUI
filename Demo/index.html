@@ -1,0 +1,334 @@
+<html>
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<title>EasyCef Demo</title>
+
+	<style>
+		.draggablecaption {
+			position: fixed;
+			top: 18px;
+			left: 18px;
+			right: 18px;
+			height: 30px;
+			background-color: cyan;
+
+			-webkit-app-region: drag;
+			/* this is point */
+		}
+
+		.nondraggable {
+
+			position: fixed;
+			top: 25px;
+			left: 60px;
+			width: 50px;
+			height: 20px;
+			background-color: yellow;
+
+			-webkit-app-region: no-drag;
+			/* this is point */
+		}
+
+		.borderTopLeft {
+			position: fixed;
+			top: 14px;
+			left: 14px;
+			width: 4px;
+			height: 4px;
+			background-color: red;
+		}
+
+		.borderTop {
+			position: fixed;
+			left: 18px;
+			top: 14px;
+			right: 18px;
+			height: 4px;
+			background-color: blue;
+		}
+
+		.borderTopRight {
+			position: fixed;
+			top: 14px;
+			right: 14px;
+			width: 4px;
+			height: 4px;
+			background-color: red;
+		}
+
+		.borderLeft {
+			position: fixed;
+			top: 18px;
+			left: 14px;
+			bottom: 18px;
+			width: 4px;
+			background-color: green;
+		}
+
+		.borderRight {
+			position: fixed;
+			top: 18px;
+			right: 14px;
+			bottom: 18px;
+			width: 4px;
+			background-color: green;
+		}
+
+		.borderBottom {
+			position: fixed;
+			left: 18px;
+			right: 18px;
+			bottom: 14px;
+			height: 4px;
+			background-color: green;
+		}
+
+		.borderBottomLeft {
+			position: fixed;
+			bottom: 14px;
+			left: 14px;
+			width: 4px;
+			height: 4px;
+			background-color: red;
+		}
+
+		.borderBottomRight {
+			position: fixed;
+			bottom: 14px;
+			right: 14px;
+			width: 4px;
+			height: 4px;
+			background-color: red;
+		}
+
+		.mainframe {
+			position: fixed;
+			top: 14px;
+			left: 14px;
+			bottom: 14px;
+			right: 14px;
+			box-shadow: black 0px 0px 14px
+		}
+
+		.contents {
+			position: absolute;
+			top: 35px;
+			left: 10px;
+			width: 90%;
+		}
+
+		@media (prefers-color-scheme: light) {
+			.contents {
+				background-color: #f0f0f0;
+			}
+		}
+
+		@media (prefers-color-scheme: dark) {
+			.contents {
+				background-color: #3e3e3e;
+				color: #fff;
+			}
+		}
+	</style>
+
+	<script type="text/javascript">
+		function Login() {
+			window.NativeLogin(document.getElementById("userName").value, document.getElementById("password").value);
+		}
+		function GetId() {
+			alert("get id from native by extensions: " + app.GetId());
+		}
+
+	</script>
+
+	<script type="text/javascript">
+
+		function _onFrameStateChanged(json) {
+			/*
+			json: {"frameid":"frame", "src":"http://xxxxxxxxxxx","state":0, resloaded:true }
+			frameid : frame id, <iframe id="xxxx" ...
+			src : frame url
+			state : http status code or error code
+			resloaded : true: page load end   false: load page is not finished
+			*/
+			console.log('!! iframe status is changed: ' + JSON.stringify(json));
+		}
+
+		function invokeFromNative(parm1, parm2, parm3) {
+
+			console.log('!! invokeFromNative parm1:' + parm1 + ' parm2:' + parm2 + ' parm3:' + parm3);
+
+			/*
+			nativeapp.userjs_async(5,6,7,8,"abcde");
+			*/
+		}
+
+		var sizeset = 1;
+		var alphaval = 255;
+
+		function testInnerCommand(cmd) {
+			switch (cmd) {
+
+				case 'writePrivateProfileString':
+					nativeapp.writePrivateProfileString('appname', 'keyname', 'keyvalue', 'c:\\testpath\\test.ini');
+					nativeapp.writePrivateProfileString('appname', 'number', '10', 'c:\\testpath\\test.ini');
+					alert("set data on c:\\testpath\\test.ini");
+					break;
+				case 'getPrivateProfileInt':
+					alert("get appname/number on c:\\testpath\\test.ini value:" + nativeapp.getPrivateProfileInt('appname', 'number', 0, 'c:\\testpath\\test.ini'));
+					break;
+				case 'writePrivateProfileString':
+					alert("get appname/keyname on c:\\testpath\\test.ini value:" + nativeapp.writePrivateProfileString('appname', 'keyname', 'not value', 'c:\\testpath\\test.ini'));
+					break;
+				case 'addFrameStateChanged':
+					nativeapp.addFrameStateChanged("theframeid");
+					console.log('addFrameStateChanged theframeid');
+					document.getElementById('insertframe').innerHTML = '<iframe name="theframeid" src="http://localhost/?if" height="200" width="600" title="Iframe Example" loading="lazy"></iframe>';
+					break;
+				case 'removeFrameStateChanged':
+					nativeapp.removeFrameStateChanged("theframeid");
+					break;
+				case 'minWindow':
+					nativeapp.minWindow();
+					break;
+				case 'maxWindow':
+					nativeapp.maxWindow();
+					break;
+				case 'restoreWindow':
+					nativeapp.restoreWindow();
+					break;
+				case 'setWindowText':
+					nativeapp.setWindowText("new title " + ++sizeset);
+					alert("title changed!");
+					break;
+				case 'minWindow':
+					nativeapp.minWindow();
+					break;
+				case 'setWindowSize':
+					if (++sizeset % 2)
+						nativeapp.setWindowSize(10, 10, 800, 600);
+					else
+						nativeapp.setWindowSize(100, 100, 1000, 700);
+					break;
+
+				//-----------------------------
+
+				case 'userjs_sync':
+					nativeapp.userjs_sync(4, 3, 2, 1, "test");
+					break;
+				case 'userjs_async':
+					nativeapp.userjs_async(1, 2, 3, 4, "asssss");
+					break;
+
+			}
+		}
+
+		function testInnerAttr(attr) {
+			switch (attr) {
+				case 'appname': alert('app name is ' + nativeapp.appname); break;
+				case 'appDir': alert('app dir is ' + nativeapp.appDir); break;
+				case 'appDataPath': alert('app cache path is ' + nativeapp.appDataPath); break;
+				case 'screen_w': alert('screen width =' + nativeapp.screen_w); break;
+				case 'screen_h': alert('screen height =' + nativeapp.screen_h); break;
+				case 'desktop_w': alert('desktop width =' + nativeapp.desktop_w); break;
+				case 'desktop_h': alert('desktop height =' + nativeapp.desktop_h); break;
+				case 'window_x': alert('window x =' + nativeapp.window_x); break;
+				case 'window_y': alert('window y =' + nativeapp.window_y); break;
+				case 'window_w': alert('window width =' + nativeapp.window_w); break;
+				case 'window_h': alert('window height =' + nativeapp.window_h); break;
+				case 'is_zoomed': alert('window is zoomed =' + nativeapp.is_zoomed); break;
+				case 'is_iconic': alert('window is iconic =' + nativeapp.is_iconic); break;
+			}
+		}
+
+		function UpdateWindowId() {
+
+			document.getElementById('showidaera').innerHTML = "当前窗口标识：" + nativeapp.winProty();
+		}
+
+	</script>
+
+
+</head>
+
+<body>
+	<div class="mainframe">
+		<div class="draggablecaption">
+			<div class="nondraggable"></div>
+		</div>
+		<!-- the class name contains "borderXXX" and attrib "data-nc" is the point! -->
+		<div class="borderTop" data-nc="top"></div>
+		<div class="borderTopLeft" data-nc="topleft"></div>
+		<div class="borderTopRight" data-nc="topright"></div>
+		<div class="borderLeft" data-nc="left"></div>
+		<div class="borderRight" data-nc="right"></div>
+		<div class="borderBottom" data-nc="bottom"></div>
+		<div class="borderBottomLeft" data-nc="bottomleft"></div>
+		<div class="borderBottomRight" data-nc="bottomright"></div>
+
+		<div>
+
+			<div class="contents">
+
+				<p id="showidaera">-1</p>
+				<a href="javascript:window.open('#','_self');window.close();">关闭本窗口</a>
+
+				<p>内置调用测试</p>
+				<a href="javascript:testInnerCommand('addFrameStateChanged');"
+					title="为当前页添加框架加载状态变化通知">addFrameStateChanged</a>
+				<a href="javascript:testInnerCommand('removeFrameStateChanged');"
+					title="为当前页移除框架加载状态变化通知">removeFrameStateChanged</a>
+
+				<a href="javascript:testInnerCommand('writePrivateProfileString');"
+					title="调用系统API WritePrivateProfileStrin设置自定义配置">writePrivateProfileString</a>
+				<a href="javascript:testInnerCommand('getPrivateProfileInt');"
+					title="调用系统API GetPrivateProfileInt读取自定义配置数值">getPrivateProfileInt</a>
+				<a href="javascript:testInnerCommand('getPrivateProfileString');"
+					title="调用系统API GetPrivateProfileString读取自定义配置字符串">getPrivateProfileString</a>
+
+				<a href="javascript:testInnerCommand('minWindow');" title="最小化窗口">minWindow</a>
+				<a href="javascript:testInnerCommand('maxWindow');" title="最大化窗口">maxWindow</a>
+				<a href="javascript:testInnerCommand('restoreWindow');" title="恢复窗口">restoreWindow</a>
+				<a href="javascript:testInnerCommand('setWindowSize');" title="调整移动窗口大小">setWindowSize</a>
+				<a href="javascript:testInnerCommand('setWindowText');" title="修改窗口标题">setWindowText</a>
+
+				<p>内部属性测试</p>
+				<a href="javascript:testInnerAttr('appname');" title="主进程名">appname</a>
+				<a href="javascript:testInnerAttr('appDir');" title="主进程所在文件夹">appDir</a>
+				<a href="javascript:testInnerAttr('appDataPath');" title="缓存路径">appDataPath</a>
+				<a href="javascript:testInnerAttr('screen_w');" title="当前窗口所在屏幕宽度">screen_w</a>
+				<a href="javascript:testInnerAttr('screen_h');" title="当前窗口所在屏幕高度">screen_h</a>
+				<a href="javascript:testInnerAttr('desktop_w');" title="桌面工作区宽度">desktop_w</a>
+				<a href="javascript:testInnerAttr('desktop_h');" title="桌面工作区高度">desktop_h</a>
+				<a href="javascript:testInnerAttr('window_x');" title="窗口顶点横坐标">window_x</a>
+				<a href="javascript:testInnerAttr('window_y');" title="窗口顶点纵坐标">window_y</a>
+				<a href="javascript:testInnerAttr('window_w');" title="窗口宽度">window_w</a>
+				<a href="javascript:testInnerAttr('window_h');" title="窗口高度">window_h</a>
+				<a href="javascript:testInnerAttr('is_zoomed');" title="窗口是否最大化">is_zoomed</a>
+				<a href="javascript:testInnerAttr('is_iconic');" title="窗口是否最小化">is_iconic</a>
+
+				<p>内置需要额外自己注册并实现的调用测试</p>
+				<a href="http://127.0.0.1/?" title="打开外部页面" target="_blank">OpenUrl</a>
+
+				<a href="javascript:testInnerCommand('userjs_sync');" title="JS调用本地代码">自定义JS同步</a>
+				<a href="javascript:testInnerCommand('userjs_async');" title="JS调用本地代码">自定义JS异步</a>
+
+				<a href="http://127.0.0.1/1.apk" title="下载文件">Download</a>
+
+				<div id="insertframe"></div>
+				<form>
+					UserName: <input type="text" id="userName" />&nbsp;&nbsp;Password:
+					<input type="text" id="password" />&nbsp;&nbsp;<input type="button" value="DoNothing"
+						onclick="Login()" />
+				</form>
+
+
+
+
+
+			</div>
+		</div>
+</body>
+
+</html>

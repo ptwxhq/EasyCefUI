@@ -5,11 +5,6 @@
 //这里的代码是直接从原有的项目中复制或者稍微修改的，如果有时间的话就重写一下
 
 
-#include "LegacyExports.h"
-
-
-#include "LegacyCodes/WebkitEcho.h"
-
 #include <list>
 #include <unordered_map>
 
@@ -122,17 +117,6 @@ public:
 		return ret;
 	}
 
-	void getNotifyLoadStop(unsigned int browser, std::vector<HttpCode>& frameIDs) {
-		std::list<DectetFrameID>::iterator it = m_dectList.begin();
-		for (; it != m_dectList.end(); ++it)
-		{
-			if (it->browserID_ == browser)
-			{
-				HttpCode item(it->identifier_, it->lastHttpCode_);
-				frameIDs.push_back(item);
-			}
-		}
-	}
 protected:
 	DectetFrameLoad() {}
 

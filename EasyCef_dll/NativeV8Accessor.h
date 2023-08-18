@@ -5,10 +5,8 @@
 class NativeV8Accessor :
     public CefV8Accessor
 {
-    typedef bool(*AccessorGetCallback)(CefRefPtr<CefV8Value>&);
-    typedef bool(*AccessorSetCallback)(const CefRefPtr<CefV8Value>);
-    typedef std::unordered_map<std::string, AccessorGetCallback> FunctionGetMap;
-    typedef std::unordered_map<std::string, AccessorSetCallback> FunctionSetMap;
+    using FunctionGetMap = std::unordered_map<std::string, bool(*)(CefRefPtr<CefV8Value>&)> ;
+    using FunctionSetMap = std::unordered_map<std::string, bool(*)(const CefRefPtr<CefV8Value>)>;
 
 public:
     virtual bool Get(const CefString& name,

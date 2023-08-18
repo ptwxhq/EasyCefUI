@@ -89,5 +89,8 @@ public:
 private:
     MYDISALLOW_COPY_AND_ASSIGN(EasyCefAppRender);
 
+
+    CefRefPtr<CefDictionaryValue> m_dictUserSyncFunc, m_dictUserAsyncFunc;
+
 };
 

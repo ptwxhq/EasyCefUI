@@ -1,12 +1,11 @@
 #include "pch.h"
 #include "EasyRenderWorks.h"
-#include "Export.h"
 
 #include "EasyRenderBrowserInfo.h"
 
 namespace RenderAsyncWorkFunctions
 {
-	void AdjustRenderSpeed(const CefRefPtr<CefBrowser> browser, const CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
+	void __AdjustRenderSpeed__(const CefRefPtr<CefBrowser> browser, const CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
 		if (g_BrowserGlobalVar.funcSpeedupCallback)
 		{
@@ -19,9 +18,14 @@ namespace RenderAsyncWorkFunctions
 
 namespace RenderSyncWorkFunctions
 {
-	bool invokedJSMethod(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
+	bool __InvokedJSMethod__(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 	{
 		//LOG(INFO) << GetCurrentProcessId() << "]EasyCefAppRender::InvokeJSFunction in" << args->GetString(0);
+		const auto nArgs = args->GetSize();
+		if (nArgs < 1)
+			return false;
+
+
 		if (!frame)
 		{
 			frame = browser->GetMainFrame();
@@ -31,24 +35,19 @@ namespace RenderSyncWorkFunctions
 		v8Context->Enter();
 
 		auto window = v8Context->GetGlobal();
-		auto funcInvoke = window->GetValue("invokeMethod");
+		auto funcInvoke = window->GetValue(args->GetString(0));
 		if (funcInvoke && funcInvoke->IsFunction())
 		{
 			CefV8ValueList v8args;
-			for (size_t i = 0; i < 3; i++)
+			for (size_t i = 1; i < nArgs; i++)
 			{
-				v8args.push_back(CefV8Value::CreateString(args->GetString(i)));
+				v8args.push_back(CefValueToCefV8Value(args->GetValue(i)));
 			}
-
-			v8args.push_back(CefV8Value::CreateBool(args->GetBool(3)));
-
-			//LOG(INFO) << GetCurrentProcessId() << "]EasyCefAppRender::InvokeJSFunction begin(" << args->GetString(0) << ")";
 
 			auto retVal = funcInvoke->ExecuteFunction(window, v8args);
 			if (retVal)
 			{
 				retval = CefV8ValueToString(retVal);
-
 			
 				//LOG(INFO) << GetCurrentProcessId() << "]EasyCefAppRender::InvokeJSFunction end(" << retval << ")";
 			}
@@ -68,7 +67,7 @@ namespace RenderSyncWorkFunctions
 		return true;
 	}
 
-	bool queryElementAttrib(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
+	bool __queryElementAttrib__(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 	{
 //		LOG(INFO) << GetCurrentProcessId() << "]EasyCefAppRender::queryElementAttrib (" << 1 << ")";
 
@@ -136,11 +135,10 @@ EasyRenderWorks::EasyRenderWorks()
 	m_mapAsyncFuncs.insert(std::make_pair(std::string(#fnName), RenderAsyncWorkFunctions::fnName))
 
 
-	REG_SYNCWORK_FUNCTION(invokedJSMethod);
-	REG_SYNCWORK_FUNCTION(queryElementAttrib);
+	REG_SYNCWORK_FUNCTION(__InvokedJSMethod__);
+	REG_SYNCWORK_FUNCTION(__queryElementAttrib__);
 
-//	REG_ASYNCWORK_FUNCTION(asyncInvokedJSMethod);
-	REG_ASYNCWORK_FUNCTION(AdjustRenderSpeed);
+	REG_ASYNCWORK_FUNCTION(__AdjustRenderSpeed__);
 
 }
 

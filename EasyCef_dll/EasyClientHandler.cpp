@@ -16,40 +16,6 @@
 #include "EasySchemes.h"
 #include "EasyReqRespModify.h"
 
-
-bool QueryNodeAttrib(CefRefPtr<WebViewControl> item, int x, int y, std::string name, std::wstring& outVal)
-{
-    auto& ipcSvr = EasyIPCServer::GetInstance();
-    auto hipcli = ipcSvr.GetClientHandle(item->GetBrowser()->GetIdentifier());
-    if (hipcli)
-    {
-        CefRefPtr<CefListValue> valueList = CefListValue::Create();
-
-        valueList->SetString(0, name.empty() ? "data-nc" : name);
-
-        valueList->SetInt(1, x);
-        valueList->SetInt(2, y);
-
-        auto frame = item->GetBrowser()->GetMainFrame();
-
-        auto send = QuickMakeIpcParms(item->GetBrowser()->GetIdentifier(), frame->GetIdentifier(), "queryElementAttrib", valueList);
-        std::string ret;
-        ipcSvr.SendData(hipcli, send, ret);
-
-        if (ret.size() > 0)
-        {
-            CefString tmp(ret);
-            outVal = tmp.ToWString();
-            return true;
-        }
-
-    }
-
-    outVal.clear();
-
-    return false;
-}
-
 enum client_menu_ids {
     CLIENT_ID_SHOW_DEVTOOLS = MENU_ID_USER_FIRST,
     CLIENT_ID_CLOSE_DEVTOOLS,
@@ -57,8 +23,6 @@ enum client_menu_ids {
 
    // CLIENT_ID_ROLOAD_FRAME = MENU_ID_USER_LAST - 10,
 
-
-    
 
 };
 
@@ -72,23 +36,7 @@ CefString GetLabel(int message_id) {
 
 bool EasyClientHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
 {
-    const std::string& message_name = message->GetName();
-
-    if (message_name == "ContinueUnsecure")
-    {
-        auto url = message->GetArgumentList()->GetString(0).ToWString();
-        if (!url.empty())
-        {
-            auto domain = DomainPackInfo::GetFormatedDomain(url.c_str());
-            s_listAllowUnsecure.insert(domain);
-            frame->LoadURL(url);
-            return true;
-        }
-        return false;
-    }
-
-
-    return EasyBrowserWorks::GetInstance().DoAsyncWork(message_name, browser, frame, message->GetArgumentList());
+    return EasyBrowserWorks::GetInstance().DoAsyncWork(message->GetName(), browser, frame, message->GetArgumentList());
 }
 
 bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& target_url, const CefString& target_frame_name, CefLifeSpanHandler::WindowOpenDisposition target_disposition, bool user_gesture, const CefPopupFeatures& popupFeatures, CefWindowInfo& windowInfo, CefRefPtr<CefClient>& client, CefBrowserSettings& settings, CefRefPtr<CefDictionaryValue>& extra_info, bool* no_javascript_access)
@@ -99,14 +47,7 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
     //    << std::format(R"(target_disposition:{},user_gesture:{},menuBar:{},statusBar:{},toolBar:{},scrollbars:{})", (int)target_disposition, user_gesture, popupFeatures.menuBarVisible, popupFeatures.statusBarVisible, popupFeatures.toolBarVisible, popupFeatures.scrollbarsVisible) 
     //    << "url:" << target_url;
 
-    extra_info = CefDictionaryValue::Create();
-
-    const auto tmpVal = EasyIPCServer::GetInstance().GetHandle();
-    auto valKeyName = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
-    extra_info->SetBinary(IpcBrowserServerKeyName, valKeyName);
-    extra_info->SetBool(ExtraKeyNameIsManagedPopup, true);
-    extra_info->SetBool(ExtraKeyNameEnableHighDpi, g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi);
-
+    extra_info = CreateExtraInfo(true, nullptr);
 
     //UI弹出的窗口要作为普通窗口还是UI的？当作UI的吧
     auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
@@ -116,68 +57,54 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
         if (item->IsUIControl())
         {
             //得限制一下不能让UI自己弹窗口，不然影响流程
-            if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->newNativeUrl && IsWindow(hWnd))
+            if (g_BrowserGlobalVar.funcPopNewUrlCallback && IsWindow(hWnd))
             {
-                WebkitEcho::getUIFunMap()->newNativeUrl(hWnd, target_url.ToWString().c_str(), target_frame_name.c_str());
+                g_BrowserGlobalVar.funcPopNewUrlCallback(hWnd, target_url.ToWString().c_str(), target_frame_name.c_str());
             }
         }
         else
         {
-            bool bCancel = false;
+            bool bHandled = false;
             HWND hAttchWnd = nullptr;
-            if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitNewTab)
+            if (g_BrowserGlobalVar.funcWebControlBeforePopup)
             {
-                //可以post信息的新窗口弹出
-                bCancel = WebkitEcho::getFunMap()->webkitNewTab(item->GetBrowserId(), target_url.ToWString().c_str(), &hAttchWnd);
+                bHandled = g_BrowserGlobalVar.funcWebControlBeforePopup(item->GetBrowserId(), target_url.ToWString().c_str(), &hAttchWnd);
             }
 
-            if (bCancel && IsWindow(hAttchWnd))
+            if (bHandled)
             {
-                RECT rect = {};
-                GetClientRect(hAttchWnd, &rect);
-                windowInfo.SetAsChild(hAttchWnd,
-                    EasyCefRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
-                );
-
-                //这边得使用相同的handler
-                auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(hAttchWnd, RECT(), target_url.ToWString().c_str(), this);
-                if (handle)
+                if (IsWindow(hAttchWnd))
                 {
-                    m_preCreatePopHandle.push_back(handle);
-                    return false;
-                }
-    
-            }
+                    RECT rect = {};
+                    GetClientRect(hAttchWnd, &rect);
+                    windowInfo.SetAsChild(hAttchWnd,
+                        EasyCefRect(rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top)
+                    );
 
-            if (!bCancel && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitOpenNewUrl)
+                    //这边得使用相同的handler
+                    auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(hAttchWnd, RECT(), target_url.ToWString().c_str(), this);
+                    if (handle)
+                    {
+                        m_preCreatePopHandle.push_back(handle);
+                        return false;
+                    }
+                }
+            }
+            else
             {
-                auto request_context = browser->GetHost()->GetRequestContext();
-                std::wstring strCachePath;
-                if (request_context)
-                {
-                    strCachePath = request_context->GetCachePath().ToWString();
-                }
-                //仅保留缓存cookie等，会丢失post等请求信息
-                WebkitEcho::getFunMap()->webkitOpenNewUrl(item->GetBrowserId(), target_url.ToWString().c_str(), strCachePath.c_str());
-                return true;
-            }
-
-
-            //均未设置的情况下使用默认弹出的方式
-            auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(nullptr,
+                //未接管的情况下使用默认弹出的方式
+                auto handle = EasyWebViewMgr::GetInstance().CreatePopWebViewControl(nullptr,
 #if CEF_VERSION_MAJOR > 95
-                { windowInfo.bounds.x, windowInfo.bounds.y, windowInfo.bounds.width, windowInfo.bounds.height }
+                    { windowInfo.bounds.x, windowInfo.bounds.y, windowInfo.bounds.width, windowInfo.bounds.height }
 #else
                 { windowInfo.x, windowInfo.y, windowInfo.width, windowInfo.height }
 #endif
-            , target_url.ToWString().c_str(), this);
-            m_preCreatePopHandle.push_back(handle);
+                , target_url.ToWString().c_str(), this);
+                m_preCreatePopHandle.push_back(handle);
 
-            return false;
-
+                return false;
+            }
         }
-
-   
 
         return true;
     }
@@ -211,7 +138,6 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
     }
     else
     {
-        handler = m_hManualCreateHandle;
         m_browser = browser;
     }
 
@@ -229,22 +155,18 @@ void EasyClientHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 
         EasyWebViewMgr::GetInstance().AsyncSetIndexInfo(handler, browser->GetIdentifier(), hWnd);
 
-        if (!m_bIsUIControl && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitAfterCreate)
+        if (!m_bIsUIControl && g_BrowserGlobalVar.funcWebControlCreated)
         {
-            //检查是Chrome_WidgetWin_0 还是 RenderWidgeHostHWND，已确认是前者
-            HWND hWidget = FindWindowExW(hWnd, nullptr, nullptr, nullptr);
-            WebkitEcho::getFunMap()->webkitAfterCreate(GetParent(hWnd), hWnd, hWidget, browser->GetIdentifier());
+            g_BrowserGlobalVar.funcWebControlCreated(browser->GetIdentifier(), hWnd);
         }
     }
-
-   
 }
 
 void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
     CEF_REQUIRE_UI_THREAD();
 
-    LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnBeforeClose:(" << browser->GetIdentifier() << ") begin ";
+    //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnBeforeClose:(" << browser->GetIdentifier() << ") begin ";
 
     bool bIsPop = browser->IsPopup();
 
@@ -282,9 +204,9 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
      //CefBrowser
     if (EasyIPCServer::GetInstance().GetClientsCount())
     {
-        if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitBeforeClose)
+        if (!m_bIsUIControl && g_BrowserGlobalVar.funcWebControlBeforeClose)
         {
-            WebkitEcho::getFunMap()->webkitBeforeClose(browser->GetIdentifier());
+            g_BrowserGlobalVar.funcWebControlBeforeClose(browser->GetIdentifier());
         }
     }
     else
@@ -316,17 +238,17 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 
 void EasyClientHandler::OnAddressChange(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& url)
 {
-    std::wstring strUrl = url;
-    if (strUrl.substr(0, _countof(EASYCEFPROTOCOLW)).find(EASYCEFPROTOCOLW) == 0)
-    {
-        strUrl.clear();
-    }
-
     if (!m_bIsUIControl)
     {
-        if (frame->IsMain() && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitChangeUrl)
+        std::wstring strUrl = url;
+        if (strUrl.substr(0, _countof(EASYCEFPROTOCOLW)).find(EASYCEFPROTOCOLW) == 0)
         {
-            WebkitEcho::getFunMap()->webkitChangeUrl(browser->GetIdentifier(), strUrl.c_str());
+            strUrl.clear();
+        }
+
+        if (frame->IsMain() && g_BrowserGlobalVar.funcWebControlUrlChange)
+        {
+            g_BrowserGlobalVar.funcWebControlUrlChange(browser->GetIdentifier(), strUrl.c_str());
         }
     }
 }
@@ -344,9 +266,9 @@ void EasyClientHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefSt
     }
     else
     {
-        if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitChangeTitle)
+        if (g_BrowserGlobalVar.funcWebControlTitleChange)
         {
-            WebkitEcho::getFunMap()->webkitChangeTitle(browser->GetIdentifier(), title.ToWString().c_str());
+            g_BrowserGlobalVar.funcWebControlTitleChange(browser->GetIdentifier(), title.ToWString().c_str());
         }
         else
         {
@@ -362,18 +284,9 @@ void EasyClientHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefSt
 
 void EasyClientHandler::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls)
 {
-    if (!m_bIsUIControl)
+    if (!m_bIsUIControl && g_BrowserGlobalVar.funcWebControlFavIconChange && !icon_urls.empty())
     {
-        if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitSiteIcon)
-        {
-            std::wstring strUrl;
-            auto frame = browser->GetMainFrame();
-            if (frame)
-            {
-                strUrl = frame->GetURL().ToWString();
-            }
-            WebkitEcho::getFunMap()->webkitSiteIcon(browser->GetIdentifier(), strUrl.c_str(), icon_urls[0].c_str());
-        }
+        g_BrowserGlobalVar.funcWebControlFavIconChange(browser->GetIdentifier(), icon_urls[0].c_str());
     }
 }
 
@@ -421,9 +334,9 @@ void EasyClientHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool
     if (m_bIsUIControl)
         return;
 
-    if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitLoadingStateChange)
+    if (g_BrowserGlobalVar.funcWebControLoadingState)
     {
-        WebkitEcho::getFunMap()->webkitLoadingStateChange(browser->GetIdentifier(), isLoading, canGoBack, canGoForward);
+        g_BrowserGlobalVar.funcWebControLoadingState(browser->GetIdentifier(), isLoading, canGoBack, canGoForward);
     }
 }
 
@@ -440,26 +353,20 @@ void EasyClientHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFr
         return;
 
     HWND hWnd = item->GetHWND();
-    auto uifunmap = WebkitEcho::getUIFunMap();
-    auto webcfunmap = WebkitEcho::getFunMap();
 
-    if (uifunmap)
+    if (item->IsUIControl())
     {
-        if (uifunmap->nativeFrameComplate)
+        if (g_BrowserGlobalVar.funcCallNativeCompleteStatus)
         {
-            uifunmap->nativeFrameComplate(hWnd, frame->GetURL().ToWString().c_str(), frame->GetName().ToWString().c_str());
+            g_BrowserGlobalVar.funcCallNativeCompleteStatus(hWnd, frame->GetURL().ToWString().c_str(), frame->GetName().ToWString().c_str(), frame->IsMain());
         }
-
-        if (uifunmap->nativeComplate && frame->IsMain())
-        {
-            uifunmap->nativeComplate(hWnd);
-        }
-
     }
-
-    if (webcfunmap && webcfunmap->webkitEndLoad && frame->IsMain())
+    else
     {
-        webcfunmap->webkitEndLoad(browser->GetIdentifier());
+        if (frame->IsMain() && g_BrowserGlobalVar.funcWebControlLoadEnd)
+        {
+            g_BrowserGlobalVar.funcWebControlLoadEnd(browser->GetIdentifier());
+        }
     }
 }
 
@@ -471,26 +378,16 @@ void EasyClientHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
     if (errorCode == ERR_ABORTED)
         return;
 
-    if (m_bIsUIControl)
+    if (g_BrowserGlobalVar.funcLoadErrorCallback)
     {
-        if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->loadError)
+        auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+        if (item)
         {
-            auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-            if (item)
+            if (g_BrowserGlobalVar.funcLoadErrorCallback(item->GetHWND(), errorCode,
+                failedUrl.ToWString().c_str(), frame->GetName().ToWString().c_str(), frame->IsMain()))
             {
-                HWND hWnd = item->GetHWND();
-                if (WebkitEcho::getUIFunMap()->loadError(hWnd, errorCode, frame->GetName().ToWString().c_str(), failedUrl.ToWString().c_str()))
-                    return;
-            }
-        }
-    }
-    else
-    {
-        if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitLoadError)
-        {
-            if (WebkitEcho::getFunMap()->webkitLoadError(browser->GetIdentifier(), errorCode, frame->IsMain(),
-                frame->GetName().ToWString().c_str(), failedUrl.ToWString().c_str()))
                 return;
+            }
         }
     }
 
@@ -519,60 +416,52 @@ void EasyClientHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRe
 
     if (m_bIsUIControl)
     {
-        if (params->IsEditable())
+        const bool bIsEdit = params->IsEditable();
+        if (!bIsEdit && !g_BrowserGlobalVar.Debug)
+        {
+            model->Clear();
+        }
+
+        if (g_BrowserGlobalVar.funcBeforeContextMenu)
         {
             auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
             if (!item)
                 return;
 
             HWND hWnd = item->GetHWND();
-            
             int x = params->GetXCoord();
             int y = params->GetYCoord();
-                                 
-            std::wstring strAttr;
-            if (hWnd)
-            {
-                if (QueryNodeAttrib(item, x, y, "data-nc", strAttr))
+
+            auto funcAddMenu = [](void* callneed, int command, LPCWSTR lpszLabel, bool bTop, bool bEnable) {
+                CefMenuModel* model = static_cast<CefMenuModel*>(callneed);
+
+                if (command > 0)
                 {
-                    constexpr int size = 32;
-                    auto menus = std::make_unique<wrapQweb::WRAP_CEF_MENU_COMMAND[]>(size);
-                    memset(menus.get(), 0, sizeof(wrapQweb::WRAP_CEF_MENU_COMMAND) * size);
-                    const auto fun = WebkitEcho::getUIFunMap();
-                    if (fun)
+                    if (bTop)
                     {
-                        fun->insertMenu(hWnd, strAttr.c_str(), menus.get());
-                        for (int i = 0; i < size; ++i)
-                        {
-                            if (menus.get()[i].command > 0)
-                            {
-                                if (menus.get()[i].top)
-                                {
-                                    model->InsertItemAt(0, menus.get()[i].command, menus.get()[i].szTxt);
-                                }
-                                else {
-                                    model->AddItem(menus.get()[i].command, menus.get()[i].szTxt);
-                                }
-                                model->SetEnabled(menus.get()[i].command, menus.get()[i].bEnable);
-                            }
-                            else {
-                                break;
-                            }
-                        }
+                        model->InsertItemAt(0, command, lpszLabel);
+                    }
+                    else {
+                        model->AddItem(command, lpszLabel);
+                    }
+                    model->SetEnabled(command, bEnable);
+                }
+                else
+                {
+                    if (bTop)
+                    {
+                        model->InsertSeparatorAt(0);
+                    }
+                    else
+                    {
+                        model->AddSeparator();
                     }
                 }
+            };
 
-            }
+            g_BrowserGlobalVar.funcBeforeContextMenu(hWnd, x, y, bIsEdit, funcAddMenu, model);
+        }
 
-        }
-        else
-        {
-            if (!g_BrowserGlobalVar.Debug)
-            {
-                model->Clear();
-            }
-        }
-        
     }
 
     if (g_BrowserGlobalVar.Debug)
@@ -624,9 +513,10 @@ bool EasyClientHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
                     return false;
 
                 HWND hWnd = item->GetHWND();
-                if (WebkitEcho::getUIFunMap() && WebkitEcho::getUIFunMap()->doMenuCommand)
+
+                if (g_BrowserGlobalVar.funcDoMenuCommand)
                 {
-                    bExec = WebkitEcho::getUIFunMap()->doMenuCommand(hWnd, command_id);
+                    bExec = g_BrowserGlobalVar.funcDoMenuCommand(hWnd, command_id);
                 }
 
                 return bExec;
@@ -638,28 +528,15 @@ bool EasyClientHandler::OnContextMenuCommand(CefRefPtr<CefBrowser> browser, CefR
     return false;
 }
 
-#if CEF_VERSION_MAJOR < 100
-void EasyClientHandler::OnPluginCrashed(CefRefPtr<CefBrowser> browser, const CefString& plugin_path)
-{
-    if (!m_bIsUIControl && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitPluginCrash)
-    {
-        WebkitEcho::getFunMap()->webkitPluginCrash(browser->GetIdentifier(), plugin_path.ToWString().c_str());
-    }
-}
-#endif
-
 void EasyClientHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser, TerminationStatus status)
 {
     EasyIPCServer::GetInstance().RemoveClient(browser->GetIdentifier());
-
  
     auto frame = browser->GetMainFrame();
 
     auto str = R"_raw(Render Process was Terminated... <a href="javascript:window.close();">Close</a>)_raw";
 
     webinfo::LoadErrorPage(frame, "", (cef_errorcode_t)100001, str);
-
-    //LOG(INFO) << GetCurrentProcessId() << "] EasyClientHandler::OnRenderProcessTerminated:(" << browser << ") res: " << status;
 }
 
 bool EasyClientHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
@@ -678,10 +555,10 @@ bool EasyClientHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<
             }
         }
 
-        if (!m_bIsUIControl && WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitBeginLoad)
+        if (!m_bIsUIControl && g_BrowserGlobalVar.funcWebControlLoadBegin)
         {
             bool cancel = false;
-            WebkitEcho::getFunMap()->webkitBeginLoad(browser->GetIdentifier(), new_url.c_str(), &cancel);
+            g_BrowserGlobalVar.funcWebControlLoadBegin(browser->GetIdentifier(), new_url.c_str(), &cancel);
             return cancel;
         }
 
@@ -710,7 +587,7 @@ bool EasyClientHandler::OnCertificateError(CefRefPtr<CefBrowser> browser, cef_er
     auto domain = DomainPackInfo::GetFormatedDomain(request_url.ToWString().c_str());
     if (!domain.empty())
     {
-        bAllowUnsecure = s_listAllowUnsecure.find(domain) != s_listAllowUnsecure.end();
+        bAllowUnsecure = g_BrowserGlobalVar.listAllowUnsecureDomains.find(domain) != g_BrowserGlobalVar.listAllowUnsecureDomains.end();
     }
 
     if (bAllowUnsecure)
@@ -790,25 +667,43 @@ void EasyClientHandler::OnDraggableRegionsChanged(CefRefPtr<CefBrowser> browser,
 
 void EasyClientHandler::OnBeforeDownload(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item, const CefString& suggested_name, CefRefPtr<CefBeforeDownloadCallback> callback)
 {
-    if (WebkitEcho::getFunMap() && WebkitEcho::getFunMap()->webkitDownFileUrl) {
-        WebkitEcho::getFunMap()->webkitDownFileUrl(browser->GetIdentifier(), download_item->GetURL().ToWString().c_str(), suggested_name.ToWString().c_str());
+    bool bUseDef = true;
+    if (g_BrowserGlobalVar.funcBeforeDownloadCallback) 
+    {
+        auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+        bUseDef = !g_BrowserGlobalVar.funcBeforeDownloadCallback(item->GetHWND(), download_item->GetId(), download_item->GetURL().ToWString().c_str(), suggested_name.ToWString().c_str());
     }
-    else
-        // Continue the download and show the "Save As" dialog.
-        callback->Continue([](const std::wstring& file_name) {
-            WCHAR szFolderPath[MAX_PATH];
-            std::wstring path;
+    
+    if (bUseDef)
+    {
+        WCHAR szFolderPath[MAX_PATH];
+        std::wstring path;
 
-            // Save the file in the user's "My Documents" folder.
-            if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL,
-                0, szFolderPath))) {
-                path = szFolderPath;
-                path += L"\\" + file_name;
-            }
+        // Save the file in the user's "My Documents" folder.
+        if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_PERSONAL | CSIDL_FLAG_CREATE, NULL, 0, szFolderPath)))
+        {
+            path = szFolderPath;
+            path += L"\\" + suggested_name.ToWString();
+        }
 
-            return path;
-            
-            }(suggested_name.ToWString()), true);
+        if (!path.empty())
+        {
+            // Continue the download and show the "Save As" dialog.
+            callback->Continue(path, true);
+        }
+
+    }
+}
+
+void EasyClientHandler::OnDownloadUpdated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefDownloadItem> download_item, CefRefPtr<CefDownloadItemCallback> callback)
+{
+    if (g_BrowserGlobalVar.funcDownloadStatusCallback)
+    {
+        if (download_item->IsInProgress() && !g_BrowserGlobalVar.funcDownloadStatusCallback(download_item->GetId(), download_item->GetReceivedBytes(), download_item->GetTotalBytes()))
+        {
+            callback->Cancel();
+        }
+    }
 }
 
 void EasyClientHandler::SetUIWindowInfo(CefRefPtr<WebViewUIControl> webui, bool bTransparent)

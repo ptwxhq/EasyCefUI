@@ -10,6 +10,8 @@
 #include "include/base/cef_logging.h"
 #include <random>
 #include <shellscalingapi.h>
+#include "EasyBrowserWorks.h"
+#include "EasyIPC.h"
 
 
 void GetLocalPaths();
@@ -28,6 +30,16 @@ uint64_t GetTimeNow() {
     QueryPerformanceCounter(&t);
     return static_cast<uint64_t>((t.QuadPart / double(qi_freq_.QuadPart)) *
         1000000);
+}
+
+uint64_t GetTimeNowMS(int Offset)
+{
+    if (!qi_freq_.HighPart && !qi_freq_.LowPart) {
+        QueryPerformanceFrequency(&qi_freq_);
+    }
+    LARGE_INTEGER t = {};
+    QueryPerformanceCounter(&t);
+    return static_cast<uint64_t>((t.QuadPart / double(qi_freq_.QuadPart)) * 1000 + Offset);
 }
 
 void SetUserDataPtr(HWND hWnd, void* ptr) {
@@ -250,7 +262,7 @@ float GetWindowScaleFactor(HWND hwnd) {
 }
 
 
-std::string QuickMakeIpcParms(int BrowserId, int64 FrameId, const std::string& name, const CefRefPtr<CefListValue>& valueList)
+std::string QuickMakeIpcParms(int BrowserId, int64 FrameId, uint64 timeout, const std::string& name, const CefRefPtr<CefListValue>& valueList)
 {
     CefRefPtr<CefValue> forsend = CefValue::Create();
     CefRefPtr<CefDictionaryValue> dict = CefDictionaryValue::Create();
@@ -259,13 +271,14 @@ std::string QuickMakeIpcParms(int BrowserId, int64 FrameId, const std::string& n
     dict->SetString("fid", std::to_string(FrameId));
     dict->SetString("name", name);
     dict->SetList("arg", valueList);
+    dict->SetString("to", std::to_string(timeout));
 
     forsend->SetDictionary(dict);
 
     return CefWriteJSON(forsend, JSON_WRITER_DEFAULT).ToString();
 }
 
-bool QuickGetIpcParms(const std::string& strData, int& BrowserId, int64& FrameId, std::string& name, CefRefPtr<CefListValue>& valueList)
+bool QuickGetIpcParms(const std::string& strData, int& BrowserId, int64& FrameId, uint64& timeout, std::string& name, CefRefPtr<CefListValue>& valueList)
 {
     auto recVal = CefParseJSON(strData, JSON_PARSER_RFC);
     if (!recVal)
@@ -292,6 +305,16 @@ bool QuickGetIpcParms(const std::string& strData, int& BrowserId, int64& FrameId
     else
     {
         FrameId = -1;
+    }
+
+    if (dict->HasKey("to"))
+    {
+        const auto val = dict->GetString("to").ToString();
+        timeout = strtoull(val.c_str(), nullptr, 10);
+    }
+    else
+    {
+        timeout = 0;
     }
 
     if (dict->HasKey("name"))
@@ -567,6 +590,31 @@ CefString CefV8ValueToString(CefRefPtr<CefV8Value> value)
     return CefWriteJSON(toVal, JSON_WRITER_DEFAULT);
 }
 
+CefRefPtr<CefDictionaryValue> CreateExtraInfo(bool bIsManagedPop, HWND hUIHwnd)
+{
+    auto extra_info = CefDictionaryValue::Create();
+
+    {
+        const auto tmpVal = EasyIPCServer::GetInstance().GetHandle();
+        auto valKey = CefBinaryValue::Create(&tmpVal, sizeof(tmpVal));
+        extra_info->SetBinary(ExtraKeyNames[IpcBrowserServer], valKey);
+    }
+
+    if (!bIsManagedPop)
+    {
+        auto valKey = CefBinaryValue::Create(&hUIHwnd, sizeof(hUIHwnd));
+        extra_info->SetBinary(ExtraKeyNames[UIWndHwnd], valKey);
+    }
+ 
+    extra_info->SetBool(ExtraKeyNames[IsManagedPop], bIsManagedPop);
+    extra_info->SetBool(ExtraKeyNames[EnableHighDpi], g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi);
+
+    extra_info->SetDictionary(ExtraKeyNames[RegSyncJSFunctions], EasyBrowserWorks::GetInstance().GetUserJSFunction(true));
+    extra_info->SetDictionary(ExtraKeyNames[RegAsyncJSFunctions], EasyBrowserWorks::GetInstance().GetUserJSFunction(false));
+
+    return extra_info;
+}
+
 void SetRequestDefaultSettings(CefRefPtr<CefRequestContext> request_context)
 {
     if (!request_context)
@@ -684,7 +732,7 @@ bool IsSystemWindows7OrOlder()
 
 bool IsSystemWindows11OrGreater()
 {
-    if (g_BrowserGlobalVar.WindowsVerMajor == 10 && g_BrowserGlobalVar.WindowsVerMinor == 0 && g_BrowserGlobalVar.WindowsVerBuild >= 22000)
+    if (g_BrowserGlobalVar.WindowsVerMajor >= 10 && g_BrowserGlobalVar.WindowsVerBuild >= 22000)
     {
         return true;
     }
@@ -971,7 +1019,7 @@ std::string GetCertificateInformation(const std::string& url,
 
     if (!url.empty())
     {
-        ss << R"_raw(<p><input type="button" value="Continue(unsecure)" onclick="nativeapp.ContinueUnsecure(')_raw" 
+        ss << R"_raw(<p><input type="button" value="Continue(unsecure)" onclick="nativeapp.__ContinueUnsecure__(')_raw" 
             << url << R"_raw(')"/> <input type="button" value="Go Back" onclick="javascript:history.back();"</p>)_raw";
     }
 

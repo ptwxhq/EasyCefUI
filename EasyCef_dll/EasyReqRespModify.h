@@ -23,7 +23,7 @@ enum class RULE_MODIFY_TYPE
 	RESPONSE_DATA,
 };
 
-typedef unsigned RuleID;
+using RuleID = unsigned;
 
 class EasyReplaceRule
 {
