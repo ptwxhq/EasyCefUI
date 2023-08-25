@@ -281,6 +281,7 @@ bool EasyBrowserWorks::RegisterUserJSFunction(const std::string& name, jscall_Us
 				int ret = funUser(hWnd, strArgs.c_str(), &pRet, context);
 				if (pRet)
 				{
+					retval = pRet;
 					delete[] pRet;
 				}
 

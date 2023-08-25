@@ -72,12 +72,12 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 
 			if (std::future_status::ready == waitres)
 			{
-				output = std::move(pData->ReturnVal);
 			}
 			else if (std::future_status::timeout == waitres)
 			{
 				pData->DataInvalid = true;
 				LOG(WARNING) << GetCurrentProcessId() << "] EasyIPCWorks::UIWork timeout " << pData->Name << " data:" << input;
+				return;
 			}
 		}
 		else
@@ -85,10 +85,9 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 			pData->Signal.get_future().wait();
 		}
 	}
-	else
-	{
-		output = std::move(pData->ReturnVal);
-	}
+
+	output = std::move(pData->ReturnVal);
+	
 
 
 	//LOG(INFO) << GetCurrentProcessId() << "] SetWorkCall:f->t (" << pData << ") " << input << "out:" << output;
