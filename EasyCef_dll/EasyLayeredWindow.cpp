@@ -791,6 +791,18 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 
 	memcpy(m_bitmap->GetBits(), pData, width * height * 4);
 
+	if (view_width_ != width || view_height_ != height)
+	{
+		/*
+		部分特殊情况下还是会差一些像素，如原始大小385，1.5倍，577.5取577
+		还原的时候577/1.5只能得到384，缺了一个像素。这边就强制拉伸以应对所有情况
+		*/
+		auto tempBmp = std::make_unique<GdiBitmap>(view_width_, view_height_);
+		SetStretchBltMode(tempBmp->GetDC(), COLORONCOLOR);
+		StretchBlt(tempBmp->GetDC(), 0, 0, view_width_, view_height_, m_bitmap->GetDC(), 0, 0, width, height, SRCCOPY);
+		m_bitmap = std::move(tempBmp);
+	}
+
 	m_info.SetDirtyRect(nullptr);
 	return true;
 }
