@@ -174,10 +174,10 @@ void EasyLayeredWindow::SetPopupRectInWebView(const CefRect& original_rect)
 	if (rc.y < 0)
 		rc.y = 0;
 	// if popup goes outside the view, try to reposition origin
-	if (rc.x + rc.width > view_width_)
-		rc.x = view_width_ - rc.width;
-	if (rc.y + rc.height > view_height_)
-		rc.y = view_height_ - rc.height;
+	if (rc.x + rc.width > view_size_.width)
+		rc.x = view_size_.width - rc.width;
+	if (rc.y + rc.height > view_size_.height)
+		rc.y = view_size_.height - rc.height;
 	// if x or y became negative, move them to 0 again.
 	if (rc.x < 0)
 		rc.x = 0;
@@ -217,22 +217,19 @@ CefRect EasyLayeredWindow::CalcViewRect(int width, int height) const
 	DCHECK_GT(GetDeviceScaleFactor(), 0);
 
 	CefRect rect;
-	bool bIsZoom = GetDeviceScaleFactor() != 1.f;
+	const bool bIsZoom = GetDeviceScaleFactor() != 1.f;
 
 	if (width < 1 && height < 1)
 	{
-		width = view_width_;
-		height = view_height_;
+		width = view_size_.width;
+		height = view_size_.height;
 	}
 
 
 	rect.x = rect.y = 0;
 	if (bIsZoom)
 	{
-		//用于减少窗口因创建之时已经舍弃小数点之后转换导致的偏移过大
-		auto v1 = DeviceToLogical(width + 1, GetDeviceScaleFactor());
-		auto v2 = DeviceToLogical(width, GetDeviceScaleFactor());
-		rect.width = (v1 + v2) / 2;
+		rect.width = DeviceToLogical(width, GetDeviceScaleFactor());
 	}
 	else
 	{
@@ -244,9 +241,7 @@ CefRect EasyLayeredWindow::CalcViewRect(int width, int height) const
 
 	if (bIsZoom)
 	{
-		auto v1 = DeviceToLogical(height + 1, GetDeviceScaleFactor());
-		auto v2 = DeviceToLogical(height, GetDeviceScaleFactor());
-		rect.height = (v1 + v2) / 2;
+		rect.height = DeviceToLogical(height, GetDeviceScaleFactor());
 	}
 	else
 	{
@@ -308,6 +303,32 @@ int EasyLayeredWindow::GetPopupXOffset() const
 int EasyLayeredWindow::GetPopupYOffset() const
 {
 	return original_popup_rect_.y - popup_rect_.y;
+}
+
+bool EasyLayeredWindow::CheckOnPaintSize(int width, int height)
+{
+	if (device_scale_factor_ == std::floor(device_scale_factor_))
+	{
+		return true;
+	}
+
+	auto rcIn = CalcViewRect(width, height);
+	auto rcComp = CalcViewRect(0, 0);
+	if (rcIn == rcComp)
+	{
+		return true;
+	}
+
+	int width_onpaint = rcIn.width * device_scale_factor_ + 0.5;
+	int height_onpaint = rcIn.height * device_scale_factor_ + 0.5;
+
+	if (width_onpaint == width && height_onpaint == height)
+	{
+		//与onpaint内部计算的值相同，虽然与实际大小不同，视为相同大小
+		return true;
+	}
+
+	return false;
 }
 
 void EasyLayeredWindow::ApplyPopupOffset(int& x, int& y) const
@@ -538,12 +559,12 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 
 	const int wi = LOWORD(lp);
 	const int hi = HIWORD(lp);
-	if (wi != view_width_ && hi != view_height_)
+	if (wi != view_size_.width && hi != view_size_.height)
 	{
-		view_width_ = wi;
-		view_height_ = hi;
+		view_size_.width = wi;
+		view_size_.height = hi;
 
-		m_info.SetSize({ view_width_, view_height_ });
+		m_info.SetSize({ view_size_.width, view_size_.height });
 
 		if (m_browser)
 		{
@@ -777,7 +798,7 @@ LRESULT EasyLayeredWindow::OnPaint(UINT, WPARAM, LPARAM, BOOL& handle)
 
 bool EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 {
-	if (CalcViewRect(width, height) != CalcViewRect(0, 0))
+	if (!CheckOnPaintSize(width, height))
 	{
 		m_browser->GetHost()->WasResized();
 		m_browser->GetHost()->Invalidate(PET_VIEW);
@@ -791,15 +812,15 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 
 	memcpy(m_bitmap->GetBits(), pData, width * height * 4);
 
-	if (view_width_ != width || view_height_ != height)
+	if (view_size_.width != width || view_size_.height != height)
 	{
 		/*
 		部分特殊情况下还是会差一些像素，如原始大小385，1.5倍，577.5取577
 		还原的时候577/1.5只能得到384，缺了一个像素。这边就强制拉伸以应对所有情况
 		*/
-		auto tempBmp = std::make_unique<GdiBitmap>(view_width_, view_height_);
+		auto tempBmp = std::make_unique<GdiBitmap>(view_size_.width, view_size_.height);
 		SetStretchBltMode(tempBmp->GetDC(), COLORONCOLOR);
-		StretchBlt(tempBmp->GetDC(), 0, 0, view_width_, view_height_, m_bitmap->GetDC(), 0, 0, width, height, SRCCOPY);
+		StretchBlt(tempBmp->GetDC(), 0, 0, view_size_.width, view_size_.height, m_bitmap->GetDC(), 0, 0, width, height, SRCCOPY);
 		m_bitmap = std::move(tempBmp);
 	}
 
@@ -816,7 +837,7 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 
 	if (!m_bitmap || x + width > m_bitmap->GetWidth() || y + height > m_bitmap->GetHeight())
 	{
-		m_bitmap = std::make_unique<GdiBitmap>(view_width_, view_height_);
+		m_bitmap = std::make_unique<GdiBitmap>(view_size_.width, view_size_.height);
 	//	m_browser->GetHost()->WasResized();
 		m_browser->GetHost()->Invalidate(PET_VIEW);
 		return false;

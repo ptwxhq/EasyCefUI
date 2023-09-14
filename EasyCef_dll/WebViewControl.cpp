@@ -641,8 +641,7 @@ bool WebViewTransparentUIControl::GetScreenInfo(CefRefPtr<CefBrowser> browser, C
     if (!::IsWindow(GetHWND()))
         return false;
 
-    CefRect view_rect;
-    GetViewRect(browser, view_rect);
+    CefRect view_rect = m_pWindow->CalcViewRect(0, 0);
 
     screen_info.device_scale_factor = m_pWindow->GetDeviceScaleFactor();
 

@@ -218,6 +218,10 @@ public:
 
     CefRect CalcViewRect(int width, int height) const;
 
+    CefSize GetViewSize() const {
+        return view_size_;
+    }
+
 private:
 
 
@@ -237,12 +241,11 @@ private:
     void ApplyPopupOffset(int& x, int& y) const;
     int GetPopupXOffset() const;
     int GetPopupYOffset() const;
+    bool CheckOnPaintSize(int width, int height);
 
-    int view_width_ = 0;
-    int view_height_ = 0;
+    CefSize view_size_;
     CefRect popup_rect_;
     CefRect original_popup_rect_;
-
 
     // Mouse state tracking.
     bool mouse_rotation_ = {};
