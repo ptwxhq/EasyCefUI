@@ -9,7 +9,9 @@ const char* const ExtraKeyNames[] = {
 	"UIWndHwnd",
 	"EnableHighDpi",
 	"RegSyncJSFuntions",
-	"RegAsyncJSFuntions"
+	"RegAsyncJSFuntions",
+
+	"\x01\\Render\\Utility\\Network\x04"
 };
 
 

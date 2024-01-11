@@ -110,6 +110,7 @@ void EasyCefAppRender::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser)
 
 void call_FrameStateChanged(CefRefPtr<CefFrame>& frame, const char* frameName, const char* url, const int& code, bool resloaded)
 {
+	OutputDebugStringA("---call_FrameStateChanged---");
 	CefRefPtr<CefValue> json = CefValue::Create();
 	
 	auto jDict = CefDictionaryValue::Create();
@@ -240,7 +241,7 @@ void EasyCefAppRender::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr
 
 	auto objapp = CefV8Value::CreateObject(v8Accessor, nullptr);
 
-	object->SetValue("nativeapp", objapp, V8_PROPERTY_ATTRIBUTE_NONE);
+	object->SetValue("nativeapp", objapp, static_cast<CefV8Value::PropertyAttribute>(V8_PROPERTY_ATTRIBUTE_READONLY | V8_PROPERTY_ATTRIBUTE_DONTENUM | V8_PROPERTY_ATTRIBUTE_DONTDELETE));
 
 	auto BrowserType = EasyRenderBrowserInfo::GetInstance().GetType(browser->GetIdentifier());
 
@@ -291,3 +292,73 @@ void EasyCefAppRender::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> reg
 	EasyRegisterCustomSchemes(registrar);
 }
 
+
+
+void EasyCefAppOther::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line)
+{
+	int InnerGetProcessType();
+	if (InnerGetProcessType() == 12)
+	{
+		if (command_line->HasSwitch("brs-svr"))
+		{
+			if (!g_BrowserGlobalVar.funcSetHostResolverWork)
+				return;
+
+			auto value = strtoul(command_line->GetSwitchValue("brs-svr").ToString().c_str(), nullptr, 16);
+
+			if (value != 0)
+			{
+				EasyIPCClient::GetInstance().SetServer((EasyIPCClient::IPCHandle)value);
+				EasyIPCClient::GetInstance().SetWorkCall([](const std::string& input, std::string& output)
+					{
+						auto recVal = CefParseJSON(input, JSON_PARSER_RFC);
+						if (!recVal)
+							return;
+
+						auto list = recVal->GetList();
+
+						if (!list)
+							return;
+
+						for (size_t i = 0; i < list->GetSize(); i++)
+						{
+							auto dict = list->GetDictionary(i);
+							if (!dict->HasKey("host"))
+								continue;
+
+							auto szHost = dict->GetString("host");
+
+							const char* pIp = nullptr;
+							std::string szIp;
+							if (dict->HasKey("ip"))
+							{
+								szIp = dict->GetString("ip").ToString();
+								pIp = szIp.c_str();
+							}
+
+							g_BrowserGlobalVar.funcSetHostResolverWork(szHost.ToString().c_str(), pIp);
+						}
+					});
+
+				EasyIPCClient::GetInstance().ThdRun();
+
+				CefRefPtr<CefListValue> valueList = CefListValue::Create();
+				valueList->SetSize(2);
+
+				valueList->SetString(0, "init");
+
+				auto handle = EasyIPCClient::GetInstance().GetHandle();
+				auto valKey = CefBinaryValue::Create(&handle, sizeof(handle));
+				valueList->SetInt(1, (int)handle);
+
+				auto strData = QuickMakeIpcParms(-1, 0, 0, ExtraKeyNames[IPC_RenderUtilityNetwork], valueList);
+
+				std::string ret;
+				EasyIPCClient::GetInstance().SendDataToServer(strData, ret, 0);
+			}
+		}
+
+
+
+	}
+}

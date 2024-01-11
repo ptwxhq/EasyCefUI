@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EasyIPCWorks.h"
+#include "EasyIPC.h"
 
 class EasyBrowserWorks : public EasyIPCWorks
 {
@@ -13,6 +14,8 @@ class EasyBrowserWorks : public EasyIPCWorks
 	AsyncFunctionMap m_mapAsyncJsKeyFuncs;
 
 	std::unordered_map<std::string, int> m_mapSyncUserFuncs, m_mapAsyncUserFuncs;
+	std::unordered_map<std::string, std::string> m_mapLocalHost;
+	EasyIPCBase::IPCHandle m_hNetworkUtility = nullptr;
 
 	void DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData) override;
 
@@ -28,6 +31,12 @@ public:
 
 	bool RegisterUserJSFunction(const std::string& name, jscall_UserFunction funUser, bool bSync, void* context, int RegType);
 	CefRefPtr<CefDictionaryValue> GetUserJSFunction(bool bSync);
+
+	void SetNetworkUtilityHandle(EasyIPCBase::IPCHandle h) {
+		m_hNetworkUtility = h;
+	}
+	void SetLocalHost(const std::string& host, const std::string& ip);
+	std::string GetLocalHosts(const std::string& host, const std::string& ip);
 
 	bool CheckNeedUI(const std::string& name) override;
 };

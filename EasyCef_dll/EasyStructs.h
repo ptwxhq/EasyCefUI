@@ -43,6 +43,8 @@ struct BrowserGlobalVar
 
 	std::function<void(float)> funcSpeedupCallback;
 
+	std::function<void(LPCSTR, LPCSTR)> funcSetHostResolverWork;
+
 	std::function<bool(LPCWSTR, LPCWSTR, BYTE**, DWORD*)> funcXpackExtract;
 
 	std::function<void(BYTE*)> funcXpackFreeData;
@@ -157,7 +159,9 @@ enum EXTRAKEYNAMES
 	UIWndHwnd,
 	EnableHighDpi,
 	RegSyncJSFunctions,
-	RegAsyncJSFunctions
+	RegAsyncJSFunctions,
+
+	IPC_RenderUtilityNetwork,
 };
 
 extern const char* const ExtraKeyNames[];

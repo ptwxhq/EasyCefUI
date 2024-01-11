@@ -69,6 +69,7 @@ struct EasyCefFunctionFlag
 namespace EASYCEF {
 
 typedef void(*SpeedUpWork)(float);
+typedef void(*SetHostResolver)(LPCSTR lpszHost, LPCSTR lpszIp);
 typedef void(*CloseHandler)();
 typedef bool(*XPackExtractWork)(LPCWSTR lpszPackFile, LPCWSTR lpszFileItem, BYTE** ppOut, DWORD *pLen);
 typedef void(*XPackFreeData)(BYTE* pOut);
@@ -76,7 +77,6 @@ typedef void(*XPackFreeData)(BYTE* pOut);
 typedef struct EasyInitConfig
 {
 	bool bSupportLayerWindow; //如果项目不需要分层窗口（可鼠标穿透）则不需要启用，性能更好
-	int ProcessType;	//手动指定进程类型，0自动识别，1主进程，2render
 	LPCWSTR strLocal;		//L"zh-CN"
 	LPCWSTR strUserAgent;
 	LPCWSTR strWebViewClassName;
@@ -94,7 +94,13 @@ typedef struct EasyInitConfig
 EASYCEF_EXP_API bool RegisterPackDomain(LPCWSTR lpszDomain, LPCWSTR lpszFilePath);
 EASYCEF_EXP_API void UnregisterPackDomain(LPCWSTR lpszDomain);
 
+//for render process
 EASYCEF_EXP_API void SetSpeedUpWork(SpeedUpWork func);
+EASYCEF_EXP_API void SetHostResolverWork(SetHostResolver func);
+
+//lpszIp为空时删除条目。自身有缓存，如果之前请求过需要清理chromium自身的dns缓存
+EASYCEF_EXP_API void SetLocalHost(LPCSTR lpszHost, LPCSTR lpszIp);
+
 
 //所有浏览器窗口均已关闭通知，默认已设为QuitMsgLoop
 EASYCEF_EXP_API void SetCloseHandler(CloseHandler func);
@@ -105,7 +111,8 @@ EASYCEF_EXP_API void QuitMsgLoop();
 
 EASYCEF_EXP_API void ShutEasyCef();
 
-//旧版本InitLibrary的替代接口
+//1 browser 2 renderer  3 gpu-process 4 ppapi 5 plugin 10- utility 11 utility/audio 12 utility/network -1 other
+EASYCEF_EXP_API int GetProcessType();
 EASYCEF_EXP_API int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender = NULL, PEASYINITCONFIG pConf= nullptr);
 
 //TODO 后续参数待补充，现在先简单点

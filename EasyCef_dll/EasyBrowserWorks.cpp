@@ -4,6 +4,7 @@
 #include "WebViewControl.h"
 #include "LegacyImplement.h"
 #include "EasySchemes.h"
+#include "EasyIPC.h"
 
 
 namespace BrowserSyncWorkFunctions {
@@ -11,6 +12,31 @@ namespace BrowserSyncWorkFunctions {
 	bool __V8AccessorAttribKeys__(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 	{
 		return EasyBrowserWorks::GetInstance().DoJSKeySyncWork(args->GetString(0).ToString(), browser, frame, retval);
+	}
+
+
+	bool __Render_Utility_Network(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
+	{
+		if (args->GetSize() == 2)
+		{
+			if (args->GetString(0) == "init")
+			{
+				EasyIPCBase::IPCHandle hClient = (EasyIPCBase::IPCHandle)args->GetInt(1);
+				if (hClient)
+				{
+					EasyBrowserWorks::GetInstance().SetNetworkUtilityHandle(hClient);
+					//初始化，一次推
+					auto hosts = EasyBrowserWorks::GetInstance().GetLocalHosts("", "");
+					
+					std::string ret;
+					return EasyIPCServer::GetInstance().SendData(hClient, hosts, ret, 5000);
+
+				}
+
+			}
+		}
+
+		return false;
 	}
 }
 
@@ -174,6 +200,9 @@ EasyBrowserWorks::EasyBrowserWorks()
 
 	
 
+	//特殊进程特殊处理
+	m_mapSyncFuncs.insert(std::make_pair(ExtraKeyNames[IPC_RenderUtilityNetwork], BrowserSyncWorkFunctions::__Render_Utility_Network));
+
 }
 
 EasyBrowserWorks& EasyBrowserWorks::GetInstance()
@@ -188,14 +217,20 @@ void EasyBrowserWorks::DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData)
 	if (pData->DataInvalid)
 		return;
 
+	CefRefPtr<CefBrowser> browser;
+	CefRefPtr<CefFrame> frame;
+
 	auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(pData->BrowserId);
 	if (item)
 	{
-		CefString ReturnVal;
-		if (DoSyncWork(pData->Name, item->GetBrowser(), item->GetBrowser()->GetFrame(pData->FrameId), pData->Args, ReturnVal))
-		{
-			pData->ReturnVal = ReturnVal.ToString();
-		}
+		browser = item->GetBrowser();
+		frame = item->GetBrowser()->GetFrame(pData->FrameId);
+	}
+
+	CefString ReturnVal;
+	if (DoSyncWork(pData->Name, browser, frame, pData->Args, ReturnVal))
+	{
+		pData->ReturnVal = ReturnVal.ToString();
 	}
 
 	pData->Signal.set_value();
@@ -352,6 +387,65 @@ CefRefPtr<CefDictionaryValue> EasyBrowserWorks::GetUserJSFunction(bool bSync)
 	}
 
 	return listfunc;
+}
+
+void EasyBrowserWorks::SetLocalHost(const std::string& host, const std::string& ip)
+{
+	auto hostLower = host;
+	std::transform(hostLower.begin(), hostLower.end(), hostLower.begin(), tolower);
+	if (ip.empty())
+	{
+		m_mapLocalHost.erase(hostLower);
+	}
+	else
+	{
+		m_mapLocalHost.insert(std::make_pair(hostLower, ip));
+	}
+
+	if (m_hNetworkUtility)
+	{
+		//初始化，一次推
+		auto hosts = EasyBrowserWorks::GetInstance().GetLocalHosts(hostLower, ip);
+		std::string ret;
+		EasyIPCServer::GetInstance().SendData(m_hNetworkUtility, hosts, ret, 5000);
+	}
+}
+
+std::string EasyBrowserWorks::GetLocalHosts(const std::string& host, const std::string& ip)
+{
+	auto val = CefValue::Create();
+	auto list = CefListValue::Create();
+	val->SetList(list);
+	size_t iCount = 0;
+
+	auto funAddItem = [list](size_t n, const std::string& host, const std::string& ip)
+		{
+			auto dict = CefDictionaryValue::Create();
+			dict->SetString("host", host);
+			dict->SetString("ip", ip);
+
+			list->SetDictionary(n, dict);
+		};
+
+	if (host.empty())
+	{
+		list->SetSize(m_mapLocalHost.size());
+
+		for (const auto& it : m_mapLocalHost)
+		{
+			funAddItem(iCount++, it.first, it.second);
+		}
+	}
+	else
+	{
+		auto hostLower = host;
+		std::transform(hostLower.begin(), hostLower.end(), hostLower.begin(), tolower);
+		list->SetSize(1);
+		funAddItem(0, hostLower, ip);
+	}
+
+
+	return CefWriteJSON(val, JSON_WRITER_DEFAULT).ToString();
 }
 
 bool EasyBrowserWorks::CheckNeedUI(const std::string& name)

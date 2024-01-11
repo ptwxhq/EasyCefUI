@@ -3,7 +3,6 @@
 
 //render进程
 
-
 class EasyCefAppRender :
     public CefApp,
     public CefRenderProcessHandler,
@@ -13,7 +12,6 @@ public:
 
 
     EasyCefAppRender() {};
-
 
     CefRefPtr<CefRenderProcessHandler> GetRenderProcessHandler() override { return this; }
 
@@ -94,3 +92,19 @@ private:
 
 };
 
+
+
+class EasyCefAppOther : public CefApp
+{
+public:
+    EasyCefAppOther() {};
+    void OnBeforeCommandLineProcessing(
+        const CefString& process_type,
+        CefRefPtr<CefCommandLine> command_line) override;
+
+    IMPLEMENT_REFCOUNTING(EasyCefAppOther);
+
+
+private:
+    MYDISALLOW_COPY_AND_ASSIGN(EasyCefAppOther);
+};

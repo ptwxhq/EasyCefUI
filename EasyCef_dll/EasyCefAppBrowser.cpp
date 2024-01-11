@@ -31,24 +31,24 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 {
 	std::vector<std::string> vecDisableFeatures;
 
-	if (process_type.empty())
-	{
+
+	
 #if CEF_VERSION_MAJOR <= 87
 
-		command_line->AppendSwitch("enable-system-flash");
-		command_line->AppendSwitch("ppapi-in-process");
+	command_line->AppendSwitch("enable-system-flash");
+	command_line->AppendSwitch("ppapi-in-process");
 
-		if (!g_BrowserGlobalVar.FlashPluginPath.empty())
-		{
-			command_line->AppendSwitchWithValue("ppapi-flash-path", g_BrowserGlobalVar.FlashPluginPath);
-		}
+	if (!g_BrowserGlobalVar.FlashPluginPath.empty())
+	{
+		command_line->AppendSwitchWithValue("ppapi-flash-path", g_BrowserGlobalVar.FlashPluginPath);
+	}
 #endif
 
-		command_line->AppendSwitchWithValue("js-flags", "--expose-gc");
+	command_line->AppendSwitchWithValue("js-flags", "--expose-gc");
 
-		//目前无法处理多屏选择的情况
-		command_line->AppendSwitch("use-fake-ui-for-media-stream");
-	}
+	//目前无法处理多屏选择的情况
+	command_line->AppendSwitch("use-fake-ui-for-media-stream");
+	
 
 	//保证js后台正确运行
 	//保持后台优先级
@@ -100,6 +100,15 @@ void EasyCefAppBrowser::OnBeforeCommandLineProcessing(const CefString& process_t
 
 }
 
+
+void EasyCefAppBrowser::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line)
+{
+	if (command_line->GetSwitchValue("type") == "utility" && command_line->GetSwitchValue("utility-sub-type") == "network.mojom.NetworkService")
+	{
+		EasyIPCServer::GetInstance().GetHandle();
+		command_line->AppendSwitchWithValue("brs-svr", std::format("{:x}", (size_t)EasyIPCServer::GetInstance().GetHandle()));
+	}
+}
 
 void EasyCefAppBrowser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {

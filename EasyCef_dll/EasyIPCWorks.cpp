@@ -26,7 +26,7 @@ bool EasyIPCWorks::DoAsyncWork(const std::string name, CefRefPtr<CefBrowser> bro
 
 void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 {
-	auto pData = std::make_shared< EasyIPCWorks::BRDataPack>();
+	auto pData = std::make_shared<EasyIPCWorks::BRDataPack>();
 
 	if (!QuickGetIpcParms(input, pData->BrowserId, pData->FrameId, pData->WaitEndTime, pData->Name, pData->Args))
 	{

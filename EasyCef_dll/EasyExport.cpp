@@ -18,7 +18,6 @@
 CefScopedSandboxInfo g_scoped_sandbox;
 
 #pragma comment(lib, "cef_sandbox.lib")
-#pragma comment(lib, "Ws2_32.lib")
 #pragma comment(lib, "Version.lib")
 #pragma comment(lib, "Dbghelp.lib")
 #pragma comment(lib, "Winmm.lib")
@@ -31,6 +30,65 @@ CefScopedSandboxInfo g_scoped_sandbox;
 
 void GetLocalPaths();
 extern EasyMemoryFileMgr g_MemFileMgr;
+
+int InnerGetProcessType()
+{
+	static int ProcessType = 0;
+	if (ProcessType != 0)
+		return ProcessType;
+
+
+	CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
+	command_line->InitFromString(::GetCommandLineW());
+
+	const char kProcessType[] = "type";
+
+	if (command_line->HasSwitch(kProcessType))
+	{
+		const char* sProcessTypes[] = { "utility",	"utility-sub-type",
+			"renderer",  "gpu-process", "ppapi",  "plugin"
+		};
+
+		auto type = command_line->GetSwitchValue(kProcessType).ToString();
+
+		for (size_t i = 2; i < _countof(sProcessTypes); i++)
+		{
+			if (type == sProcessTypes[i])
+			{
+				ProcessType = i;
+				return ProcessType;
+			}
+		}
+
+		if (type == sProcessTypes[0])
+		{
+			auto subType = command_line->GetSwitchValue(sProcessTypes[1]).ToString();
+			if (subType == "audio.mojom.AudioService")
+			{
+				ProcessType = 11;
+			}
+			else if (subType == "network.mojom.NetworkService")
+			{
+				ProcessType = 12;
+			}
+			else
+			{
+				ProcessType = 10;
+			}
+		}
+		else
+		{
+			ProcessType = -1;
+		}
+	}
+	else
+	{
+		ProcessType = 1;
+	}
+
+
+	return ProcessType;
+}
 
 namespace EASYCEF {
 
@@ -49,6 +107,26 @@ void SetSpeedUpWork(SpeedUpWork func)
 {
 	g_BrowserGlobalVar.funcSpeedupCallback = func;
 }
+
+void SetHostResolverWork(SetHostResolver func)
+{
+	g_BrowserGlobalVar.funcSetHostResolverWork = func;
+}
+
+void SetLocalHost(LPCSTR lpszHost, LPCSTR lpszIp)
+{
+	if (lpszHost && lpszHost[0])
+	{
+		auto pstr = "";
+		if (lpszIp && lpszIp[0])
+		{
+			pstr = lpszIp;
+		}
+
+		EasyBrowserWorks::GetInstance().SetLocalHost(lpszHost, pstr);
+	}
+}
+
 
 void SetCloseHandler(CloseHandler func)
 {
@@ -73,6 +151,11 @@ void QuitMsgLoop()
 void ShutEasyCef()
 {
 	CefShutdown();
+}
+
+int GetProcessType()
+{
+	return InnerGetProcessType();
 }
 
 int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
@@ -114,29 +197,9 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 
 	CefMainArgs main_args(hInstance);
 
-	CefRefPtr<CefCommandLine> command_line = CefCommandLine::CreateCommandLine();
-	command_line->InitFromString(::GetCommandLineW());
-
 	CefRefPtr<CefApp> app;
 
-	int ProcessType = 0;
-	if (pConf)
-	{
-		ProcessType = pConf->ProcessType;
-	}
-
-	if (ProcessType == 0)
-	{
-		if (command_line->HasSwitch("type"))
-		{
-			ProcessType = 2;
-		}
-		else
-		{
-			ProcessType = 1;
-		}
-	}
-
+	int ProcessType = GetProcessType();
 
 	if (ProcessType == 1)
 	{
@@ -148,6 +211,10 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 		if (ProcessType == 2)
 		{
 			app = new EasyCefAppRender;
+		}
+		else
+		{
+			app = new EasyCefAppOther;
 		}
 
 		if (dwParentPid)

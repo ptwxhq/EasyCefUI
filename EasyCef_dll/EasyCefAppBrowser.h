@@ -19,6 +19,9 @@ public:
 
     //////////////////////////////////////
 
+    void OnBeforeChildProcessLaunch(
+        CefRefPtr<CefCommandLine> command_line) override;
+
 
     void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
 

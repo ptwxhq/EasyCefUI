@@ -32,6 +32,7 @@
 
 
 #include "ApiFilter.h"
+#include <format>
 
 
 void SpeedWork(float val)
@@ -60,7 +61,21 @@ void SpeedWork(float val)
 }
 
 
-
+void SetHostResolverInfo(LPCSTR lpszHost, LPCSTR lpszIp)
+{
+    if (lpszHost && lpszHost[0])
+    {
+        if (lpszIp && lpszIp[0])
+        {
+            AddLocalHost(lpszHost, lpszIp);
+        
+        }
+        else
+        {
+            RemoveLocalHost(lpszHost);
+        }
+    }
+}
 
 
 
@@ -79,10 +94,31 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     SetSpeedUpWork(SpeedWork);
 
-    BlockFlashNotSandboxedCmd();
+    auto pt = GetProcessType();
+
+    switch (pt)
+    {
+    case 2:
+        break;
+    case 12:
+        HostFilterOn();
+        SetHostResolverWork(SetHostResolverInfo);
+        break;
+    case 4:
+        BlockFlashNotSandboxedCmd();
+        break;
+    case 3:
+    case 5:
+    case 10:
+    case 11:
+    case -1:
+        break;
+    default:
+        return 0;
+    }
+
 
     EASYCEF::EasyInitConfig config;
-    config.ProcessType = 2;
 
     return InitEasyCef(hInstance, nullptr, &config);
 }
