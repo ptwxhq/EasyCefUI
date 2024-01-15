@@ -10,8 +10,6 @@
 #include "EasyRenderWorks.h"
 #include "EasyRenderBrowserInfo.h"
 
-#include "LegacyImplement.h"
-
 
 
 void EasyCefAppRender::OnWebKitInitialized()
@@ -107,124 +105,6 @@ void EasyCefAppRender::OnBrowserDestroyed(CefRefPtr<CefBrowser> browser)
 
 }
 
-
-void call_FrameStateChanged(CefRefPtr<CefFrame>& frame, const char* frameName, const char* url, const int& code, bool resloaded)
-{
-	OutputDebugStringA("---call_FrameStateChanged---");
-	CefRefPtr<CefValue> json = CefValue::Create();
-	
-	auto jDict = CefDictionaryValue::Create();
-	jDict->SetString("frameid", frameName);
-	jDict->SetString("src",  url);
-	jDict->SetInt("state", code);
-	jDict->SetBool("resloaded", resloaded);
-
-	json->SetDictionary(jDict);
-
-	auto strJson = CefWriteJSON(json, JSON_WRITER_DEFAULT);
-
-	std::string strJs = "_onFrameStateChanged(" + strJson.ToString() + ')';
-
-	frame->ExecuteJavaScript(strJs, "", 0);
-
-	//LOG(INFO) << GetCurrentProcessId() << "]call_FrameStateChanged(" << strJs << ") ";
-
-}
-
-void EasyCefAppRender::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward)
-{
-	//这边只处理UI相关
-	if (EasyRenderBrowserInfo::BrsData::BROWSER_UI != EasyRenderBrowserInfo::GetInstance().GetType(browser->GetIdentifier()))
-	{
-		return;
-	}
-
-	//LOG(INFO) << GetCurrentProcessId() << "]ClientAppRenderer::OnLoadingStateChange(" << browser->GetIdentifier() << ") isLoading" << isLoading << ")" << canGoBack << canGoForward;
-
-
-	if (!isLoading) {
-		//避免描点跳转无endload导致异常
-		DocComplate::getInst().setBrowsr(browser->GetIdentifier(), true);
-	}
-}
-
-void EasyCefAppRender::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type)
-{
-	//这边只处理UI相关
-	if (EasyRenderBrowserInfo::BrsData::BROWSER_UI != EasyRenderBrowserInfo::GetInstance().GetType(browser->GetIdentifier()))
-	{
-		return;
-	}
-
-
-	//LOG(INFO) << GetCurrentProcessId() << "]ClientAppRenderer::OnLoadStart(" << browser->GetIdentifier() << ")frame(" << frame->GetName().ToString() << ")" << transition_type;
-
-
-	if (frame->IsMain())
-		DocComplate::getInst().setBrowsr(browser->GetIdentifier(), false);
-
-	CefRefPtr<CefFrame> parent = frame->GetParent();
-	if (parent)
-	{
-		std::string frameNam = frame->GetName().ToString();
-		if (!RecordFrameName::getInst().SaveRecord(browser->GetIdentifier(), frame->GetIdentifier(), frameNam.c_str())) {
-			frameNam = RecordFrameName::getInst().GetRecord(browser->GetIdentifier(), frame->GetIdentifier());
-		}
-		std::hash<std::string> string_hash;
-		auto id = string_hash(frameNam);
-		if (DectetFrameLoad::getInst().hit(browser->GetIdentifier(), getFramePath(parent), id, -10086)) {
-			std::string url = frame->GetURL().ToString();
-			call_FrameStateChanged(parent, frameNam.c_str(), url.c_str(), -10086, false);
-		}
-	}
-}
-
-void EasyCefAppRender::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
-{
-	//这边只处理UI相关
-	if (EasyRenderBrowserInfo::BrsData::BROWSER_UI != EasyRenderBrowserInfo::GetInstance().GetType(browser->GetIdentifier()))
-	{
-		return;
-	}
-
-	//LOG(INFO) << GetCurrentProcessId() << "]ClientAppRenderer::OnLoadEnd(" << browser->GetIdentifier() << ")frame(" << frame->GetName().ToString() << ")" << httpStatusCode;
-
-
-
-	CefRefPtr<CefFrame> parent = frame->GetParent();
-	if (parent)
-	{
-		std::hash<std::string> string_hash;
-		std::string frameNam = RecordFrameName::getInst().GetRecord(browser->GetIdentifier(), frame->GetIdentifier());
-		auto id = string_hash(frameNam);
-		if (DectetFrameLoad::getInst().hit(browser->GetIdentifier(), getFramePath(parent), id, httpStatusCode)) {
-			std::string url = frame->GetURL().ToString();
-			call_FrameStateChanged(parent, frameNam.c_str(), url.c_str(), httpStatusCode, true);
-		}
-	}
-}
-
-void EasyCefAppRender::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, ErrorCode errorCode, const CefString& errorText, const CefString& failedUrl)
-{
-	//这边只处理UI相关
-	if (EasyRenderBrowserInfo::BrsData::BROWSER_UI != EasyRenderBrowserInfo::GetInstance().GetType(browser->GetIdentifier()))
-	{
-		return;
-	}
-
-	CefRefPtr<CefFrame> parent = frame->GetParent();
-	if (parent)
-	{
-		std::hash<std::string> string_hash;
-		std::string frameNam = RecordFrameName::getInst().GetRecord(browser->GetIdentifier(), frame->GetIdentifier());
-		size_t id = string_hash(frameNam);
-		if (DectetFrameLoad::getInst().hit(browser->GetIdentifier(), getFramePath(parent), id, errorCode)) {
-			std::string url = frame->GetURL().ToString();
-			call_FrameStateChanged(parent, frameNam.c_str(), url.c_str(), errorCode, false);
-			call_FrameStateChanged(parent, frameNam.c_str(), url.c_str(), errorCode, true);
-		}
-	}
-}
 
 void EasyCefAppRender::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)
 {

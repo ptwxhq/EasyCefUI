@@ -307,7 +307,7 @@ int EasyLayeredWindow::GetPopupYOffset() const
 
 bool EasyLayeredWindow::CheckOnPaintSize(int width, int height)
 {
-	if (device_scale_factor_ == std::floor(device_scale_factor_))
+	if (device_scale_factor_ == floor(device_scale_factor_))
 	{
 		return true;
 	}
@@ -319,8 +319,8 @@ bool EasyLayeredWindow::CheckOnPaintSize(int width, int height)
 		return true;
 	}
 
-	int width_onpaint = rcIn.width * device_scale_factor_ + 0.5;
-	int height_onpaint = rcIn.height * device_scale_factor_ + 0.5;
+	int width_onpaint = round(rcIn.width * device_scale_factor_);
+	int height_onpaint = round(rcIn.height * device_scale_factor_);
 
 	if (width_onpaint == width && height_onpaint == height)
 	{

@@ -55,10 +55,12 @@ struct BrowserGlobalVar
 	std::function<bool(HWND, int)> funcDoMenuCommand;
 
 	std::function<bool(HWND, int, LPCWSTR, LPCWSTR, bool)> funcLoadErrorCallback;
+		
+	std::function<void(HWND, int, int, void*)> funcFrameLoadStatusCallback;
 
 	std::function<void(HWND, LPCWSTR, LPCWSTR, bool)> funcCallNativeCompleteStatus;
 
-	std::function<void(HWND, LPCWSTR, LPCWSTR, LPCWSTR)> funcCallDOMCompleteStatus;
+	std::function<void(HWND, bool)> funcCallDOMCompleteStatus;
 
 	std::function<void(HWND, LPCWSTR, LPCWSTR)> funcPopNewUrlCallback;
 

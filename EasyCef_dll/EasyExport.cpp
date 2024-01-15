@@ -185,8 +185,11 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 
 	GetLocalPaths();
 
+#if CEF_VERSION_MAJOR < 112
+
 	if (g_BrowserGlobalVar.FunctionFlag.bEnableHignDpi)
 		CefEnableHighDPISupport();
+#endif
 
 	auto strDebugConfigPath = g_BrowserGlobalVar.FileDir + L"debug.dbg";
 	g_BrowserGlobalVar.Debug = GetPrivateProfileIntW(L"Debug", L"Debug", 0, strDebugConfigPath.c_str()) == 1;
@@ -618,6 +621,11 @@ void FreeEasyString(const char* str)
 	}
 }
 
+bool GetUserFuncContext(UserFuncContext* data)
+{
+	return EasyBrowserWorks::GetInstance().GetBrowserFrameContext(data);
+}
+
 bool SetAddContextMenuCall(CallBeforeContextMenu func, CallDoMenuCommand fundo)
 {
 	if (func && fundo)
@@ -656,6 +664,11 @@ void SetDownloadHandler(BeforeDownloadHandler func, DownloadStatusHandler funcSt
 	g_BrowserGlobalVar.funcDownloadStatusCallback = funcStatus;
 }
 
+void SetFrameLoadStatusCallback(FrameLoadStatus func)
+{
+	g_BrowserGlobalVar.funcFrameLoadStatusCallback = (void(*)(HWND, int, int, void*))func;
+}
+
 void ExecuteJavaScript(HWND hWnd, LPCWSTR lpszFrameName, LPCWSTR lpszJSCode)
 {
 	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
@@ -664,7 +677,7 @@ void ExecuteJavaScript(HWND hWnd, LPCWSTR lpszFrameName, LPCWSTR lpszJSCode)
 
 	auto browser = item->GetBrowser();
 
-	std::vector<int64> ids;
+	std::vector<int64_t> ids;
 
 	if (lpszFrameName && lpszFrameName[0])
 	{
@@ -685,6 +698,24 @@ void ExecuteJavaScript(HWND hWnd, LPCWSTR lpszFrameName, LPCWSTR lpszJSCode)
 			frame->ExecuteJavaScript(lpszJSCode, "", 0);
 		}
 	}
+}
+
+bool ExecuteJavaScriptByFid(HWND hWnd, long long nFrameId, LPCSTR lpszJSCode)
+{
+	auto item = EasyWebViewMgr::GetInstance().GetItemByHwnd(hWnd);
+	if (!item || !item->GetBrowser())
+		return false;
+
+	auto browser = item->GetBrowser();
+
+	auto frame = browser->GetFrame(nFrameId);
+	if (frame)
+	{
+		frame->ExecuteJavaScript(lpszJSCode, "", 0);
+		return true;
+	}
+
+	return false;
 }
 
 static bool InvokeJSFunction(HWND hWnd, bool bSync, LPCSTR lpszJSFunctionName, LPCSTR lpszFrameName, std::string* pstrRet, DWORD dwTimeout, LPCSTR parmfmt, va_list args)
@@ -750,7 +781,7 @@ static bool InvokeJSFunction(HWND hWnd, bool bSync, LPCSTR lpszJSFunctionName, L
 
 	CefRefPtr<CefFrame> frame;
 
-	int64 frameid = -1;
+	int64_t frameid = -1;
 	if (lpszFrameName && lpszFrameName[0])
 	{
 		frame = item->GetBrowser()->GetFrame(lpszFrameName);
@@ -770,6 +801,7 @@ static bool InvokeJSFunction(HWND hWnd, bool bSync, LPCSTR lpszJSFunctionName, L
 
 		auto send = QuickMakeIpcParms(item->GetBrowser()->GetIdentifier(), frameid, dwTimeout ? GetTimeNowMS(dwTimeout) : 0, "__InvokedJSMethod__", list);
 		std::string ret;
+		OutputDebugStringA(send.c_str());
 		if (ipcSvr.SendData(hipcli, send, ret, dwTimeout))
 		{
 			if (pstrRet)

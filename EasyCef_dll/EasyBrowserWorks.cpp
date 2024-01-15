@@ -2,7 +2,6 @@
 #include "EasyBrowserWorks.h"
 #include "EasyWebViewMgr.h"
 #include "WebViewControl.h"
-#include "LegacyImplement.h"
 #include "EasySchemes.h"
 #include "EasyIPC.h"
 
@@ -15,29 +14,6 @@ namespace BrowserSyncWorkFunctions {
 	}
 
 
-	bool __Render_Utility_Network(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
-	{
-		if (args->GetSize() == 2)
-		{
-			if (args->GetString(0) == "init")
-			{
-				EasyIPCBase::IPCHandle hClient = (EasyIPCBase::IPCHandle)args->GetInt(1);
-				if (hClient)
-				{
-					EasyBrowserWorks::GetInstance().SetNetworkUtilityHandle(hClient);
-					//初始化，一次推
-					auto hosts = EasyBrowserWorks::GetInstance().GetLocalHosts("", "");
-					
-					std::string ret;
-					return EasyIPCServer::GetInstance().SendData(hClient, hosts, ret, 5000);
-
-				}
-
-			}
-		}
-
-		return false;
-	}
 }
 
 namespace BrowserSyncWorkJSKeys
@@ -64,30 +40,6 @@ namespace BrowserAsyncWorkFunctions {
 	void __V8AccessorSetAttribKeys__(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
 	{
 		EasyBrowserWorks::GetInstance().DoJSKeyAsyncWork(args->GetString(0).ToString(), browser, frame, args);
-	}
-
-	void __DOMContentLoaded__(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
-	{
-		//原先好像onDocLoaded把同步去掉了，那直接异步处理就好了
-
-		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-		if (!item)
-			return;
-
-		HWND hWnd = item->GetHWND();
-
-
-		std::wstring FrameUrl = frame->GetURL().ToWString();
-		std::wstring FrameName = frame->GetName().ToWString();
-
-		auto MainFrame = browser->GetMainFrame();
-
-		std::wstring MainUrl = MainFrame ? MainFrame->GetURL().ToWString() : L"";
-		
-		if (g_BrowserGlobalVar.funcCallDOMCompleteStatus)
-		{
-			g_BrowserGlobalVar.funcCallDOMCompleteStatus(hWnd, FrameName.c_str(), FrameUrl.c_str(), MainUrl.c_str());
-		}
 	}
 
 	void __ContinueUnsecure__(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
@@ -193,15 +145,86 @@ EasyBrowserWorks::EasyBrowserWorks()
 
 
 	//异步
-	REG_ASYNCWORK_FUNCTION(__DOMContentLoaded__);
 	REG_ASYNCWORK_FUNCTION(__V8AccessorSetAttribKeys__);
 	REG_ASYNCWORK_FUNCTION(dbgmode);
 	REG_ASYNCWORK_JSKEY(__nc_setalledge__);
 
 	
+	m_mapAsyncFuncs.insert(std::make_pair("__DOMContentLoaded__", [](CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args)
+	{
+		auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+		if (!item)
+			return;
+
+		HWND hWnd = item->GetHWND();
+
+		if (g_BrowserGlobalVar.funcCallDOMCompleteStatus)
+		{
+			auto tid = EasyBrowserWorks::GetInstance().SetBrowserFrameContext(browser, frame);
+			g_BrowserGlobalVar.funcCallDOMCompleteStatus(hWnd, frame->IsMain());
+			EasyBrowserWorks::GetInstance().RemoveBrowserFrameContext(tid);
+	
+		}
+	}));
 
 	//特殊进程特殊处理
-	m_mapSyncFuncs.insert(std::make_pair(ExtraKeyNames[IPC_RenderUtilityNetwork], BrowserSyncWorkFunctions::__Render_Utility_Network));
+	m_mapSyncFuncs.insert(std::make_pair(ExtraKeyNames[IPC_RenderUtilityNetwork], [](CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
+		{
+			if (args->GetSize() == 2)
+			{
+				if (args->GetString(0) == "init")
+				{
+					EasyIPCBase::IPCHandle hClient = (EasyIPCBase::IPCHandle)args->GetInt(1);
+					if (hClient)
+					{
+						EasyBrowserWorks::GetInstance().SetNetworkUtilityHandle(hClient);
+						//初始化，一次推
+						auto hosts = EasyBrowserWorks::GetInstance().GetLocalHosts("", "");
+
+						std::string ret;
+						return EasyIPCServer::GetInstance().SendData(hClient, hosts, ret, 5000);
+
+					}
+
+				}
+			}
+
+			return false;
+		}));
+
+}
+
+void EasyBrowserWorks::InnerBrowserFrameContext2User(const BrowserFrameContext* context, EASYCEF::UserFuncContext* user)
+{
+	user->IsMainFrame = context->IsMainFrame;
+	user->BrowserId = context->BrowserId;
+	user->FrameId = context->FrameId;
+	user->MainFrameId = context->MainFrameId;
+	user->FrameName = context->FrameName.c_str();
+	user->FrameUrl = context->FrameUrl.c_str();
+	user->MainUrl = context->MainUrl.c_str();
+}
+
+void EasyBrowserWorks::SetBrowserFrameContext(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, BrowserFrameContext* context)
+{
+	if (browser)
+	{
+		context->BrowserId = browser->GetIdentifier();
+		auto mainFrame = browser->GetMainFrame();
+		if (mainFrame)
+		{
+			context->MainUrl = mainFrame->GetURL();
+			context->MainFrameId = mainFrame->GetIdentifier();
+		}
+	}
+
+	if (frame)
+	{
+		context->FrameId = frame->GetIdentifier();
+		context->IsMainFrame = frame->IsMain();
+		context->FrameName = frame->GetName();
+		context->FrameUrl = frame->GetURL();
+	}
 
 }
 
@@ -236,6 +259,25 @@ void EasyBrowserWorks::DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData)
 	pData->Signal.set_value();
 }
 
+size_t EasyBrowserWorks::SetBrowserFrameContext(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame)
+{
+	std::hash<std::thread::id> hash;
+	auto tid = hash(std::this_thread::get_id());
+
+	BrowserFrameContext context;
+	
+	SetBrowserFrameContext(browser, frame, &context);
+
+	m_mapBrowserFrameContext.insert(std::make_pair(tid, context));
+
+	return tid;
+}
+
+void EasyBrowserWorks::RemoveBrowserFrameContext(size_t id)
+{
+	m_mapBrowserFrameContext.erase(id);
+}
+
 bool EasyBrowserWorks::DoJSKeySyncWork(const std::string& name, CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefString& retval)
 {
 	auto it = m_mapSyncJsKeyFuncs.find(name);
@@ -257,7 +299,7 @@ void EasyBrowserWorks::DoJSKeyAsyncWork(const std::string& name, CefRefPtr<CefBr
 
 }
 
-bool EasyBrowserWorks::RegisterUserJSFunction(const std::string& name, jscall_UserFunction funUser, bool bSync, void* context, int RegType)
+bool EasyBrowserWorks::RegisterUserJSFunction(const std::string& name, EASYCEF::jscall_UserFunction funUser, bool bSync, void* context, int RegType)
 {
 	if (!(RegType & 3))
 	{
@@ -313,7 +355,13 @@ bool EasyBrowserWorks::RegisterUserJSFunction(const std::string& name, jscall_Us
 				auto strArgs = CefWriteJSON(json, JSON_WRITER_DEFAULT).ToString();
 
 				char* pRet = nullptr;
+
+				auto tid = EasyBrowserWorks::GetInstance().SetBrowserFrameContext(browser, frame);
+
 				int ret = funUser(hWnd, strArgs.c_str(), &pRet, context);
+
+				EasyBrowserWorks::GetInstance().RemoveBrowserFrameContext(tid);
+
 				if (pRet)
 				{
 					retval = pRet;
@@ -349,7 +397,10 @@ bool EasyBrowserWorks::RegisterUserJSFunction(const std::string& name, jscall_Us
 				CefRefPtr<CefValue> json = CefValue::Create();
 				json->SetList(args);
 				auto strArgs = CefWriteJSON(json, JSON_WRITER_DEFAULT).ToString();
+
+				auto tid = EasyBrowserWorks::GetInstance().SetBrowserFrameContext(browser, frame);
 				funUser(hWnd, strArgs.c_str(), nullptr, context);
+				EasyBrowserWorks::GetInstance().RemoveBrowserFrameContext(tid);
 
 			};
 
@@ -446,6 +497,26 @@ std::string EasyBrowserWorks::GetLocalHosts(const std::string& host, const std::
 
 
 	return CefWriteJSON(val, JSON_WRITER_DEFAULT).ToString();
+}
+
+bool EasyBrowserWorks::GetBrowserFrameContext(EASYCEF::UserFuncContext* data)
+{
+	if (data)
+	{
+		std::hash<std::thread::id> hash;
+		auto tid = hash(std::this_thread::get_id());
+
+		auto it = m_mapBrowserFrameContext.find(tid);
+		if (it != m_mapBrowserFrameContext.end())
+		{
+			auto& item = it->second;
+
+			InnerBrowserFrameContext2User(&item, data);
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool EasyBrowserWorks::CheckNeedUI(const std::string& name)

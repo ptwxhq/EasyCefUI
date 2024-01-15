@@ -208,13 +208,26 @@ typedef int(*jscall_UserFunction)(HWND hWnd, LPCSTR jsonParams, char** strRet, v
 EASYCEF_EXP_API bool RegisterJSFunction(bool bSync, LPCSTR lpszFunctionName, jscall_UserFunction func, void *context, int RegType);
 
 
+struct UserFuncContext
+{
+	bool IsMainFrame;
+	int BrowserId;
+	long long FrameId;
+	long long MainFrameId;
+	LPCWSTR FrameName;
+	LPCWSTR FrameUrl;
+	LPCWSTR MainUrl;
+};
+//只在jscall_UserFunction回调中调用时有效
+EASYCEF_EXP_API bool GetUserFuncContext(UserFuncContext* data);
+
 typedef void(*FuncAddContextMenu)(void* callneed, int command, LPCWSTR lpszLabel, bool bTop, bool bEnable);
 typedef void(*CallBeforeContextMenu)(HWND hWnd, int x, int y, bool bIsEdit, FuncAddContextMenu call, void* callneed);
 typedef bool(*CallDoMenuCommand)(HWND hWnd, int command);
 EASYCEF_EXP_API bool SetAddContextMenuCall(CallBeforeContextMenu func, CallDoMenuCommand fundo);
 
 
-typedef void(*CallDOMCompleteStatus)(HWND hWnd, LPCWSTR lpszFrameName, LPCWSTR lpszUrl, LPCWSTR lpszMainUrl);
+typedef void(*CallDOMCompleteStatus)(HWND hWnd, bool isMain);
 EASYCEF_EXP_API void SetDOMCompleteStatusCallback(CallDOMCompleteStatus func);
 
 typedef void(*CallNativeCompleteStatus)(HWND hWnd, LPCWSTR lpszUrl, LPCWSTR lpszFrameName, bool bIsMain);
@@ -234,8 +247,15 @@ typedef bool(*BeforeDownloadHandler)(HWND hWnd, unsigned int nId, LPCWSTR lpszUr
 typedef bool(*DownloadStatusHandler)(unsigned int nId, long long nDownloadedSize, long long nTotalSize);
 EASYCEF_EXP_API void SetDownloadHandler(BeforeDownloadHandler func, DownloadStatusHandler funcStatus);
 
+//iLoadStatus 1:start ,2:end -1:error
+//lpszFrameIdPath是从当前子框架到主框架由,分隔的框架id
+typedef void(*FrameLoadStatus)(HWND hWnd, int iLoadStatus, int iLoadCode, UserFuncContext* data);
+EASYCEF_EXP_API void SetFrameLoadStatusCallback(FrameLoadStatus func);
+
+
 //lpszFrameName NULL -> 全部框架页
 EASYCEF_EXP_API void ExecuteJavaScript(HWND hWnd, LPCWSTR lpszFrameName, LPCWSTR lpszJSCode);
+EASYCEF_EXP_API bool ExecuteJavaScriptByFid(HWND hWnd, long long nFrameId, LPCSTR lpszJSCode);
 
 
 

@@ -60,7 +60,7 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 
 	if (bNeedUI)
 	{
-		int64 nNeedWaitMS = 0;
+		int64_t nNeedWaitMS = 0;
 		if (pData->WaitEndTime)
 		{
 			nNeedWaitMS = (GetTimeNowMS() - pData->WaitEndTime);
@@ -113,7 +113,7 @@ void EasyIPCWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool 
 
 			if (pIPC->TriggerBlockingWorkEvent())
 			{
-				int64 nNeedWaitMS = 0;
+				int64_t nNeedWaitMS = 0;
 				if (pData->WaitEndTime)
 				{
 					nNeedWaitMS = (GetTimeNowMS() - pData->WaitEndTime);

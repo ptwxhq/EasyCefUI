@@ -236,7 +236,7 @@ protected:
 
     IMPLEMENT_REFCOUNTING(EasyClientHandler);
 
-    //Cefclient 自己的
+    //Cefclient 自己的，这里面还是在主线程执行的
     bool OnProcessMessageReceived(CefRefPtr<CefBrowser> browser,
         CefRefPtr<CefFrame> frame,
         CefProcessId source_process,

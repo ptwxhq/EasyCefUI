@@ -12,8 +12,8 @@ public:
 	{
 		bool DataInvalid = false;
 		int BrowserId = -1;
-		int64 FrameId = -1;
-		uint64 WaitEndTime = 0;	  //ms
+		int64_t FrameId = -1;
+		uint64_t WaitEndTime = 0;	  //ms
 		std::string Name;
 		std::string ReturnVal;
 		CefRefPtr<CefListValue> Args;

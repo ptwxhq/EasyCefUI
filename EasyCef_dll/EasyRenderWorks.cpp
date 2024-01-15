@@ -20,7 +20,7 @@ namespace RenderSyncWorkFunctions
 {
 	bool __InvokedJSMethod__(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval)
 	{
-		//LOG(INFO) << GetCurrentProcessId() << "]EasyCefAppRender::InvokeJSFunction in" << args->GetString(0);
+		LOG(INFO) << GetCurrentProcessId() << "]EasyCefAppRender::InvokeJSFunction in " << args->GetString(0);
 		const auto nArgs = args->GetSize();
 		if (nArgs < 1)
 			return false;
@@ -28,7 +28,12 @@ namespace RenderSyncWorkFunctions
 
 		if (!frame)
 		{
+			LOG(INFO) << GetCurrentProcessId() << "] USE GetMainFrame ";
 			frame = browser->GetMainFrame();
+		}
+		else
+		{
+			LOG(INFO) << "f url:" << frame->GetURL();
 		}
 		auto v8Context = frame->GetV8Context();
 
@@ -49,7 +54,7 @@ namespace RenderSyncWorkFunctions
 			{
 				retval = CefV8ValueToString(retVal);
 			
-				//LOG(INFO) << GetCurrentProcessId() << "]EasyCefAppRender::InvokeJSFunction end(" << retval << ")";
+				LOG(INFO) << GetCurrentProcessId() << "]EasyCefAppRender::InvokeJSFunction end(" << retval << ")";
 			}
 			else
 			{
@@ -59,10 +64,18 @@ namespace RenderSyncWorkFunctions
 
 			
 		}
+		else
+		{
+			LOG(WARNING) << GetCurrentProcessId() << "]EasyCefAppRender::InvokeJSFunction NotFunction";
+
+		}
 
 
 
 		v8Context->Exit();
+
+		LOG(INFO) << GetCurrentProcessId() << "]EasyCefAppRender::InvokeJSFunction End)";
+
 
 		return true;
 	}

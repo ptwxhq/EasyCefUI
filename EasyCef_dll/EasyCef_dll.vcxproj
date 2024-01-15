@@ -257,7 +257,6 @@ echo #define GIT_VER_MONANDDAY  %monthandday% &gt;&gt; version_git.h
     <ClInclude Include="EasyWebViewMgr.h" />
     <ClInclude Include="EasyExport.h" />
     <ClInclude Include="framework.h" />
-    <ClInclude Include="LegacyImplement.h" />
     <ClInclude Include="NativeV8Accessor.h" />
     <ClInclude Include="NativeV8Handler.h" />
     <ClInclude Include="pch.h" />
@@ -287,7 +286,6 @@ echo #define GIT_VER_MONANDDAY  %monthandday% &gt;&gt; version_git.h
     <ClCompile Include="EasyUIWindow.cpp" />
     <ClCompile Include="EasyWebViewMgr.cpp" />
     <ClCompile Include="EasyExport.cpp" />
-    <ClCompile Include="LegacyImplement.cpp" />
     <ClCompile Include="NativeV8Accessor.cpp" />
     <ClCompile Include="NativeV8Handler.cpp" />
     <ClCompile Include="pch.cpp">

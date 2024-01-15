@@ -491,7 +491,7 @@ bool EasyReqRespHandler::Open(CefRefPtr<CefRequest> request, bool& handle_reques
 	return true;
 }
 
-void EasyReqRespHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, int64& response_length, CefString& redirectUrl)
+void EasyReqRespHandler::GetResponseHeaders(CefRefPtr<CefResponse> response, int64_t& response_length, CefString& redirectUrl)
 {
 	auto strMimeType = m_Response->GetMimeType();
 	if (strMimeType.empty())
@@ -574,7 +574,7 @@ void EasyReqRespHandler::OnDownloadData(CefRefPtr<CefURLRequest> request, const 
 	m_ResponseData.append(static_cast<const char*>(data), data_length);
 }
 
-bool EasyReqRespHandler::Skip(int64 bytes_to_skip, int64& bytes_skipped, CefRefPtr<CefResourceSkipCallback> callback)
+bool EasyReqRespHandler::Skip(int64_t bytes_to_skip, int64_t& bytes_skipped, CefRefPtr<CefResourceSkipCallback> callback)
 {
 	bytes_skipped = bytes_to_skip;
 	return true;

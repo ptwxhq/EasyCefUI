@@ -39,9 +39,9 @@ CefRect LogicalToDevice(const CefRect& value, float device_scale_factor);
 int DeviceToLogical(int value, float device_scale_factor);
 void DeviceToLogical(CefMouseEvent& value, float device_scale_factor);
 
-std::string QuickMakeIpcParms(int BrowserId, int64 FrameId, uint64 timeout, const std::string& name, const CefRefPtr<CefListValue>& valueList);
+std::string QuickMakeIpcParms(int BrowserId, int64_t FrameId, uint64_t timeout, const std::string& name, const CefRefPtr<CefListValue>& valueList);
 
-bool QuickGetIpcParms(const std::string& strData, int& BrowserId, int64& FrameId, uint64& timeout, std::string& name, CefRefPtr<CefListValue>& valueList);
+bool QuickGetIpcParms(const std::string& strData, int& BrowserId, int64_t& FrameId, uint64_t& timeout, std::string& name, CefRefPtr<CefListValue>& valueList);
 
 bool GetParentProcessInfo(DWORD* pdwId, std::wstring* pstrPathOut);
 

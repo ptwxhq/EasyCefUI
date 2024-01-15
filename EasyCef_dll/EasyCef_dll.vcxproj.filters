@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="LegacyCodes">
-      <UniqueIdentifier>{e73b020a-cb60-4941-abc5-3a28b1315bb7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Exports">
       <UniqueIdentifier>{2c3fa676-eae2-460d-a262-9602a49be981}</UniqueIdentifier>
     </Filter>
@@ -68,9 +65,6 @@
     </ClInclude>
     <ClInclude Include="WebViewControl.h">
       <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="LegacyImplement.h">
-      <Filter>LegacyCodes</Filter>
     </ClInclude>
     <ClInclude Include="EasyExport.h">
       <Filter>Exports</Filter>
@@ -157,9 +151,6 @@
     </ClCompile>
     <ClCompile Include="WebViewControl.cpp">
       <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="LegacyImplement.cpp">
-      <Filter>LegacyCodes</Filter>
     </ClCompile>
     <ClCompile Include="EasyExport.cpp">
       <Filter>Exports</Filter>

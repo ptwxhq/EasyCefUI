@@ -6,7 +6,6 @@
 #include <ShlObj.h>
 #include <regex>
 #include "EasyIPC.h"
-#include "LegacyImplement.h"
 #include "EasyLayeredWindow.h"
 #include "WebViewControl.h"
 #include "EasyWebViewMgr.h"
@@ -59,7 +58,7 @@ bool EasyClientHandler::OnBeforePopup(CefRefPtr<CefBrowser> browser, CefRefPtr<C
             //得限制一下不能让UI自己弹窗口，不然影响流程
             if (g_BrowserGlobalVar.funcPopNewUrlCallback && IsWindow(hWnd))
             {
-                g_BrowserGlobalVar.funcPopNewUrlCallback(hWnd, target_url.ToWString().c_str(), target_frame_name.c_str());
+                g_BrowserGlobalVar.funcPopNewUrlCallback(hWnd, target_url.ToWString().c_str(), target_frame_name.ToWString().c_str());
             }
         }
         else
@@ -279,14 +278,14 @@ void EasyClientHandler::OnTitleChange(CefRefPtr<CefBrowser> browser, const CefSt
     }
 
     if (hWnd)
-        SetWindowTextW(hWnd, title.c_str());
+        SetWindowTextW(hWnd, title.ToWString().c_str());
 }
 
 void EasyClientHandler::OnFaviconURLChange(CefRefPtr<CefBrowser> browser, const std::vector<CefString>& icon_urls)
 {
     if (!m_bIsUIControl && g_BrowserGlobalVar.funcWebControlFavIconChange && !icon_urls.empty())
     {
-        g_BrowserGlobalVar.funcWebControlFavIconChange(browser->GetIdentifier(), icon_urls[0].c_str());
+        g_BrowserGlobalVar.funcWebControlFavIconChange(browser->GetIdentifier(), icon_urls[0].ToWString().c_str());
     }
 }
 
@@ -332,7 +331,9 @@ bool EasyClientHandler::OnConsoleMessage(CefRefPtr<CefBrowser> browser, cef_log_
 void EasyClientHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool isLoading, bool canGoBack, bool canGoForward)
 {
     if (m_bIsUIControl)
+    {
         return;
+    }
 
     if (g_BrowserGlobalVar.funcWebControLoadingState)
     {
@@ -342,12 +343,32 @@ void EasyClientHandler::OnLoadingStateChange(CefRefPtr<CefBrowser> browser, bool
 
 void EasyClientHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type)
 {
-   // LOG(INFO) << GetCurrentProcessId() << "] OnLoadStart name:" << frame->GetName() << "(((" << transition_type << "||" << frame->GetURL() << "\n";
+    // LOG(INFO) << GetCurrentProcessId() << " " << GetCurrentThreadId() << "] OnLoadStart name:" << frame->GetName() << "(((" << transition_type << "||" << frame->GetURL() << "\n";
+
+    if (m_bIsUIControl)
+    {
+        if (g_BrowserGlobalVar.funcFrameLoadStatusCallback)
+        {
+            auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+            if (!item)
+                return;
+
+            EasyBrowserWorks::BrowserFrameContext bfc;
+            EASYCEF::UserFuncContext context;
+
+            EasyBrowserWorks::SetBrowserFrameContext(browser, frame, &bfc);
+            EasyBrowserWorks::InnerBrowserFrameContext2User(&bfc, &context);
+
+            g_BrowserGlobalVar.funcFrameLoadStatusCallback(item->GetHWND(), 1, 0, &context);
+        }
+
+        return;
+    }
 }
 
 void EasyClientHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
 {
-   // LOG(INFO) << GetCurrentProcessId() << "] OnLoadEnd name:" << frame->GetName() << "(((" << httpStatusCode << "||" << frame->GetURL() << "\n";
+    // LOG(INFO) << GetCurrentProcessId() << " " << GetCurrentThreadId() << "] OnLoadEnd name:" << frame->GetName() << "(((" << httpStatusCode << "||" << frame->GetURL() << "\n";
     auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
     if (!item)
         return;
@@ -356,6 +377,17 @@ void EasyClientHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFr
 
     if (item->IsUIControl())
     {
+        if (g_BrowserGlobalVar.funcFrameLoadStatusCallback)
+        {
+            EasyBrowserWorks::BrowserFrameContext bfc;
+            EASYCEF::UserFuncContext context;
+
+            EasyBrowserWorks::SetBrowserFrameContext(browser, frame, &bfc);
+            EasyBrowserWorks::InnerBrowserFrameContext2User(&bfc, &context);
+
+            g_BrowserGlobalVar.funcFrameLoadStatusCallback(item->GetHWND(), 2, httpStatusCode, &context);
+        }
+
         if (g_BrowserGlobalVar.funcCallNativeCompleteStatus)
         {
             g_BrowserGlobalVar.funcCallNativeCompleteStatus(hWnd, frame->GetURL().ToWString().c_str(), frame->GetName().ToWString().c_str(), frame->IsMain());
@@ -378,16 +410,27 @@ void EasyClientHandler::OnLoadError(CefRefPtr<CefBrowser> browser, CefRefPtr<Cef
     if (errorCode == ERR_ABORTED)
         return;
 
+    auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+    if (!item)
+        return;
+
+    if (g_BrowserGlobalVar.funcFrameLoadStatusCallback)
+    {
+        EasyBrowserWorks::BrowserFrameContext bfc;
+        EASYCEF::UserFuncContext context;
+
+        EasyBrowserWorks::SetBrowserFrameContext(browser, frame, &bfc);
+        EasyBrowserWorks::InnerBrowserFrameContext2User(&bfc, &context);
+
+        g_BrowserGlobalVar.funcFrameLoadStatusCallback(item->GetHWND(), -1, errorCode, &context);
+    }
+
     if (g_BrowserGlobalVar.funcLoadErrorCallback)
     {
-        auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
-        if (item)
+        if (g_BrowserGlobalVar.funcLoadErrorCallback(item->GetHWND(), errorCode,
+            failedUrl.ToWString().c_str(), frame->GetName().ToWString().c_str(), frame->IsMain()))
         {
-            if (g_BrowserGlobalVar.funcLoadErrorCallback(item->GetHWND(), errorCode,
-                failedUrl.ToWString().c_str(), frame->GetName().ToWString().c_str(), frame->IsMain()))
-            {
-                return;
-            }
+            return;
         }
     }
 
@@ -459,7 +502,7 @@ void EasyClientHandler::OnBeforeContextMenu(CefRefPtr<CefBrowser> browser, CefRe
                 }
             };
 
-            g_BrowserGlobalVar.funcBeforeContextMenu(hWnd, x, y, bIsEdit, funcAddMenu, model);
+            g_BrowserGlobalVar.funcBeforeContextMenu(hWnd, x, y, bIsEdit, funcAddMenu, model.get());
         }
 
     }
@@ -572,7 +615,13 @@ bool EasyClientHandler::OnOpenURLFromTab(CefRefPtr<CefBrowser> browser, CefRefPt
     if (m_bIsUIControl)
     {
         //阻止拖拽文件导致页面跳转
-        if (user_gesture && target_disposition == WOD_NEW_FOREGROUND_TAB)
+        if (user_gesture && target_disposition == 
+#if            CEF_VERSION_MAJOR < 120
+            WOD_NEW_FOREGROUND_TAB
+#else
+            CEF_WOD_NEW_FOREGROUND_TAB
+#endif
+            )
         {
             return true;
         }

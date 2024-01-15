@@ -132,11 +132,11 @@ public:
 		CefRefPtr<CefCallback> callback) override;
 
 	void GetResponseHeaders(CefRefPtr<CefResponse> response,
-		int64& response_length,
+		int64_t& response_length,
 		CefString& redirectUrl) override;
 
-	bool Skip(int64 bytes_to_skip,
-		int64& bytes_skipped,
+	bool Skip(int64_t bytes_to_skip,
+		int64_t& bytes_skipped,
 		CefRefPtr<CefResourceSkipCallback> callback) override;
 
 	bool Read(void* data_out,
@@ -149,12 +149,12 @@ public:
 	void OnRequestComplete(CefRefPtr<CefURLRequest> request) override;
 
 	void OnUploadProgress(CefRefPtr<CefURLRequest> request,
-		int64 current,
-		int64 total) override {};
+		int64_t current,
+		int64_t total) override {};
 
 	void OnDownloadProgress(CefRefPtr<CefURLRequest> request,
-		int64 current,
-		int64 total) override {};
+		int64_t current,
+		int64_t total) override {};
 
 	void OnDownloadData(CefRefPtr<CefURLRequest> request,
 		const void* data,

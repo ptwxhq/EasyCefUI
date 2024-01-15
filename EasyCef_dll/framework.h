@@ -3,9 +3,6 @@
 #define WIN32_LEAN_AND_MEAN             // 从 Windows 头文件中排除极少使用的内容
 #define NOMINMAX
 
-//兼容旧项目，目前未全部设计一套，直接按旧的走，故暂不可删
-#define EASY_LEGACY_API_COMPATIBLE 1
-
 // Windows 头文件
 #include <windows.h>
 

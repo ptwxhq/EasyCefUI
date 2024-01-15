@@ -3,11 +3,8 @@
 #include <ShlObj_core.h>
 #include "EasyIPC.h"
 #include "EasyRenderBrowserInfo.h"
-#include "LegacyImplement.h"
 #include "EasyIPCWorks.h"
 #include "EasySchemes.h"
-
-void call_FrameStateChanged(CefRefPtr<CefFrame>& frame, const char* frameName, const char* url, const int& code, bool didComit);
 
 HWND JsGetWindowHwnd()
 {
@@ -306,49 +303,6 @@ namespace JSCallFunctions
 		retval = CefV8Value::CreateInt(ret);
 	}
 
-	void addFrameStateChanged(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
-	{
-		if (arguments.size() != 1 || !arguments[0]->IsString())
-		{
-			exception = "invalid param";
-			return;
-		}
-
-
-		CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
-		CefRefPtr<CefFrame> frame = context->GetFrame();
-
-		std::string id = arguments[0]->GetStringValue();
-		std::hash<std::string> string_hash;
-		auto uid = string_hash(id);
-		bool bAdd = DectetFrameLoad::getInst().Add(frame->GetBrowser()->GetIdentifier(), getFramePath(frame), uid, frame->GetIdentifier());
-		retval = CefV8Value::CreateInt(bAdd ? 1 : 0);
-	}
-
-	void removeFrameStateChanged(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
-	{
-		if (arguments.size() != 1 || !arguments[0]->IsString())
-		{
-			exception = "invalid param";
-			return;
-		}
-		CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
-		CefRefPtr<CefFrame> frame = context->GetFrame();
-
-		std::string id = arguments[0]->GetStringValue();
-		std::hash<std::string> string_hash;
-		auto uid = string_hash(id);
-		bool bAdd = DectetFrameLoad::getInst().Remove(frame->GetBrowser()->GetIdentifier(), getFramePath(frame), uid);
-		retval = CefV8Value::CreateInt(bAdd ? 1 : 0);
-	}
-
-	void queryProduct(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
-	{
-		retval = CefV8Value::CreateString("cyjh");
-	}
-
-
-
 	void __DOMContentLoaded__(const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
 	{
 		//LOG(INFO) << GetCurrentProcessId() << "] hello!!__DOMContentLoaded__ ";
@@ -356,46 +310,19 @@ namespace JSCallFunctions
 		CefRefPtr<CefV8Context> context = CefV8Context::GetCurrentContext();
 		CefRefPtr<CefFrame> frame = context->GetFrame();
 		auto browser = frame->GetBrowser();
-		auto url = frame->GetURL().ToString();
-
-		std::wstring strMainUrl;
-		auto mainframe = browser->GetMainFrame();
-		if (mainframe)
-		{
-			strMainUrl = mainframe->GetURL().ToWString();
-		}
 
 		const auto type = EasyRenderBrowserInfo::GetInstance().GetType(browser->GetIdentifier());
 
 		if (type == EasyRenderBrowserInfo::BrsData::BROWSER_UI)
 		{
 			if (frame->IsMain()) {
-				DocComplate::getInst().setBrowsr(browser->GetIdentifier(), true);
-
 				//解析一下内容
 				ParseDOMGetAttr(frame);
 			}
-
-			CefRefPtr<CefFrame> parent = frame->GetParent();
-			if (parent)
-			{
-				std::hash<std::string> string_hash;
-				//std::string frameNam = frame->GetName().ToString();
-				std::string frameNam = RecordFrameName::getInst().GetRecord(browser->GetIdentifier(), frame->GetIdentifier());
-				auto id = string_hash(frameNam);
-				if (DectetFrameLoad::getInst().hit(browser->GetIdentifier(), getFramePath(parent), id, 200)) {
-					call_FrameStateChanged(parent, frameNam.c_str(), url.c_str(), 200, false);
-				}
-			}
-		}
-		else if (type == EasyRenderBrowserInfo::BrsData::BROWSER_WEB)
-		{
-
 		}
 
 		CefV8ValueList args;
 		FowardRender2Browser(false, __func__, args, retval, exception);
-	
 	}
 
 
@@ -556,13 +483,9 @@ void NativeV8Handler::RegisterFunctions(CefRefPtr<CefV8Value> obj, int BrowserTy
 	//不需要返回值异步处理
 	REG_ASYNCJS_FUN(__dbgmode__, 1);
 
-	REG_JS_FUN(addFrameStateChanged, 1);
-	REG_JS_FUN(removeFrameStateChanged, 1);
 	REG_JS_FUN(writePrivateProfileString, 1);
 	REG_JS_FUN(getPrivateProfileInt, 1);
 	REG_JS_FUN(getPrivateProfileString, 1);
-
-	REG_JS_FUN(queryProduct, 2);
 
 	//这几个调整一下直接放本进程处理
 	REG_JS_FUN(minWindow, 1);
