@@ -11,6 +11,10 @@
 #include "EasyRenderBrowserInfo.h"
 
 
+void EasyCefAppRenderBase::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
+{
+	EasyRegisterCustomSchemes(registrar);
+}
 
 void EasyCefAppRender::OnWebKitInitialized()
 {
@@ -166,13 +170,6 @@ bool EasyCefAppRender::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, C
 
 	return false;
 }
-
-void EasyCefAppRender::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
-{
-	EasyRegisterCustomSchemes(registrar);
-}
-
-
 
 void EasyCefAppOther::OnBeforeCommandLineProcessing(const CefString& process_type, CefRefPtr<CefCommandLine> command_line)
 {

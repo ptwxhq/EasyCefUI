@@ -3,8 +3,16 @@
 
 //render进程
 
+class EasyCefAppRenderBase : public CefApp
+{
+public:
+    void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
+
+};
+
+
 class EasyCefAppRender :
-    public CefApp,
+    public EasyCefAppRenderBase,
     public CefRenderProcessHandler,
     public CefLoadHandler
 {
@@ -51,8 +59,6 @@ public:
         CefRefPtr<CefProcessMessage> message) override;
 
 
-    void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) override;
-
 
   ////////////////////////////////////////////////
 
@@ -70,7 +76,7 @@ private:
 
 
 
-class EasyCefAppOther : public CefApp
+class EasyCefAppOther : public EasyCefAppRenderBase
 {
 public:
     EasyCefAppOther() {};
@@ -79,7 +85,6 @@ public:
         CefRefPtr<CefCommandLine> command_line) override;
 
     IMPLEMENT_REFCOUNTING(EasyCefAppOther);
-
 
 private:
     MYDISALLOW_COPY_AND_ASSIGN(EasyCefAppOther);
