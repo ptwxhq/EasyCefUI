@@ -39,6 +39,8 @@ public:
 
 	bool CheckNeedUI(const std::string& name) override;
 
+	void DisconnectNetworkUtility();
+
 private:
 	MYDISALLOW_COPY_AND_ASSIGN(EasyBrowserWorks);
 	EasyBrowserWorks();

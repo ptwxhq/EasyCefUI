@@ -247,7 +247,7 @@ void EasyBrowserWorks::DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData)
 	if (item)
 	{
 		browser = item->GetBrowser();
-		frame = item->GetBrowser()->GetFrame(pData->FrameId);
+		frame = browser->GetFrame(pData->FrameId);
 	}
 
 	CefString ReturnVal;
@@ -256,7 +256,8 @@ void EasyBrowserWorks::DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData)
 		pData->ReturnVal = ReturnVal.ToString();
 	}
 
-	pData->Signal.set_value();
+	if (pData->Future.valid())
+		pData->Signal.set_value();
 }
 
 size_t EasyBrowserWorks::SetBrowserFrameContext(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame)
@@ -343,6 +344,9 @@ bool EasyBrowserWorks::RegisterUserJSFunction(const std::string& name, EASYCEF::
 		if (funUser)
 		{
 			auto fun = [funUser, context](CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefRefPtr<CefListValue>& args, CefString& retval) -> bool {
+
+				if (!browser)
+					return false;
 
 				auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
 				if (!item)
@@ -527,4 +531,13 @@ bool EasyBrowserWorks::CheckNeedUI(const std::string& name)
 	}
 
 	return false;
+}
+
+void EasyBrowserWorks::DisconnectNetworkUtility()
+{
+	if (IsWindow(m_hNetworkUtility))
+	{
+		PostMessage(m_hNetworkUtility, WM_QUIT, 0, 0);
+	}
+	m_hNetworkUtility = nullptr;
 }

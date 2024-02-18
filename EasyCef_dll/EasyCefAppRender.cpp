@@ -71,7 +71,7 @@ void EasyCefAppRender::OnBrowserCreated(CefRefPtr<CefBrowser> browser, CefRefPtr
 		EasyIPCClient::GetInstance().SetServer(ServerHandle);
 
 		EasyIPCClient::GetInstance().SetWorkCall(std::bind(&EasyRenderWorks::CommWork, &EasyRenderWorks::GetInstance(), std::placeholders::_1, std::placeholders::_2));
-
+		EasyIPCClient::GetInstance().SetStopWorkingWorkCall(std::bind(&EasyRenderWorks::ForceStopWorks, &EasyRenderWorks::GetInstance()));
 		//LOG(INFO) << GetCurrentProcessId() << "] OnBrowserCreated::SetServer:" << ServerHandle;
 	}
 
@@ -186,6 +186,7 @@ void EasyCefAppOther::OnBeforeCommandLineProcessing(const CefString& process_typ
 			if (value != 0)
 			{
 				EasyIPCClient::GetInstance().SetServer((EasyIPCClient::IPCHandle)value);
+				EasyIPCClient::GetInstance().SetStopWorkingWorkCall(std::bind(&EasyRenderWorks::ForceStopWorks, &EasyRenderWorks::GetInstance()));
 				EasyIPCClient::GetInstance().SetWorkCall([](const std::string& input, std::string& output)
 					{
 						auto recVal = CefParseJSON(input, JSON_PARSER_RFC);

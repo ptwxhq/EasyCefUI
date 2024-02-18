@@ -190,6 +190,7 @@ void EasyRenderWorks::DoWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData)
 
 	} while (false);
 
-	pData->Signal.set_value();
+	if (pData->Future.valid())
+		pData->Signal.set_value();
 
 }

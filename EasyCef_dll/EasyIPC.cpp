@@ -145,9 +145,14 @@ void EasyIPCBase::SetWorkCall(WorkCall call)
 	m_workCall = call;
 }
 
-void EasyIPCBase::SetOnceMainThreadBlockingWorkCall(OnceBlockingWorkCall call)
+void EasyIPCBase::SetOnceMainThreadBlockingWorkCall(FuncVoidWorkCall call)
 {
 	m_OnceBlockingWorkCall = call;
+}
+
+void EasyIPCBase::SetStopWorkingWorkCall(FuncVoidWorkCall call)
+{
+	m_StopWorkingCall = call;
 }
 
 EasyIPCBase::~EasyIPCBase()
@@ -242,7 +247,13 @@ bool EasyIPCBase::Stop()
 
 		m_listDataUpdate.notify_all();
 
-		std::lock_guard<std::mutex> lock(m_MutWorkthd);
+		if (IsServer())
+		{
+			if (m_hRunningWork)
+			{
+				WaitForSingleObject(m_hRunningWork, INFINITE);
+			}
+		}
 
 		bRes = true;
 	}
@@ -259,6 +270,13 @@ void EasyIPCBase::Run()
 
 
 	m_bIsRunning = true;
+	if (IsServer())
+	{
+		m_hRunningWork = CreateEventA(nullptr, FALSE, FALSE, nullptr);
+		if (!m_hRunningWork)
+			return;
+	}
+
 
 	SetUserDataPtr(m_hAsServerHandle, this);
 
@@ -398,11 +416,22 @@ void EasyIPCBase::Run()
 	m_bIsRunning = false;
 	m_hAsServerHandle = nullptr;
 
+	if (m_StopWorkingCall)
+	{
+		m_StopWorkingCall();
+	}
 	m_listDataUpdate.notify_all();
 
 	for (int i = 0; i < nEasyThreadPoolCount; i++)
 	{
 		vecEasyThreadPool[i].join();
+	}
+
+	if (IsServer())
+	{
+		SetEvent(m_hRunningWork);
+		CloseHandle(m_hRunningWork);
+		m_hRunningWork = nullptr;
 	}
 
 
@@ -554,6 +583,10 @@ bool EasyIPCBase::SendData(IPCHandle handle, const std::string& send, std::strin
 const std::string EasyIPCBase::GetShareMemName(IPCHandle hFrom, IPCHandle hTo, size_t id)
 {
 	return std::format("_EasyIPC_v1_{:X}_{:X}_{:X}", (size_t)hFrom, (size_t)hTo, id);
+}
+
+EasyIPCBase::EasyIPCBase(bool bServer) : m_bIsServer(bServer)
+{
 }
 
 bool EasyIPCBase::SetMemData(const std::string& strSend, const std::string& strMemName, CEasyFileMap* pMem, std::unique_ptr<CEasyFileMap>& pMemLarge, int iFlag)
@@ -736,7 +769,7 @@ void EasyIPCServer::RemoveClient(int id)
 	auto client = m_clients.find(id);
 	if (client != m_clients.end())
 	{
-		PostMessage(client->second, WM_CLOSE, 0, 0);
+		PostMessage(client->second, WM_QUIT, 0, 0);
 		m_clients.erase(client);
 	}
 	
@@ -756,6 +789,10 @@ EasyIPCBase::IPCHandle EasyIPCServer::GetClientHandle(int id)
 size_t EasyIPCServer::GetClientsCount()
 {
 	return m_clients.size();
+}
+
+EasyIPCServer::EasyIPCServer() : EasyIPCBase(true)
+{
 }
 
 
@@ -797,4 +834,8 @@ bool EasyIPCClient::SendDataToServer(const std::string& send, std::string& ret, 
 bool EasyIPCClient::IsServerSet()
 {
 	return !!m_hServerHandle;
+}
+
+EasyIPCClient::EasyIPCClient() : EasyIPCBase(false)
+{
 }

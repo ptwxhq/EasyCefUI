@@ -15,11 +15,13 @@ public:
 	using IPCHandle = HWND;
 
 	using WorkCall = std::function<void(const std::string&, std::string&)>;
-	using OnceBlockingWorkCall = std::function<void()>;
+	using FuncVoidWorkCall = std::function<void()>;
 
 	void SetWorkCall(WorkCall call);
 
-	void SetOnceMainThreadBlockingWorkCall(OnceBlockingWorkCall call);
+	void SetOnceMainThreadBlockingWorkCall(FuncVoidWorkCall call);
+
+	void SetStopWorkingWorkCall(FuncVoidWorkCall call);
 
 	void ThdRun();
 
@@ -33,7 +35,9 @@ public:
 
 	IPCHandle GetHandle() const { return m_hAsServerHandle; }
 
-	virtual bool IsServer() = 0;
+	virtual bool IsServer() const final {
+		return m_bIsServer;
+	}
 
 	void SetMainThread(DWORD dwId);
 
@@ -46,7 +50,7 @@ public:
 
 
 protected:
-
+	EasyIPCBase(bool bServer);
 	static bool SetMemData(const std::string& strSend, const std::string& strMemName, CEasyFileMap* pMem, std::unique_ptr<CEasyFileMap>& pMemLarge, int iFlag);
 	static bool GetMemData(std::string& strReturn, int& iFlag, const std::string& strMemName, CEasyFileMap* pMem);
 
@@ -61,6 +65,7 @@ protected:
 	}
 
 
+	const bool m_bIsServer;
 	bool m_bIsRunning = false;
 	bool m_bIsMainThreadBlocking = false;
 
@@ -68,10 +73,12 @@ protected:
 	IPCHandle m_hAsServerHandle = nullptr;
 
 	WorkCall m_workCall = nullptr;
-	OnceBlockingWorkCall m_OnceBlockingWorkCall = nullptr;
+	FuncVoidWorkCall m_OnceBlockingWorkCall = nullptr;
+	FuncVoidWorkCall m_StopWorkingCall = nullptr;
 
 	HANDLE m_hMainBlockingWorkNotify = nullptr;
 	HANDLE m_hForceStopWorkNotify = nullptr;
+	HANDLE m_hRunningWork = nullptr;
 
 	std::atomic_ulong m_SendRound;
 
@@ -98,12 +105,8 @@ public:
 
 	size_t GetClientsCount();
 
-	bool IsServer() final {
-		return true;
-	}
-
 protected:
-	EasyIPCServer() = default;
+	EasyIPCServer();
 
 	std::unordered_map<int, IPCHandle> m_clients;
 };
@@ -120,14 +123,10 @@ public:
 
 	bool SendDataToServer(const std::string& send, std::string &ret, DWORD timeout);
 
-	bool IsServer() final {
-		return false;
-	}
-
 	bool IsServerSet();
 
 protected:
-	EasyIPCClient() = default;
+	EasyIPCClient();
 	IPCHandle m_hServerHandle = nullptr;
 };
 

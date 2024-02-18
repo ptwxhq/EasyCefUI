@@ -58,6 +58,9 @@ CefRefPtr<WebViewControl> EasyWebViewMgr::GetItemByHwnd(HWND hWnd)
 
 CefRefPtr<WebViewControl> EasyWebViewMgr::GetItemBrowserById(int id)
 {
+	if (id == -1)
+		return nullptr;
+
 	for (auto it = m_WebViewIndex.begin(); it != m_WebViewIndex.end(); ++it)
 	{
 		if (it->second.id == id)

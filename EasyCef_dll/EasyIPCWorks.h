@@ -19,6 +19,7 @@ public:
 		CefRefPtr<CefListValue> Args;
 
 		std::promise<void> Signal;
+		std::future<void> Future = Signal.get_future();
 	};
 
 	
@@ -34,6 +35,8 @@ public:
 		return false;
 	}
 
+	void ForceStopWorks();
+
 protected:
 	using SyncFunctionMap = std::unordered_map<std::string, std::function<bool(CefRefPtr<CefBrowser>, CefRefPtr<CefFrame>, const CefRefPtr<CefListValue>&, CefString&)>>;
 
@@ -44,5 +47,6 @@ protected:
 
 	SyncFunctionMap m_mapSyncFuncs;
 	AsyncFunctionMap m_mapAsyncFuncs;
+	std::unordered_set<std::shared_ptr<EasyIPCWorks::BRDataPack>> m_setWorkDataPacks;
 };
 

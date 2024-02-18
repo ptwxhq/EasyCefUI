@@ -20,6 +20,7 @@ void EasyCefAppBrowser::OnContextInitialized()
 
 	EasyIPCServer::GetInstance().SetMainThread(GetCurrentThreadId());
 	EasyIPCServer::GetInstance().SetWorkCall(std::bind(&EasyBrowserWorks::CommWork, &EasyBrowserWorks::GetInstance(), std::placeholders::_1, std::placeholders::_2));
+	EasyIPCServer::GetInstance().SetStopWorkingWorkCall(std::bind(&EasyBrowserWorks::ForceStopWorks, &EasyBrowserWorks::GetInstance()));
 
 
 	//黑暗模式

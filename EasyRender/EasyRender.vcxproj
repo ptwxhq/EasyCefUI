@@ -121,6 +121,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <MinimumRequiredVersion>6.1</MinimumRequiredVersion>
       <AdditionalLibraryDirectories>$(SolutionDir)</AdditionalLibraryDirectories>
+      <LargeAddressAware>false</LargeAddressAware>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>sysver.manifest</AdditionalManifestFiles>

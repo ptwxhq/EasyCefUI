@@ -210,6 +210,8 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
     }
     else
     {
+        //网络进程的一并关掉
+        EasyBrowserWorks::GetInstance().DisconnectNetworkUtility();
 
         //保存下cookies
         auto request_context = CefRequestContext::GetGlobalContext();

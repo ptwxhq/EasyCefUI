@@ -60,6 +60,8 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 
 	if (bNeedUI)
 	{
+		m_setWorkDataPacks.insert(pData);
+
 		int64_t nNeedWaitMS = 0;
 		if (pData->WaitEndTime)
 		{
@@ -68,7 +70,7 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 	
 		if (nNeedWaitMS > 0)
 		{
-			auto waitres = pData->Signal.get_future().wait_for(std::chrono::milliseconds(nNeedWaitMS));
+			auto waitres = pData->Future.wait_for(std::chrono::milliseconds(nNeedWaitMS));
 
 			if (std::future_status::ready == waitres)
 			{
@@ -77,13 +79,14 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 			{
 				pData->DataInvalid = true;
 				LOG(WARNING) << GetCurrentProcessId() << "] EasyIPCWorks::UIWork timeout " << pData->Name << " data:" << input;
-				return;
 			}
 		}
 		else
 		{
-			pData->Signal.get_future().wait();
+			pData->Future.wait();
 		}
+
+		m_setWorkDataPacks.erase(pData);
 	}
 
 	output = std::move(pData->ReturnVal);
@@ -92,6 +95,20 @@ void EasyIPCWorks::CommWork(const std::string& input, std::string& output)
 
 	//LOG(INFO) << GetCurrentProcessId() << "] SetWorkCall:f->t (" << pData << ") " << input << "out:" << output;
 
+}
+
+void EasyIPCWorks::ForceStopWorks()
+{
+	auto it = m_setWorkDataPacks.begin();
+	while (it != m_setWorkDataPacks.end())
+	{
+		if ((*it)->Future.valid())
+		{
+			(*it)->Signal.set_value();
+			(*it)->Future.get();
+		}
+		m_setWorkDataPacks.erase(it++);
+	}
 }
 
 void EasyIPCWorks::UIWork(std::shared_ptr<EasyIPCWorks::BRDataPack> pData, bool bNeedUIThread)
