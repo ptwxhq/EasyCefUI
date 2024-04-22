@@ -182,9 +182,8 @@ bool EasyReqRespModifyMgr::HeaderOperation(CefRequest::HeaderMap& header, const 
 					auto regex_constants = Rule.bReplaceCaseInsensitive ? std::regex_constants::icase : std::regex_constants::ECMAScript;
 
 					std::regex word_regex(Rule.strSearch, regex_constants);
-					std::smatch m;
 
-					if (std::regex_search(strSrc, m, word_regex))
+					if (std::regex_search(strSrc, word_regex))
 					{
 						itemHead->second = std::regex_replace(strSrc, word_regex, Rule.strReplace);
 						bHaveOperation = true;
@@ -358,9 +357,7 @@ bool EasyReqRespModifyMgr::ModifyRequest(const std::vector<RuleID>& listIds, Cef
 						{
 							auto regex_constants = it->bReplaceCaseInsensitive ? std::regex_constants::icase : std::regex_constants::ECMAScript;
 							std::regex word_regex(it->strSearch, regex_constants);
-							std::smatch m;
-
-							if (std::regex_search(strSrc, m, word_regex))
+							if (std::regex_search(strSrc, word_regex))
 							{
 								strNew = std::regex_replace(strSrc, word_regex, it->strReplace);
 								bHaveOperation = true;

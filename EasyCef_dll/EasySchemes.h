@@ -6,8 +6,6 @@
 #include <mutex>
 
 
-extern CefRefPtr<CefResourceManager> g_resource_manager;
-
 struct EasyMemoryFile
 {
 	size_t id = 0;
@@ -93,6 +91,20 @@ private:
 	MYDISALLOW_COPY_AND_ASSIGN(DomainPackInfo);
 	DomainPackInfo() = default;
 	std::unordered_map<std::wstring, std::wstring> m_DomainMap;
+};
+
+
+class SaveFileToDiskProvider : public CefResourceManager::Provider {
+public:
+
+	SaveFileToDiskProvider() = default;
+
+	bool OnRequest(scoped_refptr<CefResourceManager::Request> request) override;
+
+private:
+	CefRefPtr<CefStreamReader> SaveContents(CefRefPtr<CefRequest> request, int& code, std::string& status);
+
+	MYDISALLOW_COPY_AND_ASSIGN(SaveFileToDiskProvider);
 };
 
 

@@ -127,7 +127,7 @@ EASYCEF_EXP_API void SetFunctionFlag(EasyCefFunctionFlag *pFlag);
 
 //仅限chromium87或以下版本，需要加载前设置，如不设置则默认使用系统flash
 EASYCEF_EXP_API void SetFlashPluginPath(LPCWSTR lpszPath);
-EASYCEF_EXP_API void SetCachePath(LPCWSTR lpszPath);
+EASYCEF_EXP_API void SetCachePath(LPCWSTR lpszPath); //设置为L"/"表示不使用缓存
 
 
 struct EasyReqRspRule

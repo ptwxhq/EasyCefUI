@@ -310,7 +310,15 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 		g_BrowserGlobalVar.CachePath = GetDefAppDataFolder();
 	}
 
-	CefString(&settings.cache_path).FromWString(g_BrowserGlobalVar.CachePath);
+	if (g_BrowserGlobalVar.CachePath == L"/")
+	{
+		g_BrowserGlobalVar.CachePath.clear();
+	}
+
+	if (!g_BrowserGlobalVar.CachePath.empty())
+	{
+		CefString(&settings.cache_path).FromWString(g_BrowserGlobalVar.CachePath);
+	}
 
 	settings.log_severity = (cef_log_severity_t)GetPrivateProfileIntW(L"Debug", L"Log", LOGSEVERITY_DISABLE, strDebugConfigPath.c_str());
 

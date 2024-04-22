@@ -2,6 +2,7 @@
 
 #include <list>
 #include "WebViewControl.h"
+#include "EasySchemes.h"
 
 //主进程
 
@@ -21,7 +22,7 @@ class EasyClientHandler :
 {
 public:
 
-
+    EasyClientHandler();
 
     //////////////////////////////////////////////////////
 
@@ -233,6 +234,8 @@ protected:
     std::list<wvhandle> m_preCreatePopHandle;
 
     CefRefPtr<WebViewUIControl> m_webuicontrol;
+
+    CefRefPtr<CefResourceManager> m_resource_manager;
 
     IMPLEMENT_REFCOUNTING(EasyClientHandler);
 

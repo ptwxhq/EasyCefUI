@@ -4,7 +4,6 @@
 #include <algorithm>
 #include "include/wrapper/cef_stream_resource_handler.h"
 
-CefRefPtr<CefResourceManager> g_resource_manager;
 EasyMemoryFileMgr g_MemFileMgr;
 
 void EasyRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
@@ -32,116 +31,6 @@ void RegEasyCefSchemes(CefRefPtr<CefRequestContext> requestContext)
 
 }
 
-class SaveFileToDiskProvider : public CefResourceManager::Provider {
-
-	#define ToDiskUrl "http://todisk/"
-	const int LenOfUrl = _countof(ToDiskUrl) - 1;
-public:
-
-	SaveFileToDiskProvider() = default;
-
-	bool OnRequest(scoped_refptr<CefResourceManager::Request> request) override {
-		CEF_REQUIRE_IO_THREAD();
-
-		const std::string& url = request->url();
-		const int len = LenOfUrl;
-		if (url.compare(0, len, ToDiskUrl) != 0) {
-			return false;
-		}
-
-		std::string status;
-
-		CefResponse::HeaderMap response_headers;
-		response_headers.insert(std::make_pair("Access-Control-Allow-Origin", "*"));
-
-		int code = 400;
-		auto response = SaveContents(request->request(), code, status);
-
-		request->Continue(new CefStreamResourceHandler(code, status, "text/plain; charset=utf-8",
-			response_headers, response));
-
-		return true;
-	}
-
-private:
-	CefRefPtr<CefStreamReader> SaveContents(CefRefPtr<CefRequest> request, int& code, std::string& status)
-	{
-		code = 403;
-		status = "Path Invalid";
-
-		auto url = request->GetURL().ToWString();
-		auto encodedpath = url.substr(LenOfUrl);
-
-		std::wstring localpath = CefURIDecode(encodedpath, false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
-
-		std::replace(localpath.begin(), localpath.end(), L'/', L'\\');
-
-		do
-		{
-			if (PathIsRelativeW(localpath.c_str()))
-			{
-				break;
-			}
-
-			if (_waccess_s(localpath.c_str(), 0) == 0)
-			{
-				status = "File is exist";
-				break;
-			}
-
-			status = "No post data";
-			CefRefPtr<CefPostData> postData = request->GetPostData();
-			if (!postData)
-				break;
-			
-			CefPostData::ElementVector elements;
-			postData->GetElements(elements);
-			if (elements.size() == 0)
-				break;
-			
-			for (auto element : elements)
-			{
-				auto type = element->GetType();
-
-				if (type == PDE_TYPE_BYTES) {
-
-					auto write = CefStreamWriter::CreateForFile(localpath);
-					if (write)
-					{
-						size_t size = element->GetBytesCount();
-						char* bytes = new char[size];
-						element->GetBytes(size, bytes);
-						auto written = write->Write(bytes, size, 1);
-						delete[] bytes;
-
-						if (written == 1)
-						{
-							code = 200;
-							status = "OK";
-						}
-						else
-						{
-							code = 500;
-							status = "Write size error";
-						}
-					}
-					else
-					{
-						code = 500;
-						status = "Fail to create file. errno:" + std::to_string(errno);
-					}
-
-				}
-			}
-
-		} while (false);
-
-
-		return CefStreamReader::CreateForData(static_cast<void*>(const_cast<char*>(status.c_str())), status.size());
-	}
-
-	MYDISALLOW_COPY_AND_ASSIGN(SaveFileToDiskProvider);
-};
 
 EasySchemesHandlerFactory::EasySchemesHandlerFactory()
 {
@@ -152,10 +41,6 @@ EasySchemesHandlerFactory::EasySchemesHandlerFactory()
 	mapSchemes.insert(std::make_pair("memory", RESTYPE::MEMORY));
 	mapSchemes.insert(std::make_pair(EASYCEFSCHEME, RESTYPE::INTERNALUI));
 
-
-	g_resource_manager = new CefResourceManager();
-
-	g_resource_manager->AddProvider(new SaveFileToDiskProvider, 0, std::string());
 }
 
 CefRefPtr<CefResourceHandler> EasySchemesHandlerFactory::Create(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, const CefString& scheme_name, CefRefPtr<CefRequest> request)
@@ -629,4 +514,108 @@ bool EasyMemoryFileMgr::GetData(size_t id, std::string& data)
 	}
 
 	return false;
+}
+
+
+
+#define ToDiskUrl "http://todisk/"
+const int LenOfUrl = _countof(ToDiskUrl) - 1;
+bool SaveFileToDiskProvider::OnRequest(scoped_refptr<CefResourceManager::Request> request) 
+{
+	CEF_REQUIRE_IO_THREAD();
+	const std::string& url = request->url();
+	const int len = LenOfUrl;
+	if (url.compare(0, len, ToDiskUrl) != 0) {
+		return false;
+	}
+
+	std::string status;
+
+	CefResponse::HeaderMap response_headers;
+	response_headers.insert(std::make_pair("Access-Control-Allow-Origin", "*"));
+
+	int code = 400;
+	auto response = SaveContents(request->request(), code, status);
+
+	request->Continue(new CefStreamResourceHandler(code, status, "text/plain; charset=utf-8",
+		response_headers, response));
+
+	return true;
+}
+
+
+CefRefPtr<CefStreamReader> SaveFileToDiskProvider::SaveContents(CefRefPtr<CefRequest> request, int& code, std::string& status)
+{
+	code = 403;
+	status = "Path Invalid";
+
+	auto url = request->GetURL().ToWString();
+	auto encodedpath = url.substr(LenOfUrl);
+
+	std::wstring localpath = CefURIDecode(encodedpath, false, (cef_uri_unescape_rule_t)(UU_PATH_SEPARATORS | UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS));
+
+	std::replace(localpath.begin(), localpath.end(), L'/', L'\\');
+
+	do
+	{
+		if (PathIsRelativeW(localpath.c_str()))
+		{
+			break;
+		}
+
+		if (_waccess_s(localpath.c_str(), 0) == 0)
+		{
+			status = "File is exist";
+			break;
+		}
+
+		status = "No post data";
+		CefRefPtr<CefPostData> postData = request->GetPostData();
+		if (!postData)
+			break;
+
+		CefPostData::ElementVector elements;
+		postData->GetElements(elements);
+		if (elements.size() == 0)
+			break;
+
+		for (auto element : elements)
+		{
+			auto type = element->GetType();
+
+			if (type == PDE_TYPE_BYTES) {
+
+				auto write = CefStreamWriter::CreateForFile(localpath);
+				if (write)
+				{
+					size_t size = element->GetBytesCount();
+					char* bytes = new char[size];
+					element->GetBytes(size, bytes);
+					auto written = write->Write(bytes, size, 1);
+					delete[] bytes;
+
+					if (written == 1)
+					{
+						code = 200;
+						status = "OK";
+					}
+					else
+					{
+						code = 500;
+						status = "Write size error";
+					}
+				}
+				else
+				{
+					code = 500;
+					status = "Fail to create file. errno:" + std::to_string(errno);
+				}
+
+			}
+		}
+
+	} while (false);
+
+
+	return CefStreamReader::CreateForData(static_cast<void*>(const_cast<char*>(status.c_str())), status.size());
 }

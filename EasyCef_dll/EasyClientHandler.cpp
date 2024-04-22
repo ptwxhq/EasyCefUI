@@ -33,6 +33,13 @@ CefString GetLabel(int message_id) {
 }
 
 
+EasyClientHandler::EasyClientHandler()
+{
+    m_resource_manager = new CefResourceManager();
+    m_resource_manager->AddProvider(new SaveFileToDiskProvider, 0, std::string());
+}
+
+
 bool EasyClientHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
 {
     return EasyBrowserWorks::GetInstance().DoAsyncWork(message->GetName(), browser, frame, message->GetArgumentList());
@@ -788,7 +795,7 @@ CefResourceRequestHandler::ReturnValue EasyClientHandler::OnBeforeResourceLoad(C
 
     if (m_bIsUIControl)
     {
-        return g_resource_manager->OnBeforeResourceLoad(browser, frame, request, callback);
+        return m_resource_manager->OnBeforeResourceLoad(browser, frame, request, callback);
     }
 
     return RV_CONTINUE;
@@ -809,7 +816,7 @@ CefRefPtr<CefResourceHandler> EasyClientHandler::GetResourceHandler(CefRefPtr<Ce
 
     if (m_bIsUIControl)
     {
-        return g_resource_manager->GetResourceHandler(browser, frame, request);
+        return m_resource_manager->GetResourceHandler(browser, frame, request);
     }
 
     return nullptr;
