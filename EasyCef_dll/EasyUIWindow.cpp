@@ -5,6 +5,7 @@
 #include <Windowsx.h>
 #undef SubclassWindow
 
+#include <dwmapi.h>
 
 
 namespace {
@@ -304,6 +305,11 @@ BOOL EasyUIWindowBase::Cls_OnCreate(HWND hwnd, LPCREATESTRUCT lpCreateStruct)
 			func_ptr(hwnd, TRUE);
 	}
 
+	if (IsSystemWindows7OrOlder())
+	{
+		SetWindowTheme(hwnd, L"", L"");
+	}
+
 	return TRUE;
 }
 
@@ -409,8 +415,11 @@ LRESULT EasyOpaqueWindow::OnNcActivate(UINT msg, WPARAM wParam, LPARAM lParam, B
 {
 	if (IsSystemWindows7OrOlder())
 	{
-		handle = TRUE;
-		return 0;
+		if (wParam)
+		{
+			handle = TRUE;
+			return 0;
+		}
 	}
 
 	handle = FALSE;
