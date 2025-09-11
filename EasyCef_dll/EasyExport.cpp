@@ -809,7 +809,7 @@ static bool InvokeJSFunction(HWND hWnd, bool bSync, LPCSTR lpszJSFunctionName, L
 
 		auto send = QuickMakeIpcParms(item->GetBrowser()->GetIdentifier(), frameid, dwTimeout ? GetTimeNowMS(dwTimeout) : 0, "__InvokedJSMethod__", list);
 		std::string ret;
-		OutputDebugStringA(send.c_str());
+		//OutputDebugStringA(send.c_str());
 		if (ipcSvr.SendData(hipcli, send, ret, dwTimeout))
 		{
 			if (pstrRet)
@@ -892,7 +892,7 @@ bool InvokeJSFunctionAsync(HWND hWnd, LPCSTR lpszJSFunctionName, LPCSTR lpszFram
 {
 	va_list args;
 	va_start(args, parmfmt);
-	return InvokeJSFunction(hWnd, false, lpszJSFunctionName, lpszFrameName, nullptr, /*0*/15000, parmfmt, args);
+	return InvokeJSFunction(hWnd, false, lpszJSFunctionName, lpszFrameName, nullptr, 0, parmfmt, args);
 }
 
 void AdjustRenderProcessSpeed(HWND hWnd, double dbSpeed)

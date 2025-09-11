@@ -559,7 +559,7 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 
 	const int wi = LOWORD(lp);
 	const int hi = HIWORD(lp);
-	if (wi != view_size_.width && hi != view_size_.height)
+	if (wi != view_size_.width || hi != view_size_.height)
 	{
 		view_size_.width = wi;
 		view_size_.height = hi;
