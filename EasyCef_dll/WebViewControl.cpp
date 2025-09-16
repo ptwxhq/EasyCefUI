@@ -266,6 +266,9 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
     CefBrowserSettings browser_settings;
     CefRefPtr<CefRequestContext> request_context;
 
+    browser_settings.minimum_font_size = 1;
+    browser_settings.minimum_logical_font_size = 1;
+
  //   browser_settings.javascript_close_windows = STATE_ENABLED;
     WCHAR strFonts[64] = {};
     GetPrivateProfileStringW(L"Settings", L"Fonts", L"", strFonts, _countof(strFonts), g_BrowserGlobalVar.BrowserSettingsPath.c_str());
@@ -402,6 +405,8 @@ void WebViewUIControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParam
 #endif
 #endif
 
+    browser_settings.minimum_font_size = 1;
+    browser_settings.minimum_logical_font_size = 1;
 
 
     if (pParams->cookie.length())
