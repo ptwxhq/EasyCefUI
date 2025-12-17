@@ -77,6 +77,7 @@ typedef void(*XPackFreeData)(BYTE* pOut);
 typedef struct EasyInitConfig
 {
 	bool bSupportLayerWindow; //如果项目不需要分层窗口（可鼠标穿透）则不需要启用，性能更好
+	bool bExistMsgLoop;
 	LPCWSTR strLocal;		//L"zh-CN"
 	LPCWSTR strUserAgent;
 	LPCWSTR strWebViewClassName;
@@ -226,6 +227,8 @@ typedef void(*CallBeforeContextMenu)(HWND hWnd, int x, int y, bool bIsEdit, Func
 typedef bool(*CallDoMenuCommand)(HWND hWnd, int command);
 EASYCEF_EXP_API bool SetAddContextMenuCall(CallBeforeContextMenu func, CallDoMenuCommand fundo);
 
+typedef bool(*CallRenderCrash)(HWND hWnd, int why);
+EASYCEF_EXP_API bool SetRenderCrashCall(CallRenderCrash func);
 
 typedef void(*CallDOMCompleteStatus)(HWND hWnd, bool isMain);
 EASYCEF_EXP_API void SetDOMCompleteStatusCallback(CallDOMCompleteStatus func);
@@ -280,7 +283,7 @@ EASYCEF_EXP_API void SetWindowAlpha(HWND hWnd, unsigned char val);
 enum WEBCONTROLWORK
 {
 	WC_GOBACK,				//后退
-	WC_GOFOWARD,			//前进
+	WC_GOFORWARD,			//前进
 	WC_RELOAD,				//刷新
 	WC_RELOADIGNORECACHE,	//不使用缓存刷新
 	WC_STOP,				//停止加载

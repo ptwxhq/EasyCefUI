@@ -217,15 +217,32 @@ void WebViewBrowserControl::InitBrowserImpl(std::shared_ptr<BrowserInitParams> p
                         {
                             UINT width = LOWORD(lParam);
                             UINT height = HIWORD(lParam);
-                            SetWindowPos(std::get<0>(*pContext)->GetHWND(), nullptr, 0, 0, width, height, SWP_NOZORDER | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
+                            auto hWnd = std::get<0>(*pContext)->GetHWND();
+                            if (hWnd)
+                            {
+                                SetWindowPos(hWnd, nullptr, 0, 0, width, height, SWP_NOZORDER | SWP_NOMOVE | SWP_ASYNCWINDOWPOS);
+                            }
+                            
                         }
                         break;
                     case WM_MOVE:
                         {
-                        std::get<0>(*pContext)->m_browser->GetHost()->NotifyMoveOrResizeStarted();
+                            auto browser = std::get<0>(*pContext)->m_browser;
+                            if (browser)
+                            {
+                                browser->GetHost()->NotifyMoveOrResizeStarted();
+                            }
                         }
                         break;
                     case WM_DESTROY:
+                        auto pWebC = std::get<0>(*pContext);
+                        if (pWebC)
+                        {
+                            HWND h = pWebC->GetHWND();
+                            ShowWindow(h, SW_HIDE);
+                            SetParent(h, nullptr);
+                            pWebC->CloseBrowser();
+                        }
                         RemoveWindowSubclass(hWnd, std::get<1>(*pContext), uIdSubclass);
                         delete pContext;
                     }

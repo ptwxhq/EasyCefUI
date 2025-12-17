@@ -145,11 +145,21 @@ void QuitMsgLoop()
 	//关闭服务
 	EasyIPCServer::GetInstance().Stop();
 
-	CefQuitMessageLoop();
+	if (!g_BrowserGlobalVar.hMultiThreadMsgLoop)
+	{
+		CefQuitMessageLoop();
+	}
 }
 
 void ShutEasyCef()
 {
+	if (g_BrowserGlobalVar.hMultiThreadMsgLoop)
+	{
+		WaitForSingleObject(g_BrowserGlobalVar.hMultiThreadMsgLoop, 5000);
+		g_BrowserGlobalVar.hMultiThreadMsgLoop = nullptr;
+		Sleep(100);	//目前没什么好方法，就这样了
+	}
+
 	CefShutdown();
 }
 
@@ -254,6 +264,13 @@ int InitEasyCef(HINSTANCE hInstance, LPCWSTR lpRender, PEASYINITCONFIG pConf)
 
 	if (pConf)
 	{
+		
+		if (pConf->bExistMsgLoop)
+		{
+			settings.multi_threaded_message_loop = true;
+			g_BrowserGlobalVar.hMultiThreadMsgLoop = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+		}
+
 		if (pConf->bSupportLayerWindow)
 		{
 			settings.windowless_rendering_enabled = true;
@@ -505,7 +522,7 @@ bool GetMemoryFileUrl(size_t id, LPWSTR lpszUrl, unsigned int nInLen, unsigned i
 		auto ws = szUrl.ToWString();
 		if (lpszUrl)
 		{
-			auto nLast = std::min(nInLen, ws.size());
+			auto nLast = std::min((size_t)nInLen, ws.size());
 			wcsncpy_s(lpszUrl, nInLen, ws.c_str(), nLast);
 			lpszUrl[nLast] = 0;
 		}
@@ -640,6 +657,17 @@ bool SetAddContextMenuCall(CallBeforeContextMenu func, CallDoMenuCommand fundo)
 	{
 		g_BrowserGlobalVar.funcBeforeContextMenu = func;
 		g_BrowserGlobalVar.funcDoMenuCommand = fundo;
+		return true;
+	}
+
+	return false;
+}
+
+bool SetRenderCrashCall(CallRenderCrash func)
+{
+	if (func)
+	{
+		g_BrowserGlobalVar.funcRenderCrashCallback = func;
 		return true;
 	}
 
@@ -963,7 +991,7 @@ bool WebControlDoWork(HWND hWnd, WEBCONTROLWORK dowork)
 		case EASYCEF::WC_GOBACK:
 			item->GoBack();
 			break;
-		case EASYCEF::WC_GOFOWARD:
+		case EASYCEF::WC_GOFORWARD:
 			item->GoForward();
 			break;
 		case EASYCEF::WC_RELOAD:

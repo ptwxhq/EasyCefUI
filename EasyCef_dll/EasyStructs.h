@@ -37,6 +37,8 @@ struct BrowserGlobalVar
 	HINSTANCE hInstance = nullptr;
 	HINSTANCE hDllInstance = nullptr;
 
+	HANDLE hMultiThreadMsgLoop = nullptr;
+
 	void* sandbox_info = nullptr;
 
 	std::function<void()> funcCloseCallback;
@@ -67,6 +69,8 @@ struct BrowserGlobalVar
 	std::function<bool(HWND, unsigned int, LPCWSTR, LPCWSTR)> funcBeforeDownloadCallback;
 
 	std::function<bool(unsigned int, long long, long long)> funcDownloadStatusCallback;
+
+	std::function<bool(HWND, int)> funcRenderCrashCallback;
 
 
 	//控件常用回调

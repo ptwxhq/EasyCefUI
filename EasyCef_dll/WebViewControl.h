@@ -84,6 +84,7 @@ protected:
 class WebViewBrowserControl : public WebViewControl
 {
 	IMPLEMENT_REFCOUNTING(WebViewBrowserControl);
+
 public:
 	void InitBrowserImpl(std::shared_ptr<BrowserInitParams> pParams) override;
 

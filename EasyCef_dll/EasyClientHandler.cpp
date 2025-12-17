@@ -227,19 +227,21 @@ void EasyClientHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser)
             cookie_mgr->FlushStore(nullptr);
 
         // All browser windows have closed. Quit the application message loop.
-        //CefQuitMessageLoop();
+
+        if (EasyWebViewMgr::GetInstance().HaveDelayItem())
+        {
+            EasyWebViewMgr::GetInstance().CleanDelayItem(nullptr);
+        }
+
         if (g_BrowserGlobalVar.funcCloseCallback)
         {
-            if (EasyWebViewMgr::GetInstance().HaveDelayItem())
-            {
-                EasyWebViewMgr::GetInstance().CleanDelayItem(nullptr);
-            }
-
             g_BrowserGlobalVar.funcCloseCallback();
         }
-        
 
-
+        if (g_BrowserGlobalVar.hMultiThreadMsgLoop)
+        {
+            SetEvent(g_BrowserGlobalVar.hMultiThreadMsgLoop);
+        }
     }
     
 }
@@ -586,9 +588,19 @@ void EasyClientHandler::OnRenderProcessTerminated(CefRefPtr<CefBrowser> browser,
  
     auto frame = browser->GetMainFrame();
 
-    auto str = R"_raw(Render Process was Terminated... <a href="javascript:window.close();">Close</a>)_raw";
-
-    webinfo::LoadErrorPage(frame, "", (cef_errorcode_t)100001, str);
+    if (g_BrowserGlobalVar.funcRenderCrashCallback)
+    {
+        auto item = EasyWebViewMgr::GetInstance().GetItemBrowserById(browser->GetIdentifier());
+        if (item)
+        {
+            g_BrowserGlobalVar.funcRenderCrashCallback(item->GetHWND(), status);
+        }
+    }
+    else
+    {
+        auto str = R"_raw(Render Process was Terminated... <a href="javascript:window.close();">Close</a>)_raw";
+        webinfo::LoadErrorPage(frame, "", (cef_errorcode_t)(10000 + status), str);
+    }
 }
 
 bool EasyClientHandler::OnBeforeBrowse(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefRequest> request, bool user_gesture, bool is_redirect)
