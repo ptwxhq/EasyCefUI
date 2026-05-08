@@ -153,6 +153,9 @@ void QuitMsgLoop()
 
 void ShutEasyCef()
 {
+	//关闭服务，避免QuitMsgLoop漏调用。
+	EasyIPCServer::GetInstance().Stop();
+
 	if (g_BrowserGlobalVar.hMultiThreadMsgLoop)
 	{
 		WaitForSingleObject(g_BrowserGlobalVar.hMultiThreadMsgLoop, 5000);

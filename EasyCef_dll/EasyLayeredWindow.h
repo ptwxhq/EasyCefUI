@@ -136,6 +136,7 @@ public:
 
         MESSAGE_HANDLER(WM_WINDOWPOSCHANGED, OnWindowPosChanged)
         MESSAGE_HANDLER(WM_SIZE, OnSize)
+        MESSAGE_HANDLER(WM_TIMER, OnTimer)
 
 
         MESSAGE_HANDLER(WM_SETFOCUS, OnFocus)
@@ -166,6 +167,7 @@ public:
     LRESULT OnMouseEvent(UINT msg, WPARAM wp, LPARAM lp, BOOL&);
     LRESULT OnWindowPosChanged(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle);
     LRESULT OnSize(UINT msg, WPARAM wp,LPARAM lp, BOOL &handle);
+    LRESULT OnTimer(UINT msg, WPARAM wp, LPARAM lp, BOOL& handle);
 
     LRESULT OnFocus(UINT, WPARAM, LPARAM, BOOL&);
     LRESULT OnCaptureLost(UINT, WPARAM, LPARAM, BOOL&);
@@ -242,8 +244,11 @@ private:
     int GetPopupXOffset() const;
     int GetPopupYOffset() const;
     bool CheckOnPaintSize(int width, int height);
+    void ResizeBackingStore(int width, int height);
 
     CefSize view_size_;
+    bool m_deferLayeredRender = false;
+    bool m_bitmapHasCurrentViewPaint = false;
     CefRect popup_rect_;
     CefRect original_popup_rect_;
 

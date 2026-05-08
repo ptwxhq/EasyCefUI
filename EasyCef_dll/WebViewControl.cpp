@@ -6,6 +6,18 @@
 #include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "EasySchemes.h"
+#include "include/base/cef_bind.h"
+#include "include/cef_task.h"
+
+class SimpleTask : public CefTask{
+public:
+    explicit SimpleTask(std::function<void()> f) : f_(std::move(f)) {}
+    void Execute() override { f_(); }
+
+private:
+    std::function<void()> f_;
+    IMPLEMENT_REFCOUNTING(SimpleTask);
+};
 
 
 bool WebViewControl::SetBrowser(CefRefPtr<CefBrowser> browser)
@@ -23,15 +35,37 @@ bool WebViewControl::LoadUrl(const CefString& url, bool cleanload)
 {
     if (m_browser && m_browser->GetMainFrame())
     {
-        auto request = CefRequest::Create();
-        if (!cleanload)
+        if (cleanload)
         {
-            request->SetFlags(request->GetFlags() | UR_FLAG_SKIP_CACHE);
+            auto request = CefRequest::Create();
+            if (!cleanload)
+            {
+                request->SetFlags(request->GetFlags() | UR_FLAG_SKIP_CACHE);
+            }
+
+            request->SetURL(url);
+
+            m_browser->GetMainFrame()->LoadRequest(request);
+            //if (CefCurrentlyOn(TID_UI))
+            //{
+            //    
+            //}
+            //else
+            //{
+            //    CefPostTask(TID_UI, new SimpleTask([self = m_browser, request] {
+            //        self->GetMainFrame()->LoadRequest(request);
+            //        }));
+            //}
+
         }
+        else
+        {
+            m_browser->GetMainFrame()->LoadURL(url);
+        }
+       
 
-        request->SetURL(url);
-
-        m_browser->GetMainFrame()->LoadRequest(request);
+        
+        
         return true;
     }
 

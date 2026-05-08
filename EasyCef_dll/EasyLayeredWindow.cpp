@@ -10,6 +10,11 @@
 
 #define VERIFYHR(x) VERIFY(SUCCEEDED(x))
 
+namespace {
+constexpr UINT_PTR kResizeRenderTimerId = 1;
+constexpr UINT kResizeRenderDelayMs = 80;
+}
+
 
 
 inline bool IsMouseEventFromTouch(UINT message) {
@@ -307,11 +312,6 @@ int EasyLayeredWindow::GetPopupYOffset() const
 
 bool EasyLayeredWindow::CheckOnPaintSize(int width, int height)
 {
-	if (device_scale_factor_ == floor(device_scale_factor_))
-	{
-		return true;
-	}
-
 	auto rcIn = CalcViewRect(width, height);
 	auto rcComp = CalcViewRect(0, 0);
 	if (rcIn == rcComp)
@@ -319,8 +319,8 @@ bool EasyLayeredWindow::CheckOnPaintSize(int width, int height)
 		return true;
 	}
 
-	int width_onpaint = round(rcIn.width * device_scale_factor_);
-	int height_onpaint = round(rcIn.height * device_scale_factor_);
+	const int width_onpaint = round(rcComp.width * device_scale_factor_);
+	const int height_onpaint = round(rcComp.height * device_scale_factor_);
 
 	if (width_onpaint == width && height_onpaint == height)
 	{
@@ -329,6 +329,36 @@ bool EasyLayeredWindow::CheckOnPaintSize(int width, int height)
 	}
 
 	return false;
+}
+
+void EasyLayeredWindow::ResizeBackingStore(int width, int height)
+{
+	if (width < 1 || height < 1)
+	{
+		return;
+	}
+
+	if (m_bitmap && m_bitmap->GetWidth() == width && m_bitmap->GetHeight() == height)
+	{
+		return;
+	}
+
+	auto newBitmap = std::make_unique<GdiBitmap>(width, height);
+	if (m_bitmap)
+	{
+		SetStretchBltMode(newBitmap->GetDC(), COLORONCOLOR);
+		StretchBlt(newBitmap->GetDC(), 0, 0, width, height,
+			m_bitmap->GetDC(), 0, 0, m_bitmap->GetWidth(), m_bitmap->GetHeight(),
+			SRCCOPY);
+	}
+	else
+	{
+		memset(newBitmap->GetBits(), 0, width * height * 4);
+	}
+
+	m_bitmap = std::move(newBitmap);
+	m_bitmapHasCurrentViewPaint = false;
+	m_info.SetDirtyRect(nullptr);
 }
 
 void EasyLayeredWindow::ApplyPopupOffset(int& x, int& y) const
@@ -559,17 +589,50 @@ LRESULT EasyLayeredWindow::OnSize(UINT, WPARAM wp, LPARAM lp, BOOL& h)
 
 	const int wi = LOWORD(lp);
 	const int hi = HIWORD(lp);
+	if (wi < 1 || hi < 1)
+	{
+		return 0;
+	}
+
 	if (wi != view_size_.width || hi != view_size_.height)
 	{
 		view_size_.width = wi;
 		view_size_.height = hi;
 
 		m_info.SetSize({ view_size_.width, view_size_.height });
+		ResizeBackingStore(view_size_.width, view_size_.height);
+		m_deferLayeredRender = true;
+		SetTimer(kResizeRenderTimerId, kResizeRenderDelayMs);
 
 		if (m_browser)
 		{
 			m_browser->GetHost()->WasResized();
+			m_browser->GetHost()->Invalidate(PET_VIEW);
 		}
+	}
+
+	return 0;
+}
+
+LRESULT EasyLayeredWindow::OnTimer(UINT, WPARAM wp, LPARAM, BOOL& h)
+{
+	if (wp != kResizeRenderTimerId)
+	{
+		h = FALSE;
+		return 0;
+	}
+
+	KillTimer(kResizeRenderTimerId);
+	m_deferLayeredRender = false;
+
+	if (m_bitmapHasCurrentViewPaint)
+	{
+		Render();
+	}
+	else if (m_browser)
+	{
+		m_browser->GetHost()->WasResized();
+		m_browser->GetHost()->Invalidate(PET_VIEW);
 	}
 
 	return 0;
@@ -649,10 +712,11 @@ LRESULT EasyLayeredWindow::OnCreate(UINT, WPARAM, LPARAM lp, BOOL& handle)
 	if (g_BrowserGlobalVar.FunctionFlag.bUIImeFollow)
 		ime_handler_.reset(new client::OsrImeHandlerWin(m_hWnd));
 
-
-
-	m_info.SetSize({ pCREATESTRUCT->cx, pCREATESTRUCT->cy });
-	m_bitmap = std::make_unique<GdiBitmap>(pCREATESTRUCT->cx, pCREATESTRUCT->cy);
+	view_size_.width = pCREATESTRUCT->cx > 0 ? pCREATESTRUCT->cx : 1;
+	view_size_.height = pCREATESTRUCT->cy > 0 ? pCREATESTRUCT->cy : 1;
+	m_info.SetSize({ view_size_.width, view_size_.height });
+	m_bitmap = std::make_unique<GdiBitmap>(view_size_.width, view_size_.height);
+	m_bitmapHasCurrentViewPaint = false;
 
 	//LOG(INFO) << GetCurrentProcessId() << "] OnCreate new:" << pCREATESTRUCT->x << pCREATESTRUCT->y << pCREATESTRUCT->cx << pCREATESTRUCT->cy << "\n";
 
@@ -825,6 +889,7 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int width, int height)
 	}
 
 	m_info.SetDirtyRect(nullptr);
+	m_bitmapHasCurrentViewPaint = true;
 	return true;
 }
 
@@ -832,6 +897,12 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 {
 	if (x < 0 || y < 0)
 	{
+		return false;
+	}
+
+	if (!m_bitmapHasCurrentViewPaint)
+	{
+		m_browser->GetHost()->Invalidate(PET_VIEW);
 		return false;
 	}
 
@@ -898,6 +969,11 @@ bool EasyLayeredWindow::SetBitmapData(const void* pData, int x, int y, int width
 
 void EasyLayeredWindow::Render()
 {
+	if (m_deferLayeredRender || !m_bitmapHasCurrentViewPaint)
+	{
+		return;
+	}
+
  	if (m_hWnd && m_bitmap)
 	{
 		m_info.Update(m_hWnd, m_bitmap->GetDC());
